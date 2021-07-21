@@ -739,3 +739,7 @@ EXECUTOR_FAST_SIMPLE_QUERY = 2 # 0 : Disable fast simple query
 SERIAL_EXECUTE_MODE = 1  # 0: disable
                          # 1: enable (default)
 
+#=================================================================
+# Job Scheduler Logging Properties
+#=================================================================
+JOB_MSGLOG_FLAG = 1       # 1 (JOB trace log)

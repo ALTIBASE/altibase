@@ -1124,3 +1124,8 @@ __REDUCE_PARTITION_PREPARE_MEMORY = 1 # 0: disable
 #=================================================================
 __LEFT_OUTER_SKIP_RIGHT_ENABLE = 1 # 0: disable
                                    # 1: enable
+
+#=================================================================
+# Job Scheduler Logging Properties
+#=================================================================
+JOB_MSGLOG_FLAG = 1       # 1 (JOB trace log)

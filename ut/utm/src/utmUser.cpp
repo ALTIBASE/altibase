@@ -31,9 +31,10 @@
     "and c.user_name=? "                                                \
     "order by 1"
 
-#define GET_USER_COUNT_QUERY                    \
-    "select/*+ NO_PLAN_CACHE */ count(*) from system_.sys_users_"
-
+/* BUG-49122 Prevent seg. fault w/o PUBLIC account */
+#define GET_TARGET_USER_COUNT_QUERY                                  \
+     "SELECT/*+ NO_PLAN_CACHE */ count(*) FROM system_.sys_users_"   \
+     " WHERE user_name != 'PUBLIC' AND user_name != 'SYSTEM_'"
 
 #define GET_USER_DETAIL_QUERY                                        \
     " select /*+ USE_HASH( A, B ) USE_HASH( A, C ) NO_PLAN_CACHE */" \
@@ -469,8 +470,8 @@ SQLRETURN getUserQuery( FILE  *aUserFp,
     SQLHSTMT s_userStmt = SQL_NULL_HSTMT;
     SQLRETURN sRet;
 
-    SInt        i = 1;
-    SInt        sUserCnt = 0;
+    SInt        i = 0;
+    SInt        sTargetUserCnt = 0;
     SInt        s_userID;
     SChar       s_user_name[UTM_NAME_LEN+1];
     SChar       s_query[QUERY_LEN / 2];
@@ -484,13 +485,14 @@ SQLRETURN getUserQuery( FILE  *aUserFp,
 
     IDE_TEST_RAISE(SQLAllocStmt(m_hdbc, &s_userStmt) != SQL_SUCCESS, DBCError);
 
-    idlOS::sprintf(s_query, GET_USER_COUNT_QUERY);
+    /* BUG-49122 Prevent seg. fault w/o PUBLIC account */
+    idlOS::sprintf(s_query, GET_TARGET_USER_COUNT_QUERY);
 
     IDE_TEST_RAISE(SQLExecDirect(s_userStmt, (SQLCHAR *)s_query, SQL_NTS)
                    != SQL_SUCCESS, UserStmtError);
 
     IDE_TEST_RAISE(
-        SQLBindCol(s_userStmt, 1, SQL_C_SLONG, (SQLPOINTER)&sUserCnt, 0, NULL)
+        SQLBindCol(s_userStmt, 1, SQL_C_SLONG, (SQLPOINTER)&sTargetUserCnt, 0, NULL)
         != SQL_SUCCESS, UserStmtError);        
 
     sRet = SQLFetch(s_userStmt);
@@ -503,17 +505,17 @@ SQLRETURN getUserQuery( FILE  *aUserFp,
     IDE_TEST_RAISE(SQLFreeStmt(s_userStmt, SQL_UNBIND)
                    != SQL_SUCCESS, UserStmtError);                
 
-    sUserCnt = sUserCnt - 2; // 'PUBLIC', 'SYSTEM_'
-
-    if ( sUserCnt > 0 )
+    if ( sTargetUserCnt > 0 )
     {
         // BUG-35099: [ux] Codesonar warning UX part - 228797.2579802
-        IDE_ASSERT( ( ID_SIZEOF(UserInfo) * sUserCnt ) < ID_UINT_MAX );
-        m_UserInfo = (UserInfo *) idlOS::malloc(ID_SIZEOF(UserInfo) * sUserCnt);
+        IDE_ASSERT( ( ID_SIZEOF(UserInfo) * sTargetUserCnt ) < ID_UINT_MAX );
+        m_UserInfo = (UserInfo *) idlOS::malloc(ID_SIZEOF(UserInfo) * sTargetUserCnt);
         IDE_TEST(m_UserInfo == NULL);
     }
-    idlOS::strcpy(m_UserInfo[0].m_user, aUserName);
-    idlOS::strcpy(m_UserInfo[0].m_passwd, aPasswd);
+
+    idlOS::strcpy(m_UserInfo[i].m_user, aUserName);
+    idlOS::strcpy(m_UserInfo[i].m_passwd, aPasswd);
+    i++;
 
     /* PROJ-1349
      * 1. TEMPORARY TABLESPACE tbs_name
@@ -632,7 +634,7 @@ SQLRETURN getUserQuery( FILE  *aUserFp,
     
     idlOS::fflush(aUserFp);
 
-    IDE_TEST_RAISE( sUserCnt != i, NoExistTablespaceError );
+    IDE_TEST_RAISE( sTargetUserCnt != i, NoExistTablespaceError );
 
     *a_user_cnt = i;
 
