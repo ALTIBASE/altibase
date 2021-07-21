@@ -1470,14 +1470,16 @@ IDE_RC sdtSortSegment::readNPageFromDisk( sdtSortSegHdr* aWASegment,
                                aWAGroupID,
                                aWCBPtr );
 
+    // TC/FIT/Server/sm/Bugs/BUG-45263/BUG-45263.tc
+    IDU_FIT_POINT( "BUG-45263@sdtSortSegment::readNPageFromDisk::iduFileopen" );
+
     IDE_TEST( sddDiskMgr::read( aWASegment->mStatistics,
                                 aWASegment->mSpaceID,
                                 aNPageID,
                                 1,
-                                sWAPagePtr ) != IDE_SUCCESS );
-
-    // TC/FIT/Server/sm/Bugs/BUG-45263/BUG-45263.tc
-    IDU_FIT_POINT( "BUG-45263@sdtSortSegment::readNPageFromDisk::iduFileopen" );
+                                sWAPagePtr,
+                                ID_FALSE ) /* aFatal */
+              != IDE_SUCCESS );
 
     aWASegment->mStatsPtr->mReadCount++;
 
@@ -2329,49 +2331,51 @@ void sdtSortSegment::dumpWASegment( void           * aWASegment,
     sdtSortSegHdr  * sWASegment = (sdtSortSegHdr*)aWASegment;
     SInt             i;
 
+    IDE_ERROR( sWASegment != NULL );
+
     (void)idlVA::appendFormat(
-        aOutBuf,
-        aOutSize,
-        "DUMP WASEGMENT:\n"
-        "\tWASegPtr         : 0x%"ID_xINT64_FMT"\n"
-        "\tSpaceID          : %"ID_UINT32_FMT"\n"
-        "\tType             : SORT\n"
-        "\tNExtentCount     : %"ID_UINT32_FMT"\n"
-        "\tWAExtentCount    : %"ID_UINT32_FMT"\n"
-        "\tMaxWAExtentCount : %"ID_UINT32_FMT"\n"
-        "\tPageSeqInLFE     : %"ID_UINT32_FMT"\n"
+                aOutBuf,
+                aOutSize,
+                "DUMP WASEGMENT:\n"
+                "WASegPtr         : 0x%"ID_xINT64_FMT"\n"
+                "SpaceID          : %"ID_UINT32_FMT"\n"
+                "Type             : SORT\n"
+                "NExtentCount     : %"ID_UINT32_FMT"\n"
+                "WAExtentCount    : %"ID_UINT32_FMT"\n"
+                "MaxWAExtentCount : %"ID_UINT32_FMT"\n"
+                "PageSeqInLFE     : %"ID_UINT32_FMT"\n"
 
-        "\tHintWCBPtr       : 0x%"ID_xPOINTER_FMT"\n"
-        "\tWAExtentListHead : 0x%"ID_xPOINTER_FMT"\n"
-        "\tWAExtentListTail : 0x%"ID_xPOINTER_FMT"\n"
-        "\tCurFreeWAExtent  : 0x%"ID_xPOINTER_FMT"\n"
-        "\tmCurrFreePageIdx : %"ID_UINT32_FMT"\n"
+                "HintWCBPtr       : 0x%"ID_xPOINTER_FMT"\n"
+                "WAExtentListHead : 0x%"ID_xPOINTER_FMT"\n"
+                "WAExtentListTail : 0x%"ID_xPOINTER_FMT"\n"
+                "CurFreeWAExtent  : 0x%"ID_xPOINTER_FMT"\n"
+                "mCurrFreePageIdx : %"ID_UINT32_FMT"\n"
 
-        "\tAllocPageCount   : %"ID_UINT32_FMT"\n"
-        "\tNPageCount       : %"ID_UINT32_FMT"\n"
-        "\tLastFreeExtFstPID: %"ID_UINT32_FMT"\n"
-        "\tInMemory         : %s\n"
-        "\tNPageHashBucketCnt: %"ID_UINT32_FMT"\n"
-        "\tUsedWCBPtr       : 0x%"ID_xPOINTER_FMT"\n",
-        sWASegment,
-        sWASegment->mSpaceID,
-        getNExtentCount( sWASegment ),
-        sWASegment->mWAExtentInfo.mCount,
-        sWASegment->mMaxWAExtentCount,
-        sWASegment->mNExtFstPIDList.mPageSeqInLFE,
+                "AllocPageCount   : %"ID_UINT32_FMT"\n"
+                "NPageCount       : %"ID_UINT32_FMT"\n"
+                "LastFreeExtFstPID: %"ID_UINT32_FMT"\n"
+                "InMemory         : %s\n"
+                "NPageHashBucketCnt: %"ID_UINT32_FMT"\n"
+                "UsedWCBPtr       : 0x%"ID_xPOINTER_FMT"\n",
+                sWASegment,
+                sWASegment->mSpaceID,
+                getNExtentCount( sWASegment ),
+                sWASegment->mWAExtentInfo.mCount,
+                sWASegment->mMaxWAExtentCount,
+                sWASegment->mNExtFstPIDList.mPageSeqInLFE,
 
-        sWASegment->mHintWCBPtr,
-        sWASegment->mWAExtentInfo.mHead,
-        sWASegment->mWAExtentInfo.mTail,
-        sWASegment->mCurFreeWAExtent,
-        sWASegment->mCurrFreePageIdx,
+                sWASegment->mHintWCBPtr,
+                sWASegment->mWAExtentInfo.mHead,
+                sWASegment->mWAExtentInfo.mTail,
+                sWASegment->mCurFreeWAExtent,
+                sWASegment->mCurrFreePageIdx,
 
-        sWASegment->mAllocWAPageCount,
-        sWASegment->mNPageCount,
-        sWASegment->mNExtFstPIDList.mLastFreeExtFstPID,
-        sWASegment->mIsInMemory == SDT_WORKAREA_OUT_MEMORY ? "OutMemory" : "InMemory",
-        sWASegment->mNPageHashBucketCnt,
-        sWASegment->mUsedWCBPtr );
+                sWASegment->mAllocWAPageCount,
+                sWASegment->mNPageCount,
+                sWASegment->mNExtFstPIDList.mLastFreeExtFstPID,
+                sWASegment->mIsInMemory == SDT_WORKAREA_OUT_MEMORY ? "OutMemory" : "InMemory",
+                sWASegment->mNPageHashBucketCnt,
+                sWASegment->mUsedWCBPtr );
 
     (void)idlVA::appendFormat( aOutBuf, aOutSize, "\n" );
 
@@ -2381,8 +2385,11 @@ void sdtSortSegment::dumpWASegment( void           * aWASegment,
     }
 
     return;
-}
 
+    IDE_EXCEPTION_END;
+
+    return;
+}
 
 void sdtSortSegment::dumpWAGroup( sdtSortSegHdr  * aWASegment,
                                   sdtGroupID       aWAGroupID,
@@ -2400,15 +2407,15 @@ void sdtSortSegment::dumpWAGroup( sdtSortSegHdr  * aWASegment,
             aOutBuf,
             aOutSize,
             "DUMP WAGROUP:\n"
-            "\tID     : %"ID_UINT32_FMT"\n"
-            "\tPolicy : %-4"ID_UINT32_FMT
+            "ID     : %"ID_UINT32_FMT"\n"
+            "Policy : %-4"ID_UINT32_FMT
             "(0:None, 1:InMemory, 2:FIFO, 3:LRU, 4:HASH)\n"
-            "\tRange  : %"ID_UINT32_FMT" <-> %"ID_UINT32_FMT"\n"
-            "\tReuseP : Seq: %"ID_UINT32_FMT", "
+            "Range  : %"ID_UINT32_FMT" <-> %"ID_UINT32_FMT"\n"
+            "ReuseP : Seq: %"ID_UINT32_FMT", "
             "Top: %"ID_UINT32_FMT", Bot: %"ID_UINT32_FMT"\n"
-            "\tHint   : %"ID_UINT32_FMT"\n"
-            "\tHintPtr: 0x%"ID_xPOINTER_FMT"\n"
-            "\tMapPtr : 0x%"ID_xINT64_FMT"\n\n",
+            "Hint   : %"ID_UINT32_FMT"\n"
+            "HintPtr: 0x%"ID_xPOINTER_FMT"\n"
+            "MapPtr : 0x%"ID_xINT64_FMT"\n\n",
             aWAGroupID,
             sGrpInfo->mPolicy,
             sGrpInfo->mBeginWPID,

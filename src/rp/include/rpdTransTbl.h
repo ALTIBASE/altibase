@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpdTransTbl.h 90444 2021-04-02 10:15:58Z minku.kang $
+ * $Id: rpdTransTbl.h 91226 2021-07-14 08:01:24Z lswhh $
  **********************************************************************/
 
 #ifndef _O_RPD_TRANSTBL_H_
@@ -162,7 +162,7 @@ public:
     /* Begin된 Transaction의 SN중에서 가장 작은 SN값을
        return */
     void           getMinTransFirstSN( smSN * aSN );
-
+    idBool         isExistActiveTrans();
     inline rpdTransPoolType transPoolType() { return mTransPoolType; }
 
     inline idBool    isATrans(smTID aRemoteTID);

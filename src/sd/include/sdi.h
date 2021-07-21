@@ -949,7 +949,8 @@ typedef enum
     SDI_DDL_TYPE_INDEX      = 2,
     SDI_DDL_TYPE_PROCEDURE_DROP = 3,
     SDI_DDL_TYPE_DROP = 4,
-    SDI_DDL_TYPE_DISJOIN = 5
+    SDI_DDL_TYPE_DISJOIN = 5,
+    SDI_DDL_TYPE_INDEX_DROP = 6
 } sdiDDLType;
 
 /* TASK-7219 Non-shard DML */
@@ -1804,11 +1805,13 @@ public:
                                     qcStatement * aViewStatement );
 
     static IDE_RC checkShardObjectForDDL( qcStatement  * aQcStmt,
-                                          sdiDDLType     aDDLType );
+                                          sdiDDLType     aDDLType,
+                                          SChar        * aObjectName = NULL );
 
     static IDE_RC checkShardObjectForDDLInternal( qcStatement *      aQcStmt,
                                                   qcNamePosition     aUserNamePos,
-                                                  qcNamePosition     aTableNamePos );
+                                                  qcNamePosition     aTableNamePos,
+                                                  SChar            * aObjectName );
 
     static IDE_RC checkShardReplication( qcStatement * aQcStmt );
 

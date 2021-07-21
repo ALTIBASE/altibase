@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: ideLogEntry.h 89495 2020-12-14 05:19:22Z emlee $
+ * $Id: ideLogEntry.h 91200 2021-07-12 02:29:48Z hykim $
  **********************************************************************/
 
 /***********************************************************************
@@ -452,6 +452,81 @@
 #define IDE_QP_32   IDE_TRC_QP_32, IDE_QP, 32
 
 /* ------------------------------------------------
+ *  JOB
+ *  Macro: IDE_*_LEV   ==> DO_FLAG,MODULE,LEVEL
+ *
+ * ----------------------------------------------*/
+
+#define IDE_TRC_JOB_0   1           /* always do */
+#define IDE_TRC_JOB_1   (iduProperty::getJobTrcFlag() & 0x00000001)
+#define IDE_TRC_JOB_2   (iduProperty::getJobTrcFlag() & 0x00000002)
+#define IDE_TRC_JOB_3   (iduProperty::getJobTrcFlag() & 0x00000004)
+#define IDE_TRC_JOB_4   (iduProperty::getJobTrcFlag() & 0x00000008)
+#define IDE_TRC_JOB_5   (iduProperty::getJobTrcFlag() & 0x00000010)
+#define IDE_TRC_JOB_6   (iduProperty::getJobTrcFlag() & 0x00000020)
+#define IDE_TRC_JOB_7   (iduProperty::getJobTrcFlag() & 0x00000040)
+#define IDE_TRC_JOB_8   (iduProperty::getJobTrcFlag() & 0x00000080)
+#define IDE_TRC_JOB_9   (iduProperty::getJobTrcFlag() & 0x00000100)
+#define IDE_TRC_JOB_10  (iduProperty::getJobTrcFlag() & 0x00000200)
+#define IDE_TRC_JOB_11  (iduProperty::getJobTrcFlag() & 0x00000400)
+#define IDE_TRC_JOB_12  (iduProperty::getJobTrcFlag() & 0x00000800)
+#define IDE_TRC_JOB_13  (iduProperty::getJobTrcFlag() & 0x00001000)
+#define IDE_TRC_JOB_14  (iduProperty::getJobTrcFlag() & 0x00002000)
+#define IDE_TRC_JOB_15  (iduProperty::getJobTrcFlag() & 0x00004000)
+#define IDE_TRC_JOB_16  (iduProperty::getJobTrcFlag() & 0x00008000)
+#define IDE_TRC_JOB_17  (iduProperty::getJobTrcFlag() & 0x00010000)
+#define IDE_TRC_JOB_18  (iduProperty::getJobTrcFlag() & 0x00020000)
+#define IDE_TRC_JOB_19  (iduProperty::getJobTrcFlag() & 0x00040000)
+#define IDE_TRC_JOB_20  (iduProperty::getJobTrcFlag() & 0x00080000)
+#define IDE_TRC_JOB_21  (iduProperty::getJobTrcFlag() & 0x00100000)
+#define IDE_TRC_JOB_22  (iduProperty::getJobTrcFlag() & 0x00200000)
+#define IDE_TRC_JOB_23  (iduProperty::getJobTrcFlag() & 0x00400000)
+#define IDE_TRC_JOB_24  (iduProperty::getJobTrcFlag() & 0x00800000)
+#define IDE_TRC_JOB_25  (iduProperty::getJobTrcFlag() & 0x01000000)
+#define IDE_TRC_JOB_26  (iduProperty::getJobTrcFlag() & 0x02000000)
+#define IDE_TRC_JOB_27  (iduProperty::getJobTrcFlag() & 0x04000000)
+#define IDE_TRC_JOB_28  (iduProperty::getJobTrcFlag() & 0x08000000)
+#define IDE_TRC_JOB_29  (iduProperty::getJobTrcFlag() & 0x10000000)
+#define IDE_TRC_JOB_30  (iduProperty::getJobTrcFlag() & 0x20000000)
+#define IDE_TRC_JOB_31  (iduProperty::getJobTrcFlag() & 0x40000000)
+#define IDE_TRC_JOB_32  (iduProperty::getJobTrcFlag() & 0x80000000)
+
+
+#define IDE_JOB_0    IDE_TRC_JOB_0,  IDE_JOB, 0
+#define IDE_JOB_1    IDE_TRC_JOB_1,  IDE_JOB, 1
+#define IDE_JOB_2    IDE_TRC_JOB_2,  IDE_JOB, 2
+#define IDE_JOB_3    IDE_TRC_JOB_3,  IDE_JOB, 3
+#define IDE_JOB_4    IDE_TRC_JOB_4,  IDE_JOB, 4
+#define IDE_JOB_5    IDE_TRC_JOB_5,  IDE_JOB, 5
+#define IDE_JOB_6    IDE_TRC_JOB_6,  IDE_JOB, 6
+#define IDE_JOB_7    IDE_TRC_JOB_7,  IDE_JOB, 7
+#define IDE_JOB_8    IDE_TRC_JOB_8,  IDE_JOB, 8
+#define IDE_JOB_9    IDE_TRC_JOB_9,  IDE_JOB, 9
+#define IDE_JOB_10   IDE_TRC_JOB_10, IDE_JOB, 10
+#define IDE_JOB_11   IDE_TRC_JOB_11, IDE_JOB, 11
+#define IDE_JOB_12   IDE_TRC_JOB_12, IDE_JOB, 12
+#define IDE_JOB_13   IDE_TRC_JOB_13, IDE_JOB, 13
+#define IDE_JOB_14   IDE_TRC_JOB_14, IDE_JOB, 14
+#define IDE_JOB_15   IDE_TRC_JOB_15, IDE_JOB, 15
+#define IDE_JOB_16   IDE_TRC_JOB_16, IDE_JOB, 16
+#define IDE_JOB_17   IDE_TRC_JOB_17, IDE_JOB, 17
+#define IDE_JOB_18   IDE_TRC_JOB_18, IDE_JOB, 18
+#define IDE_JOB_19   IDE_TRC_JOB_19, IDE_JOB, 19
+#define IDE_JOB_20   IDE_TRC_JOB_20, IDE_JOB, 20
+#define IDE_JOB_21   IDE_TRC_JOB_21, IDE_JOB, 21
+#define IDE_JOB_22   IDE_TRC_JOB_22, IDE_JOB, 22
+#define IDE_JOB_23   IDE_TRC_JOB_23, IDE_JOB, 23
+#define IDE_JOB_24   IDE_TRC_JOB_24, IDE_JOB, 24
+#define IDE_JOB_25   IDE_TRC_JOB_25, IDE_JOB, 25
+#define IDE_JOB_26   IDE_TRC_JOB_26, IDE_JOB, 26
+#define IDE_JOB_27   IDE_TRC_JOB_27, IDE_JOB, 27
+#define IDE_JOB_28   IDE_TRC_JOB_28, IDE_JOB, 28
+#define IDE_JOB_29   IDE_TRC_JOB_29, IDE_JOB, 29
+#define IDE_JOB_30   IDE_TRC_JOB_30, IDE_JOB, 30
+#define IDE_JOB_31   IDE_TRC_JOB_31, IDE_JOB, 31
+#define IDE_JOB_32   IDE_TRC_JOB_32, IDE_JOB, 32
+
+/* ------------------------------------------------
  *  SD  BUG-46138
  *  Macro: IDE_*_LEV   ==> DO_FLAG,MODULE,LEVEL
  * ----------------------------------------------*/
@@ -728,6 +803,7 @@ typedef enum ideLogModule
     IDE_SM,
     IDE_RP,
     IDE_QP,
+    IDE_JOB, /* BUG-49108 */
     IDE_SD, /* BUG-46138 */
     IDE_DK,
     IDE_XA,

@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smcSequence.cpp 91121 2021-07-02 04:46:19Z jiwon.kim $
+ * $Id: smcSequence.cpp 91197 2021-07-12 01:15:29Z emlee $
  **********************************************************************/
 
 #include <idl.h>
@@ -855,17 +855,15 @@ IDE_RC smcSequence::readSequenceNext( void*                aTrans,
                       != IDE_SUCCESS );
             sState = 2;
 
-
-            IDE_TEST(smrUpdate::updateSequenceAtTableHead(
-                    NULL, /* idvSQL* */
-                    sDummyTx,
-                    aTableHeader->mSelfOID,
-                    SM_MAKE_OFFSET(aTableHeader->mSelfOID)
-                    + SMP_SLOT_HEADER_SIZE,
-                    NULL,
-                    &sAfterSequence,
-                    ID_SIZEOF(smcSequenceInfo))
-                != IDE_SUCCESS);
+            IDE_TEST( smrUpdate::updateSequenceAtTableHead(
+                                        NULL, /* idvSQL* */
+                                        sDummyTx,
+                                        aTableHeader->mSelfOID,
+                                        SM_MAKE_OFFSET(aTableHeader->mSelfOID) + SMP_SLOT_HEADER_SIZE,
+                                        NULL,
+                                        &sAfterSequence,
+                                        ID_SIZEOF(smcSequenceInfo))
+                     != IDE_SUCCESS );
 
             IDE_TEST( smLayerCallback::commitTx(sDummyTx) != IDE_SUCCESS );
            
@@ -874,32 +872,31 @@ IDE_RC smcSequence::readSequenceNext( void*                aTrans,
             
             aTableHeader->mSequence = sAfterSequence;
 
-            IDE_TEST(smmDirtyPageMgr::insDirtyPage(
-                    SMI_ID_TABLESPACE_SYSTEM_MEMORY_DIC, sPageID)
-                != IDE_SUCCESS);
+            IDE_TEST( smmDirtyPageMgr::insDirtyPage( SMI_ID_TABLESPACE_SYSTEM_MEMORY_DIC, 
+                                                     sPageID )
+                      != IDE_SUCCESS);
         }
         else
         {
             sPageID = SM_MAKE_PID(aTableHeader->mSelfOID);
             sState = 1;
 
-            IDE_TEST(smrUpdate::updateSequenceAtTableHead(
-                    NULL, /* idvSQL* */
-                    aTrans,
-                    aTableHeader->mSelfOID,
-                    SM_MAKE_OFFSET(aTableHeader->mSelfOID)
-                    + SMP_SLOT_HEADER_SIZE,
-                    NULL,
-                    &sAfterSequence,
-                    ID_SIZEOF(smcSequenceInfo))
-                != IDE_SUCCESS);
+            IDE_TEST( smrUpdate::updateSequenceAtTableHead(
+                                        NULL, /* idvSQL* */
+                                        aTrans,
+                                        aTableHeader->mSelfOID,
+                                        SM_MAKE_OFFSET(aTableHeader->mSelfOID) + SMP_SLOT_HEADER_SIZE,
+                                        NULL,
+                                        &sAfterSequence,
+                                        ID_SIZEOF(smcSequenceInfo))
+                      != IDE_SUCCESS );
             
             aTableHeader->mSequence = sAfterSequence;
 
             sState = 0;
-            IDE_TEST(smmDirtyPageMgr::insDirtyPage(
-                    SMI_ID_TABLESPACE_SYSTEM_MEMORY_DIC, sPageID)
-                != IDE_SUCCESS);
+            IDE_TEST( smmDirtyPageMgr::insDirtyPage( SMI_ID_TABLESPACE_SYSTEM_MEMORY_DIC, 
+                                                     sPageID )
+                      != IDE_SUCCESS );
         }      
     }
     else
@@ -933,8 +930,8 @@ IDE_RC smcSequence::readSequenceNext( void*                aTrans,
         {
             case 2:
                 IDE_PUSH();
-                (void)smmDirtyPageMgr::insDirtyPage(
-                    SMI_ID_TABLESPACE_SYSTEM_MEMORY_DIC, sPageID);
+                (void)smmDirtyPageMgr::insDirtyPage( SMI_ID_TABLESPACE_SYSTEM_MEMORY_DIC, 
+                                                     sPageID );
                 IDE_POP();
                 
                 IDE_ASSERT( smLayerCallback::abortTx(sDummyTx)
@@ -953,8 +950,8 @@ IDE_RC smcSequence::readSequenceNext( void*                aTrans,
         if(sState == 1)
         {
             IDE_PUSH();
-            (void)smmDirtyPageMgr::insDirtyPage(
-                SMI_ID_TABLESPACE_SYSTEM_MEMORY_DIC, sPageID);
+            (void)smmDirtyPageMgr::insDirtyPage( SMI_ID_TABLESPACE_SYSTEM_MEMORY_DIC, 
+                                                 sPageID);
             IDE_POP();
         }
     }

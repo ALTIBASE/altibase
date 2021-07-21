@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $$Id: smrLogMgr.cpp 88191 2020-07-27 03:08:54Z mason.lee $
+ * $$Id: smrLogMgr.cpp 91226 2021-07-14 08:01:24Z lswhh $
  *
  * 로그관리자 구현파일입니다.
  *
@@ -3146,6 +3146,14 @@ void smrLogMgr::writeFileEndLog()
     // 현재 어느 LSN까지 로그를 기록했는지를 Setting한다.
     setLstWriteLSN( sLSN );
 
+    if ( smrRecoveryMgr::mSendXLogFunc != NULL )
+    {
+        smrRecoveryMgr::mSendXLogFunc( (const SChar*) &mFileEndLog );
+    }
+    else
+    {
+        /* Nothing to do */
+    }
     /* BUG-35392 */
     if ( smrRecoveryMgr::mCopyToRPLogBufFunc != NULL )
     {

@@ -2953,15 +2953,19 @@ IDE_RC rpxReplicator::replicateLogWithLogPtr( const SChar * aLogPtr )
     if ( sLog.getType() == SMI_LT_FILE_END )
     {
         mSenderInfo->wakeupEagerSender();
+        IDE_DASSERT(mSender->isParallelParent() == ID_TRUE);
+        mSender->setCommitXSNForFileEndLog(sLog.getRecordSN());
     }
     else
     {
         /* Nothing to do */
     }
- 
-    IDE_TEST( checkAndWaitForLogSync( &sLog ) != IDE_SUCCESS );
 
     idCore::acpAtomicInc64( &mReadLogCount );
+  
+    IDE_TEST_CONT(sLog.getTransID() == SM_NULL_TID, NORMAL_EXIT);
+
+    IDE_TEST( checkAndWaitForLogSync( &sLog ) != IDE_SUCCESS );
 
     if ( sLog.getType() == SMI_LT_TRANS_GROUPCOMMIT )
     {
@@ -2994,6 +2998,8 @@ IDE_RC rpxReplicator::replicateLogWithLogPtr( const SChar * aLogPtr )
                                    sTID )
                   != IDE_SUCCESS );
     }
+
+    RP_LABEL(NORMAL_EXIT);
 
     return IDE_SUCCESS;
 
@@ -3421,7 +3427,7 @@ IDE_RC rpxReplicator::replicateLogFiles( RP_ACTION_ON_NOGAP      aActionNoGap,
                 }
                 else
                 {
-                    IDE_RAISE( NEXT_LOG );
+                    IDE_CONT( NEXT_LOG );
                 }
             }
         }
@@ -3478,6 +3484,7 @@ IDE_RC rpxReplicator::replicateLogFiles( RP_ACTION_ON_NOGAP      aActionNoGap,
             {
                 /* do nothing */
             }
+            IDE_CONT( NEXT_LOG );
         }
         else
         {
@@ -3773,6 +3780,17 @@ rpdTransTbl * rpxReplicator::getTransTbl( void )
     return mTransTbl;
 }
 
+idBool rpxReplicator::isExistActiveTrans()
+{
+    if ( mTransTbl != NULL )
+    {
+        return mTransTbl->isExistActiveTrans( );
+    }
+    else
+    {
+        return ID_FALSE;
+    }
+}
 /*
  *
  */

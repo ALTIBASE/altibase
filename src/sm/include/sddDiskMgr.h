@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: sddDiskMgr.h 89217 2020-11-11 12:31:50Z et16 $
+ * $Id: sddDiskMgr.h 91197 2021-07-12 01:15:29Z emlee $
  *
  * Description :
  *
@@ -208,8 +208,7 @@ public:
     static IDE_RC read( idvSQL      * aStatistics,
                         scSpaceID     aTableSpaceID,
                         scPageID      aPageID,
-                        UChar       * aBuffer,
-                        UInt        * aDataFileID );
+                        UChar       * aBuffer );
     // PRJ-1149.
     static IDE_RC readPageFromDataFile( idvSQL           * aStatistics,
                                         sddDataFileNode  * aFileNode,
@@ -222,13 +221,14 @@ public:
                                          scPageID           aPageID,
                                          iduFileIOVec     & aVec );
     /* page 판독 #2 */
-    static IDE_RC read( idvSQL*       aStatistics,
+    static IDE_RC read( idvSQL      * aStatistics,
                         scSpaceID     aTableSpaceID,
                         scPageID      aPageID,
                         ULong         aPageCount,
-                        UChar*        aBuffer );
+                        UChar       * aBuffer,
+                        idBool        aFatal );
     /* page 판독 #2 */
-    static IDE_RC readv( idvSQL*        aStatistics,
+    static IDE_RC readv( idvSQL      * aStatistics,
                          scSpaceID      aTableSpaceID,
                          scPageID       aFstPageID,
                          iduFileIOVec & aVec );

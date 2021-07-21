@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smrUpdate.h 90444 2021-04-02 10:15:58Z minku.kang $
+ * $Id: smrUpdate.h 91224 2021-07-14 05:36:12Z minku.kang $
  **********************************************************************/
 
 #ifndef _O_SMR_UPDATE_H_
@@ -516,11 +516,11 @@ public:
                                   scPageID      aFstUndoPID,
                                   scPageID      aLstUndoPID );
 
-    static IDE_RC writeXaStartReqLog( ID_XID * aXID,
+    static IDE_RC writeXaStartReqLog( ID_XID * aGlobalXID,
                                       smTID    aTID,
                                       smLSN  * aLSN );
 
-    static IDE_RC writeXaPrepareReqLog( ID_XID * aXID,
+    static IDE_RC writeXaPrepareReqLog( ID_XID * aGlobalXID,
                                         smTID    aTID,
                                         UInt     aGlobalTxId,
                                         UChar  * aBranchTx,

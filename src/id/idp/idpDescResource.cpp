@@ -4,7 +4,7 @@
  **********************************************************************/
 
 /***********************************************************************
- * $Id: idpDescResource.cpp 91121 2021-07-02 04:46:19Z jiwon.kim $
+ * $Id: idpDescResource.cpp 91200 2021-07-12 02:29:48Z hykim $
  *
  * Description:
  *
@@ -6053,7 +6053,7 @@ IDE_RC registProperties()
             0, IDP_MAX_PROP_STRING_LEN, (SChar *)"?"IDL_FILE_SEPARATORS"trc");
 
     /* BUG-45403 문제발생시의 Dump 를 선택 할수 있다. */
-    IDP_DEF(UInt , "__TEMPDUMP_ENABLE",
+    IDP_DEF(UInt , "__TEMPDUMP_LEVEL",
             IDP_ATTR_SL_ALL |
             IDP_ATTR_SH_ALL |
             IDP_ATTR_IU_ANY |
@@ -8128,6 +8128,54 @@ IDE_RC registProperties()
             IDP_ATTR_ML_JUSTONE  |
             IDP_ATTR_CK_CHECK,
             0, ID_UINT_MAX, 2);
+
+    /* ------------------------------------------------------------------
+     *  JOB BUG-49108
+     * --------------------------------------------------------------*/
+    IDP_DEF(String, "JOB_MSGLOG_FILE",
+            IDP_ATTR_SL_ALL |
+            IDP_ATTR_SH_ALL |
+            IDP_ATTR_IU_ANY |
+            IDP_ATTR_MS_ANY |
+            IDP_ATTR_SK_PATH     |
+            IDP_ATTR_LC_EXTERNAL |
+            IDP_ATTR_RD_READONLY |
+            IDP_ATTR_ML_JUSTONE  |
+            IDP_ATTR_CK_CHECK,
+            0, IDP_MAX_PROP_STRING_LEN, (SChar *)PRODUCT_PREFIX"altibase_job.log");
+
+    IDP_DEF(UInt, "JOB_MSGLOG_SIZE",
+            IDP_ATTR_SL_ALL |
+            IDP_ATTR_SH_ALL |
+            IDP_ATTR_IU_ANY |
+            IDP_ATTR_MS_ANY |
+            IDP_ATTR_LC_EXTERNAL |
+            IDP_ATTR_RD_READONLY |
+            IDP_ATTR_ML_JUSTONE  |
+            IDP_ATTR_CK_CHECK,
+            0, ID_UINT_MAX, (10 * 1024 * 1024));
+
+    IDP_DEF(UInt, "JOB_MSGLOG_COUNT",
+            IDP_ATTR_SL_ALL |
+            IDP_ATTR_SH_ALL |
+            IDP_ATTR_IU_ANY |
+            IDP_ATTR_MS_ANY |
+            IDP_ATTR_LC_EXTERNAL |
+            IDP_ATTR_RD_READONLY |
+            IDP_ATTR_ML_JUSTONE  |
+            IDP_ATTR_CK_CHECK,
+            0, ID_UINT_MAX, 10);
+
+    IDP_DEF(UInt, "JOB_MSGLOG_FLAG",
+            IDP_ATTR_SL_ALL |
+            IDP_ATTR_SH_ALL |
+            IDP_ATTR_IU_ANY |
+            IDP_ATTR_MS_ANY |
+            IDP_ATTR_LC_EXTERNAL |
+            IDP_ATTR_RD_WRITABLE |
+            IDP_ATTR_ML_JUSTONE  |
+            IDP_ATTR_CK_CHECK,
+            0, ID_UINT_MAX, 1);
 
     /* ------------------------------------------------------------------
      *  SD  BUG-46138 

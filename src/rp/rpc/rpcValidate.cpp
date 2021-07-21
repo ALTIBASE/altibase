@@ -632,7 +632,7 @@ IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
     {
         IDE_TEST( qciMisc::getPartitionInfoList( aQcStatement,
                                                  sSmiStmt,
-                                                 ( iduMemory * )QCI_QMX_MEM( aQcStatement ),
+                                                 QCI_QMP_MEM( aQcStatement ),
                                                  sInfo->tableID,
                                                  &sPartInfoList )
                           != IDE_SUCCESS );
@@ -1041,7 +1041,7 @@ IDE_RC rpcValidate::validateAlterDropTbl(void * aQcStatement)
 
             IDE_TEST( qciMisc::getPartitionInfoList( aQcStatement,
                                                      sSmiStmt,
-                                                     ( iduMemory * )QCI_QMX_MEM( aQcStatement ),
+                                                     QCI_QMP_MEM( aQcStatement ),
                                                      sInfo->tableID,
                                                      &sPartInfoList )
                       != IDE_SUCCESS );
@@ -1482,23 +1482,26 @@ IDE_RC rpcValidate::validateDrop(void * aQcStatement)
         
         if ( sMeta.mReplication.mItemCount > 0 )
         {
-            IDE_TEST( ( ( iduMemory * )QCI_QMX_MEM( aQcStatement ) )
-                      ->alloc( ID_SIZEOF(qciTableInfo*)
-                               * sMeta.mReplication.mItemCount,
-                               (void**)&sTableInfoArray )
-                      != IDE_SUCCESS);
+            IDE_TEST( QCI_QMP_MEM( aQcStatement )->alloc( 
+                      ID_SIZEOF(qciTableInfo*) * sMeta.mReplication.mItemCount,
+                      (void**)&sTableInfoArray )
+                != IDE_SUCCESS);
             idlOS::memset( sTableInfoArray,
                            0x00,
                            ID_SIZEOF( qciTableInfo* ) * sMeta.mReplication.mItemCount );
 
-            IDE_TEST( ( ( iduMemory *)QCI_QMX_MEM( aQcStatement ) )
-                      ->alloc( ID_SIZEOF(SInt) * sMeta.mReplication.mItemCount,
-                               (void**)&sDummyCount )
-                      != IDE_SUCCESS );
+            IDE_TEST( QCI_QMP_MEM( aQcStatement )->alloc( 
+                      ID_SIZEOF(SInt) * sMeta.mReplication.mItemCount,
+                      (void**)&sDummyCount )
+                != IDE_SUCCESS );
 
             idlOS::memset( sDummyCount, 0, ID_SIZEOF(SInt) * sMeta.mReplication.mItemCount );
             
-            IDE_TEST( rpcManager::lockTables( aQcStatement, &sMeta, SMI_TBSLV_DROP_TBS ) != IDE_SUCCESS );
+            IDE_TEST( rpcManager::lockTables( aQcStatement, 
+                                              ID_TRUE,
+                                              &sMeta, 
+                                              SMI_TBSLV_DROP_TBS ) 
+                      != IDE_SUCCESS );
 
             IDE_TEST( rpcManager::getTableInfoArrAndRefCount( sSmiStmt,
                                                               &sMeta,
@@ -1510,11 +1513,10 @@ IDE_RC rpcValidate::validateDrop(void * aQcStatement)
 
         if ( sTableOIDCount > 0 )
         {
-            IDE_TEST( ( ( iduMemory * )QCI_QMX_MEM( aQcStatement ) )
-                      ->alloc( ID_SIZEOF(qciTableInfo*)
-                               * sTableOIDCount,
-                               (void**)&sTableOIDArray )
-                      != IDE_SUCCESS);
+            IDE_TEST( QCI_QMP_MEM( aQcStatement )->alloc( 
+                      ID_SIZEOF(qciTableInfo*) * sTableOIDCount,
+                      (void**)&sTableOIDArray )
+                != IDE_SUCCESS);
 
             for ( i = 0; i < sTableOIDCount; i++ )
             {
@@ -1883,7 +1885,7 @@ IDE_RC rpcValidate::validateSyncTbl(void * aQcStatement)
 
                 IDE_TEST( qciMisc::getPartitionInfoList( aQcStatement,
                                                          sSmiStmt,
-                                                         ( iduMemory * )QCI_QMX_MEM( aQcStatement ),
+                                                         QCI_QMP_MEM( aQcStatement ),
                                                          sInfo->tableID,
                                                          &sPartInfoList )
                           != IDE_SUCCESS );
@@ -2029,10 +2031,6 @@ IDE_RC rpcValidate::validateTempSync(void * aQcStatement)
 
     sRemoteHost = sParseTree->hosts;
 
-    // BUG-48997
-    //IDE_TEST_RAISE( sRemoteHost->connOpt->connType != RP_SOCKET_TYPE_TCP, 
-    //                ERR_NOT_SUPPORT_CONNECTION_TYPE )
-
     QCI_STR_COPY( sRemoteIP, sRemoteHost->hostIp );
     IDE_TEST_RAISE(isValidIPFormat(sRemoteIP) != ID_TRUE,
                    ERR_INVALID_HOST_IP_PORT);
@@ -2057,10 +2055,6 @@ IDE_RC rpcValidate::validateTempSync(void * aQcStatement)
     {
         IDE_SET(ideSetErrorCode(rpERR_ABORT_NOT_SUPPORT_FEATURE_WITH_V6_PROTOCOL,
                                 "Replication Temporary Sync"));
-    }
-    IDE_EXCEPTION(ERR_NOT_SUPPORT_CONNECTION_TYPE)
-    {
-        IDE_SET( ideSetErrorCode( rpERR_ABORT_RP_INTERNAL_ARG, "Infiniband is not supported" ) );
     }
     IDE_EXCEPTION(ERR_INVALID_HOST_IP_PORT)
     {
@@ -2792,10 +2786,10 @@ IDE_RC rpcValidate::validateAlterPartition( void         * aQcStatement,
      * RPU_REPLICATION_MAX_COUNT 의 최대값 : 10240
      * rpdReplications 의 크기는 : 약 1500 정도
      */
-    IDE_TEST( ( ( iduMemory * )QCI_QMX_MEM( aQcStatement ) )->alloc(
-                                            ID_SIZEOF(rpdReplications) * RPU_REPLICATION_MAX_COUNT,
-                                            (void**)&sReplications )
-              != IDE_SUCCESS );
+    IDE_TEST( QCI_QMP_MEM( aQcStatement )->alloc(
+            ID_SIZEOF(rpdReplications) * RPU_REPLICATION_MAX_COUNT,
+            (void**)&sReplications )
+        != IDE_SUCCESS );
 
     IDE_TEST( rpdCatalog::selectAllReplications( sSmiStmt,
                                                  sReplications,
@@ -2918,9 +2912,10 @@ IDE_RC rpcValidate::makeTableOIDArray( void         * aQcStatement,
 
     IDE_TEST_CONT( aReplItemCount == 0, NORMAL_EXIT );
 
-    IDE_TEST( ( ( iduMemory * )QCI_QMX_MEM( aQcStatement ) )
-              ->alloc( ID_SIZEOF(UInt) * aReplItemCount,
-                       (void**)&sTableInfoIdx ) );
+    IDE_TEST( QCI_QMP_MEM( aQcStatement )->alloc( 
+            ID_SIZEOF(UInt) * aReplItemCount,
+            (void**)&sTableInfoIdx ) 
+        != IDE_SUCCESS );
 
     idlOS::memset( sTableInfoIdx, 0, ID_SIZEOF(SInt) * aReplItemCount );
 
@@ -2930,10 +2925,10 @@ IDE_RC rpcValidate::makeTableOIDArray( void         * aQcStatement,
                                               &sTableOIDCount )
               != IDE_SUCCESS );
 
-    IDE_TEST( ( ( iduMemory * )QCI_QMX_MEM( aQcStatement ) )
-              ->alloc( ID_SIZEOF(smOID) * sTableOIDCount,
-                       (void**)&sTableOIDArray )
-              != IDE_SUCCESS);
+    IDE_TEST( QCI_QMP_MEM( aQcStatement )->alloc( 
+            ID_SIZEOF(smOID) * sTableOIDCount,
+            (void**)&sTableOIDArray )
+        != IDE_SUCCESS);
     idlOS::memset( sTableOIDArray,
                    0x00,
                    ID_SIZEOF( smOID ) * sTableOIDCount );

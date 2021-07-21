@@ -761,7 +761,7 @@ SECTION = 1
 # *Cause: The DIRECT_IO_PAGE_SIZE is none of 512, 1024(1K), 2048(2K), 4096(4K), or 8192(8K).
 # *Action: Use only 512, 1024(1K), 2048(2K), 4096(4K), or 8192(8K) for the DIRECT_IO_PAGE_SIZE property value.
 
-193,smERR_ABORT_NotFoundDataFile = The data file containing page [<0%d>] does not exist. ( Tablespace - ID : <1%d>, Type : <2%d> )
+193,smERR_ABORT_NotFoundDataFile = The data file containing page [<0%u>] does not exist. ( Tablespace - ID : <1%d>, Type : <2%d> )
 # *Cause: The data file does not exist.
 # *Action: Verify that the data file exists.
 

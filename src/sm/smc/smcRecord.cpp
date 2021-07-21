@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smcRecord.cpp 90083 2021-02-26 00:58:48Z et16 $
+ * $Id: smcRecord.cpp 91258 2021-07-19 06:52:13Z minku.kang $
  **********************************************************************/
 
 #include <idl.h>
@@ -3941,6 +3941,7 @@ IDE_RC smcRecord::recordLockValidation(void                  * aTrans,
         *aState = 1;
     } // end of while
 
+    IDU_FIT_POINT_RAISE( "smcRecord::recordLockValidation::isSameColumnValue", already_modified );
     if( sCurSlotHeaderPtr != sPrvSlotHeaderPtr )
     {
         IDE_ASSERT( aRetryInfo != NULL );

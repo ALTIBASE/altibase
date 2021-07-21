@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: sdrRedoMgr.cpp 89217 2020-11-11 12:31:50Z et16 $
+ * $Id: sdrRedoMgr.cpp 91197 2021-07-12 01:15:29Z emlee $
  *
  * Description :
  *
@@ -463,7 +463,6 @@ IDE_RC sdrRedoMgr::generatePageUsingOnlineRedo( idvSQL    * aStatistics,
                                                 UChar     * aOutPagePtr,
                                                 idBool    * aSuccess )
 {
-    UInt                     sDummy;
     smLSN                    sCurLSN;
     smLSN                    sLstLSN;
     smLSN                    sLastModifyLSN;
@@ -492,8 +491,7 @@ IDE_RC sdrRedoMgr::generatePageUsingOnlineRedo( idvSQL    * aStatistics,
         IDE_TEST( sddDiskMgr::read( aStatistics,
                                     aSpaceID,
                                     aPageID,
-                                    aOutPagePtr,
-                                    &sDummy ) // DataFileID
+                                    aOutPagePtr )
                   != IDE_SUCCESS );
 
         /* Page가 초기화되지 않거나 Inconsistent하다면 검증하지 않는다. */

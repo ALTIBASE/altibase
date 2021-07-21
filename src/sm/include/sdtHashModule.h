@@ -21,14 +21,11 @@
 #ifndef _O_SDT_HASH_MODULE_H_
 #define _O_SDT_HASH_MODULE_H_ 1
 
-#include <smiTempTable.h>
-#include <idu.h>
-#include <idl.h>
 #include <smDef.h>
 #include <smiDef.h>
+#include <smiTempTable.h>
 #include <sdtHashDef.h>
 #include <smuMemStack.h>
-#include <smErrorCode.h>
 #include <sdtWAExtentMgr.h>
 
 typedef struct sdtHashSlot
@@ -61,7 +58,9 @@ typedef struct sdtSubHash
 #define SDT_SUBHASH_MAX_KEYCOUNT            (255)
 #define SDT_ALLOC_SUBHASH_MIN_KEYCOUNT      (64)
 
-/******************************** SMALL HASH SET ***********************************/
+/******************************** SMALL HASH SET ***********************************
+ * HashValue 상위 4bit를 이용해 In-Memory에서의 Hash Set 을 구성한다.             *
+ ***********************************************************************************/
 #define SDT_EXIST_SMALL_HASHSET( aHashSlot, aHashValue )                \
     (( (aHashSlot)->mHashSet & ( 0x0001 << ( (aHashValue) >> 28 ) )) != 0 )
 
@@ -71,23 +70,29 @@ typedef struct sdtSubHash
 #define SDT_ADD_SMALL_HASHSET( aHashSlot, aHashValue )                  \
     (aHashSlot)->mHashSet |= ( 0x0001 << ( (aHashValue) >> 28 ) );
 
-/******************************** LARGE HASH SET ***********************************/
+/******************************** LARGE HASH SET ***********************************
+ * HashValue 상위 6bit를 이용해 Out-Memory에서의 Hash Set2를 구성한다.             *
+ * 다음 4bit를 이용해 Hash Set1을 구성한다.                                        *
+ ***********************************************************************************/
 #define SDT_EXIST_LARGE_HASHSET( aHashSlot, aHashValue )                                            \
-    (( 0 != ((aHashSlot)->mRowPtrOrHashSet & ((ULong)(0x0000000000000001) <<  ((aHashValue) >> 26 )))) && \
+    (( 0 != ( (aHashSlot)->mRowPtrOrHashSet & ((ULong)(0x0000000000000001) <<  ((aHashValue) >> 26 )))) && \
      ( 0 != ( (aHashSlot)->mHashSet        & ((UShort)(0x00000001) << (((aHashValue) >> 22 ) & 0x0000000F )))))
 
 #define SDT_NOT_EXIST_LARGE_HASHSET( aHashSlot, aHashValue )                                        \
     (( 0 == ((aHashSlot)->mRowPtrOrHashSet & ((ULong)(0x0000000000000001) <<  ((aHashValue) >> 26 )))) || \
      ( 0 == ( (aHashSlot)->mHashSet        & ((UShort)(0x00000001) << (((aHashValue) >> 22 ) & 0x0000000F )))))
 
+/* Sub Hash에 저장된 상위 2Byte정보로 확인 */
 #define SDT_ADD_LARGE_HASHSET( aHashSlot, aHashHigh )                                               \
     (aHashSlot)->mRowPtrOrHashSet |= ((ULong)(0x0000000000000001) << ( (aHashHigh) >> 10 ));        \
     (aHashSlot)->mHashSet         |= ((UShort)(0x00000001) << (((aHashHigh) >> 6 ) & 0x0000000F ));
 
-/******************************** HASH VALUE ***********************************/
+/******************************** HASH VALUE ***************************************/
+/* 검증용 */
 #define SDT_MAKE_HASH_LOW( aHashValue )                 \
     (UChar)( ((aHashValue) & 0x0000FF00 ) >> 8 )
 
+/* Sub Hash에는 상위 2Byte정보만 저장 되어 있다.*/
 #define SDT_MAKE_HASH_HIGH( aHashValue )        \
     (UShort)( (aHashValue) >> 16 )
 
@@ -658,7 +663,7 @@ IDE_RC sdtHashModule::insert( smiTempTableHeader  * aHeader,
             (( sWASeg->mOpenCursorType == SMI_HASH_CURSOR_HASH_UPDATE ) &&
              ( smuProperty::getTmpCheckUnique4Update() == ID_TRUE )))
         {
-            /* Insert가 완료 될 때 까지는 small head set만 구성된다.*/
+            /* Insert가 완료 될 때 까지는 small hash set만 구성된다.*/
             if ( SDT_EXIST_SMALL_HASHSET( sHashSlot, aHashValue ) )
             {
                 if ( sWASeg->mIsInMemory == SDT_WORKAREA_IN_MEMORY )
@@ -759,9 +764,9 @@ IDE_RC sdtHashModule::insert( smiTempTableHeader  * aHeader,
 idBool sdtHashModule::checkHashSlot( smiHashTempCursor* aHashCursor,
                                      UInt               aHashValue )
 {
-    sdtWCB      * sWCBPtr;
-    sdtHashSlot * sHashSlot;
-    UInt          sMapIdx;
+    sdtWCB        * sWCBPtr;
+    sdtHashSlot   * sHashSlot;
+    UInt            sMapIdx;
 
     sMapIdx = SDT_GET_HASH_MAP_IDX( aHashValue,
                                     aHashCursor->mHashSlotCount );
@@ -798,9 +803,11 @@ idBool sdtHashModule::checkHashSlot( smiHashTempCursor* aHashCursor,
         }
         else
         {
-            /* out memory 일 경우 small hash set 확인 */
+            /* out memory 일 경우 large hash set 확인 */
             if ( SDT_NOT_EXIST_LARGE_HASHSET( sHashSlot, aHashValue ) )
             {
+                /* Insert가 완료 될 때 까지는 small hash set만 구성되어 있다.*/
+                IDE_DASSERT( ((sdtHashSegHdr*)aHashCursor->mWASegment)->mOpenCursorType != SMI_HASH_CURSOR_NONE );
                 return ID_FALSE;
             }
         }
@@ -935,8 +942,8 @@ IDE_RC sdtHashModule::openHashCursor( smiHashTempCursor  * aCursor,
 
             /* Single에서 Single flag가 기록되어 있음
              * DISCARD & Single에서만 변환하면 됨 */
-            aCursor->mChildOffset = SDT_DEL_SINGLE_FLAG_IN_OFFSET( sHashSlot->mOffset );
             aCursor->mChildPageID = sHashSlot->mPageID;
+            aCursor->mChildOffset = SDT_DEL_SINGLE_FLAG_IN_OFFSET( sHashSlot->mOffset );
 
             aCursor->mSubHashPtr = NULL;
             aCursor->mSubHashIdx = 0;
@@ -1488,6 +1495,7 @@ IDE_RC sdtHashModule::fetchFromGRID( smiTempTableHeader * aHeader,
          * 없으면 만든다. */
         IDE_TEST( sdtHashModule::buildNPageHashMap( sWASeg ) != IDE_SUCCESS );
     }
+    IDU_FIT_POINT( "BUG-49107@sdtHashModule::fetchFromGRID" );
     IDE_TEST( sdtHashModule::getSlotPtr( sWASeg,
                                          &sWASeg->mFetchGrp,
                                          aGRID.mPageID,
@@ -1531,12 +1539,12 @@ IDE_RC sdtHashModule::fetchFromGRID( smiTempTableHeader * aHeader,
 
     IDE_EXCEPTION_END;
 
+    smiTempTable::checkAndDump( aHeader );
+
     if ( sIsFixedPage == ID_TRUE )
     {
         sdtHashModule::unfixWAPage( sWCBPtr );
     }
-
-    smiTempTable::checkAndDump( aHeader );
 
     return IDE_FAILURE;
 }

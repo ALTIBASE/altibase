@@ -126,6 +126,7 @@ void printusage(void)
     idlOS::printf("\t SM          : altibase_sm.log\n");
     idlOS::printf("\t RP          : altibase_rp.log\n");
     idlOS::printf("\t QP          : altibase_qp.log\n");
+    idlOS::printf("\t JOB         : altibase_job.log\n");
     idlOS::printf("\t SD          : altibase_sd.log\n");    /* BUG-46138 */
     idlOS::printf("\t DK          : altibase_dk.log\n");
     idlOS::printf("\t XA          : altibase_xa.log\n");

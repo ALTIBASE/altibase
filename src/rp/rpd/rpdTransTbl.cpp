@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpdTransTbl.cpp 90444 2021-04-02 10:15:58Z minku.kang $
+ * $Id: rpdTransTbl.cpp 91226 2021-07-14 08:01:24Z lswhh $
  **********************************************************************/
 
 #include <idl.h>
@@ -510,6 +510,17 @@ void rpdTransTbl::removeTrans(smTID  aRemoteTID)
     return;
 }
 
+idBool rpdTransTbl::isExistActiveTrans()
+{
+    if ( idCore::acpAtomicGet32( &mATransCnt ) > 0 )
+    {
+        return ID_TRUE;
+    }
+    else
+    {
+        return ID_FALSE;
+    }
+}
 /***********************************************************************
  * Description : Active Transaction중에서 First Write Log의 SN중에서 가장
  *               작은 SN값을 가져온다.

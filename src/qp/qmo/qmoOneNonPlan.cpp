@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qmoOneNonPlan.cpp 91174 2021-07-08 04:54:09Z jayce.park $
+ * $Id: qmoOneNonPlan.cpp 91237 2021-07-16 04:28:37Z donovan.seo $
  *
  * Description :
  *     Plan Generator
@@ -481,6 +481,13 @@ IDE_RC qmoOneNonPlan::makeSCAN( qcStatement  * aStatement ,
             {
                 sSCAN->flag   |= QMNC_SCAN_TABLE_QUEUE_TRUE;
                 sSCAN->lockMode = SMI_LOCK_WRITE;
+            }
+
+            /* BUG-49127 */
+            if ( sParseTree->forUpdate->isMoveAndDelete == ID_TRUE )
+            {
+                sSCAN->flag &= ~QMNC_SCAN_MOVE_AND_DELETE_MASK;
+                sSCAN->flag |= QMNC_SCAN_MOVE_AND_DELETE_TRUE;
             }
         }
         else
@@ -1207,6 +1214,13 @@ qmoOneNonPlan::makeSCAN4Partition( qcStatement     * aStatement,
             else
             {
                 /* Nothing to do */
+            }
+
+            /* BUG-49127 */
+            if ( sParseTree->forUpdate->isMoveAndDelete == ID_TRUE )
+            {
+                sSCAN->flag &= ~QMNC_SCAN_MOVE_AND_DELETE_MASK;
+                sSCAN->flag |= QMNC_SCAN_MOVE_AND_DELETE_TRUE;
             }
         }
         else

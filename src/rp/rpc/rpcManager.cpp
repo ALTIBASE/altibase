@@ -17,7 +17,7 @@
 
 /***********************************************************************
 
-* $Id: rpcManager.cpp 91161 2021-07-07 07:12:16Z seulki $
+* $Id: rpcManager.cpp 91258 2021-07-19 06:52:13Z minku.kang $
 
 ***********************************************************************/
 
@@ -5288,7 +5288,11 @@ IDE_RC rpcManager::alterReplicationSetRecovery( void        * aQcStatement )
          * PROJ-2453
          * DeadLock 걸리는 문제로 TableLock을 먼저 걸고 SendLock을 걸어야  함
          */
-        IDE_TEST( lockTables( aQcStatement, &sMeta, SMI_TBSLV_DDL_DML ) != IDE_SUCCESS );
+        IDE_TEST( lockTables( aQcStatement, 
+                              ID_FALSE,
+                              &sMeta, 
+                              SMI_TBSLV_DDL_DML ) 
+                  != IDE_SUCCESS );
 
         IDE_TEST( getTableInfoArrAndRefCount( sSmiStmt, 
                                               &sMeta,
@@ -6222,7 +6226,11 @@ IDE_RC rpcManager::alterReplicationSetGapless( void * aQcStatement )
          * DeadLock 걸리는 문제로 TableLock을 먼저 걸고 SendLock을 걸어야  함
          */
         /* replication 걸려있는 테이블을 찾아서 sTableInfoArray에 저장 */
-        IDE_TEST( lockTables( aQcStatement, &sMeta, SMI_TBSLV_DDL_DML ) != IDE_SUCCESS );
+        IDE_TEST( lockTables( aQcStatement, 
+                              ID_FALSE,
+                              &sMeta, 
+                              SMI_TBSLV_DDL_DML ) 
+                  != IDE_SUCCESS );
 
         IDE_TEST( getTableInfoArrAndRefCount( sSmiStmt, 
                                               &sMeta,
@@ -6353,6 +6361,7 @@ IDE_RC rpcManager::alterReplicationSetGapless( void * aQcStatement )
 }
 
 IDE_RC rpcManager::lockTables( void                * aQcStatement,
+                               idBool                aIsValidate,
                                rpdMeta             * aMeta,
                                smiTBSLockValidType   aTBSLvType )
 {
@@ -6364,6 +6373,7 @@ IDE_RC rpcManager::lockTables( void                * aQcStatement,
         sMetaItem = aMeta->mItemsOrderByTableOID[i];
 
         IDE_TEST( sMetaItem->lockReplItemForDDL( aQcStatement,
+                                                 aIsValidate,
                                                  aTBSLvType,
                                                  SMI_TABLE_LOCK_X,
                                                  smiGetDDLLockTimeOut((QCI_SMI_STMT( aQcStatement ))->getTrans()) )
@@ -6572,7 +6582,11 @@ IDE_RC rpcManager::dropReplication( void        * aQcStatement )
          * PROJ-2453
          * DeadLock 걸리는 문제로 TableLock을 먼저 걸고 SendLock을 걸어야  함
          */
-        IDE_TEST( lockTables( aQcStatement, &sMeta, SMI_TBSLV_DROP_TBS ) != IDE_SUCCESS );
+        IDE_TEST( lockTables( aQcStatement, 
+                              ID_FALSE,
+                              &sMeta, 
+                              SMI_TBSLV_DROP_TBS ) 
+                  != IDE_SUCCESS );
 
         IDE_TEST( getTableInfoArrAndRefCount( sSmiStmt, 
                                               &sMeta,
@@ -20294,8 +20308,6 @@ void rpcManager::sendXLog( const SChar * aLogPtr )
     sCurrentSN  = smiLogRec::getSNFromLogHdr( &sLogHead );
     sIsBeginLog = smiLogRec::isBeginLogFromHdr( &sLogHead );
 
-    IDE_TEST_CONT( sTransID == SM_NULL_TID, NORMAL_EXIT );
-    
     for ( i = 0 ; i < mMyself->mMaxReplSenderCount ; i++ )
     {
         sSenderInfo = &mMyself->mSenderInfoArrList[i][RP_DEFAULT_PARALLEL_ID];
@@ -21087,10 +21099,31 @@ IDE_RC rpcManager::attemptHandshakeForTempSync( void              ** aHBT,
     //----------------------------------------------------------------//
 
     sConnType = aReplication->mReplHosts[0].mConnType;
+    if ( sConnType == RP_SOCKET_TYPE_TCP )
+    {
+        sConnectArg.mTCP.mAddr = aReplication->mReplHosts[0].mHostIp;
+        sConnectArg.mTCP.mPort = aReplication->mReplHosts[0].mPortNo;
+	sConnectArg.mTCP.mBindAddr = NULL;
 
-    IDE_TEST_RAISE( cmiAllocLink( &sLink, CMI_LINK_TYPE_PEER_CLIENT, CMI_LINK_IMPL_TCP )
-                    != IDE_SUCCESS, ERR_ALLOC_LINK );
-    sIsAllocCmLink = ID_TRUE;
+	IDE_TEST_RAISE( cmiAllocLink( &sLink, CMI_LINK_TYPE_PEER_CLIENT, CMI_LINK_IMPL_TCP )
+			!= IDE_SUCCESS, ERR_ALLOC_LINK );
+	sIsAllocCmLink = ID_TRUE;
+    }
+    else if ( sConnType == RP_SOCKET_TYPE_IB )
+    {
+        sConnectArg.mIB.mAddr = aReplication->mReplHosts[0].mHostIp;
+        sConnectArg.mIB.mPort = aReplication->mReplHosts[0].mPortNo;
+        sConnectArg.mIB.mLatency = aReplication->mReplHosts[0].mIBLatency;
+        sConnectArg.mIB.mBindAddr = NULL;
+
+        IDE_TEST_RAISE(cmiAllocLink(&sLink, CMI_LINK_TYPE_PEER_CLIENT, CMI_LINK_IMPL_IB)
+                       != IDE_SUCCESS, ERR_ALLOC_LINK);
+	sIsAllocCmLink = ID_TRUE;
+    }
+    else
+    {
+        IDE_DASSERT( 0 );
+    }
 
     /* Initialize Protocol Context & Alloc CM Block */
     IDE_TEST( cmiMakeCmBlockNull( aProtocolContext ) != IDE_SUCCESS );
@@ -21101,21 +21134,6 @@ IDE_RC rpcManager::attemptHandshakeForTempSync( void              ** aHBT,
                                      NULL )
                     != IDE_SUCCESS, ERR_ALLOC_CM_BLOCK );
 
-    if ( sConnType == RP_SOCKET_TYPE_TCP )
-    {
-        sConnectArg.mTCP.mAddr = aReplication->mReplHosts[0].mHostIp;
-        sConnectArg.mTCP.mPort = aReplication->mReplHosts[0].mPortNo;
-        sConnectArg.mTCP.mBindAddr = NULL;
-    }
-    else if ( sConnType == RP_SOCKET_TYPE_IB )
-    {
-        // BUG-48997
-        //IDE_RAISE( ERR_NOT_SUPPORT_IB ); 
-    }
-    else
-    {
-        IDE_DASSERT( 0 );
-    }
 
     //----------------------------------------------------------------//
     // connect to Standby Server
@@ -21150,11 +21168,14 @@ IDE_RC rpcManager::attemptHandshakeForTempSync( void              ** aHBT,
             break;
 
         case RP_MSG_OK :
-            IDE_TEST( rpcHBT::registHost( aHBT,
-                                          sConnectArg.mTCP.mAddr,
-                                          sConnectArg.mTCP.mPort )
-                      != IDE_SUCCESS );
-            sIsRegistHost = ID_TRUE;
+            if ( sConnType == RP_SOCKET_TYPE_TCP )
+            {
+                IDE_TEST( rpcHBT::registHost( aHBT,
+                                              sConnectArg.mTCP.mAddr,
+                                              sConnectArg.mTCP.mPort )
+                          != IDE_SUCCESS );
+                sIsRegistHost = ID_TRUE;
+            }
             break;
 
         default :
@@ -21196,10 +21217,6 @@ IDE_RC rpcManager::attemptHandshakeForTempSync( void              ** aHBT,
 
     return IDE_SUCCESS;
 
-    IDE_EXCEPTION(ERR_NOT_SUPPORT_IB);
-    {
-        IDE_SET( ideSetErrorCode( rpERR_ABORT_RP_INTERNAL_ARG, "IB socket is not supported in the temporary sync" ) );
-    }
     IDE_EXCEPTION(ERR_RECV_HAND_ACK);
     {
         IDE_SET( ideSetErrorCode( rpERR_ABORT_HANDSHAKE_DISCONNECT,
@@ -21271,9 +21288,12 @@ void rpcManager::releaseHandshakeForTempSync( void              ** aHBT,
 
 {
     cmiLink        * sLink = NULL;
-    
-    rpcHBT::unregistHost( *aHBT );
-    *aHBT = NULL;
+ 
+    if ( *aHBT != NULL )
+    {
+        rpcHBT::unregistHost( *aHBT );
+        *aHBT = NULL;
+    }
 
     cmiGetLinkForProtocolContext(aProtocolContext, &sLink);
  

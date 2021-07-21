@@ -300,8 +300,7 @@ IDE_RC sdtTempRow::appendRowPiece( sdtSortSegHdr     * aWASegment,
         sTRPHeader->mValueLength = aTRPInfo->mValueLength;
 
         /* 원본 Row의 시작 위치 */
-        sRowPtr = ((UChar*)aTRPInfo->mValueList[ 0 ].value)
-            - aTRPInfo->mColumns[ 0 ].mColumn.offset;
+        sRowPtr = ((UChar*)aTRPInfo->mValueList[ 0 ].value) - aTRPInfo->mColumns[ 0 ].mColumn.offset;
 
         idlOS::memcpy( sSlotPtr + sRowPieceHeaderSize,
                        sRowPtr,
@@ -315,10 +314,9 @@ IDE_RC sdtTempRow::appendRowPiece( sdtSortSegHdr     * aWASegment,
                       sWPID,
                       sSlotNo );
 
-        sdtSortSegment::convertFromWGRIDToNGRID(
-            aWASegment,
-            aTRInsertResult->mHeadRowpieceGRID,
-            &aTRInsertResult->mHeadRowpieceGRID );
+        sdtSortSegment::convertFromWGRIDToNGRID( aWASegment,
+                                                 aTRInsertResult->mHeadRowpieceGRID,
+                                                 &aTRInsertResult->mHeadRowpieceGRID );
 
         SC_MAKE_NULL_GRID( aTRPInfo->mTRPHeader.mNextGRID );
     }
@@ -643,6 +641,7 @@ IDE_RC sdtTempRow::filteringAndFetch( smiSortTempCursor * aTempCursor,
                      sHeader->mRowBuffer4Fetch,
                      &sTRPInfo )
               != IDE_SUCCESS );
+
     IDE_DASSERT( sTRPInfo.mValueLength <= sHeader->mRowSize );
 
     if ( sFlag & SMI_TCFLAG_FILTER_KEY )

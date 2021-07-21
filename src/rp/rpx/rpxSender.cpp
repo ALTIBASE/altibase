@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpxSender.cpp 90266 2021-03-19 05:23:09Z returns $
+ * $Id: rpxSender.cpp 91248 2021-07-16 10:41:30Z lswhh $
  **********************************************************************/
 
 #include <idl.h>
@@ -1975,17 +1975,24 @@ IDE_RC rpxSender::doRunning()
 IDE_RC
 rpxSender::doReplication()
 {
+    IDE_RC sRC = IDE_SUCCESS;
+
     while(checkInterrupt() == RP_INTR_NONE)
     {
         if ( mStatus != RP_SENDER_IDLE )
         {
             /* For Parallel Logging: Log Base로 Replication을 수행 */
             IDU_FIT_POINT( "rpxSender::doReplication::SLEEP::replicateLogFiles::mReplicator" );
-            IDE_TEST( mReplicator.replicateLogFiles( RP_WAIT_ON_NOGAP,
+            sRC =  mReplicator.replicateLogFiles( RP_WAIT_ON_NOGAP,
                                                      RP_SEND_XLOG_ON_ADD_XLOG,
                                                      NULL,
-                                                     NULL )
-                      != IDE_SUCCESS );
+                                                     NULL );
+            if ( sRC != IDE_SUCCESS )
+            {
+                IDE_ERRLOG(IDE_RP_0);
+                IDE_SET(ideSetErrorCode(rpERR_ABORT_RP_SENDER_DO_REPLICATION));
+                IDE_TEST( checkInterrupt() != RP_INTR_EXIT );
+            }
         }
         else
         {
@@ -4635,8 +4642,16 @@ rpxSender * rpxSender::getAssignedSender( smTID        aTransID,
     UInt               sSlotIndex = 0;
     rpxSender        * sSender = NULL;
 
-    sSlotIndex = aTransID % mTransTableSize;
-    sSender = mAssignedTransTbl[sSlotIndex];
+    if ( aTransID != SM_NULL_TID )
+    {
+        sSlotIndex = aTransID % mTransTableSize;
+        sSender = mAssignedTransTbl[sSlotIndex];
+    }
+    else
+    {
+        sSender = this;
+    }
+
     if ( sSender == NULL )
     {
         sSender = assignSenderBySlotIndex( sSlotIndex,

@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpxSenderXLog.cpp 90152 2021-03-09 01:59:25Z yoonhee.kim $
+ * $Id: rpxSenderXLog.cpp 91226 2021-07-14 08:01:24Z lswhh $
  **********************************************************************/
 
 #include <idl.h>
@@ -60,6 +60,30 @@ smSN rpxSender::getNextRestartSN()
     }
     return sRestartSN;
 }
+
+void rpxSender::setCommitXSNForFileEndLog(smSN aFileEndSN)
+{
+    UInt i;
+    UInt sChildCnt = RPU_REPLICATION_EAGER_PARALLEL_FACTOR - 1;
+
+    if(mReplicator.isExistActiveTrans() != ID_TRUE)    // Transaction Table이 비었을 경우
+    {
+        mCommitXSN = aFileEndSN;
+    }
+    if(isParallelParent() == ID_TRUE)
+    {
+        if(mChildArray != NULL)
+        {
+            for(i=0; i < sChildCnt; i++)
+            {
+                mChildArray[i].setCommitXSNForFileEndLog(aFileEndSN);
+            }
+        }
+    }
+
+    return ;
+}
+
 //===================================================================
 //
 // Name:          addXLogKeepAlive

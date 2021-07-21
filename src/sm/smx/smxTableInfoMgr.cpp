@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smxTableInfoMgr.cpp 90158 2021-03-10 00:30:31Z emlee $
+ * $Id: smxTableInfoMgr.cpp 91252 2021-07-19 00:47:57Z emlee $
  **********************************************************************/
 
 # include <smErrorCode.h>
@@ -524,8 +524,8 @@ IDE_RC smxTableInfoMgr::releaseEntryAndUpdateDiskTableInfoWithCommit(
     }
     else
     {
-        /*BUGBUG : mTXSegEntry != NULL 을 확인하고 왔는데 이쪽으로 올수 있나? */
-        IDE_DASSERT( 0 );
+        /* bindTSS 에서 실패하면
+         * mTXSegEntry != NULL 이면서 sTSSlotSID 는 SD_NULL_SID 인 상태가 된다 */
 
         aTransPtr->initCommitLog( &sCommitLog, SMR_LT_MEMTRANS_COMMIT, aCommitSCN );
     }

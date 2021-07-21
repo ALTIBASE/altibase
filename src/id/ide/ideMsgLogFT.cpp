@@ -4,7 +4,7 @@
  **********************************************************************/
 
 /***********************************************************************
- * $Id: ideMsgLogFT.cpp 91010 2021-06-17 01:33:11Z hykim $
+ * $Id: ideMsgLogFT.cpp 91200 2021-07-12 02:29:48Z hykim $
  **********************************************************************/
 #include <idl.h>
 #include <ide.h>
@@ -77,6 +77,44 @@ static SChar *gQpTrcDesc[32] =
     /*  4 bit */ (SChar *)"DCL Trace Log",
     /*  5 bit */ (SChar *)"Query in PSM Trace Log",
     /*  6 bit */ (SChar *)"Query Plan in PSM Trace Log",
+    /*  7 bit */ (SChar *)"---",
+    /*  8 bit */ (SChar *)"---",
+    /*  9 bit */ (SChar *)"---",
+    /* 10 bit */ (SChar *)"---",
+    /* 11 bit */ (SChar *)"---",
+    /* 12 bit */ (SChar *)"---",
+    /* 13 bit */ (SChar *)"---",
+    /* 14 bit */ (SChar *)"---",
+    /* 15 bit */ (SChar *)"---",
+    /* 16 bit */ (SChar *)"---",
+    /* 17 bit */ (SChar *)"---",
+    /* 18 bit */ (SChar *)"---",
+    /* 19 bit */ (SChar *)"---",
+    /* 20 bit */ (SChar *)"---",
+    /* 21 bit */ (SChar *)"---",
+    /* 22 bit */ (SChar *)"---",
+    /* 23 bit */ (SChar *)"---",
+    /* 24 bit */ (SChar *)"---",
+    /* 25 bit */ (SChar *)"---",
+    /* 26 bit */ (SChar *)"---",
+    /* 27 bit */ (SChar *)"---",
+    /* 28 bit */ (SChar *)"---",
+    /* 29 bit */ (SChar *)"---",
+    /* 30 bit */ (SChar *)"---",
+    /* 31 bit */ (SChar *)"---",
+    /* 32 bit */ (SChar *)"Debug"
+};
+
+// BUG-49108 SERVER : WARNING!!!! << under 64 characters >>
+static SChar *gJobTrcDesc[32] = 
+{
+                         //0123456789012345678901234567890123456789012345678901234567890123
+    /*  1 bit */ (SChar *)"JOB Trace Log",
+    /*  2 bit */ (SChar *)"---",
+    /*  3 bit */ (SChar *)"---",
+    /*  4 bit */ (SChar *)"---",
+    /*  5 bit */ (SChar *)"---",
+    /*  6 bit */ (SChar *)"---",
     /*  7 bit */ (SChar *)"---",
     /*  8 bit */ (SChar *)"---",
     /*  9 bit */ (SChar *)"---",
@@ -414,6 +452,15 @@ IDE_RC buildRecordCallback(idvSQL              */* aStatistics */,
     IDE_TEST(buildTrcRecord((SChar *)"QP",
                             iduProperty::getQpTrcFlag(),
                             gQpTrcDesc,
+                            aHeader,
+                            aMemory) != IDE_SUCCESS);
+
+    /* ------------------------------------------------
+     * JOB   BUG-49108
+     * ----------------------------------------------*/
+    IDE_TEST(buildTrcRecord((SChar *)"JOB",
+                            iduProperty::getJobTrcFlag(),
+                            gJobTrcDesc,
                             aHeader,
                             aMemory) != IDE_SUCCESS);
 

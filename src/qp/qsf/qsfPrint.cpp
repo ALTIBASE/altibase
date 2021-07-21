@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qsfPrint.cpp 91010 2021-06-17 01:33:11Z hykim $
+ * $Id: qsfPrint.cpp 91200 2021-07-12 02:29:48Z hykim $
  **********************************************************************/
 
 #include <idl.h>
@@ -182,11 +182,13 @@ IDE_RC qsfCalculate_SpPrint(
         {
             sLen = (SInt)sPrintString->length;
             ideLog::log( IDE_QP_3, "[DBMS_CONCURRENT_EXEC : PRINT] %.*s\n", sLen, sPrintString->value );
+            ideLog::log( IDE_JOB_1, "[DBMS_CONCURRENT_EXEC : PRINT] %.*s\n", sLen, sPrintString->value );
         }
         else if ( QC_SMI_STMT_SESSION_IS_JOB( sStatement ) == ID_TRUE )
         {
             sLen = (SInt)sPrintString->length;
             ideLog::log( IDE_QP_3, "[JOB : PRINT] %.*s\n", sLen, sPrintString->value );
+            ideLog::log( IDE_JOB_1, "[JOB : PRINT] %.*s\n", sLen, sPrintString->value );
         }
         else if ( QC_SESSION_IS_TEMP_SQL( sStatement ) == ID_TRUE )
         {

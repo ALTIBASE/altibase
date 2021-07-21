@@ -1184,7 +1184,8 @@ IDE_RC qdbCopySwap::validateReplaceTable( qcStatement * aStatement )
     /* BUG-48290 sharding object에 대한 DDL 차단(source check) */
     IDE_TEST( sdi::checkShardObjectForDDLInternal( aStatement,
                                                    sParseTree->mSourceUserName,
-                                                   sParseTree->mSourceTableName ) != IDE_SUCCESS );
+                                                   sParseTree->mSourceTableName,
+                                                   NULL ) != IDE_SUCCESS );
 
     IDE_TEST_RAISE( sSourceUserID != sParseTree->userID, ERR_DIFFERENT_TABLE_OWNER );
 
@@ -7412,7 +7413,8 @@ IDE_RC qdbCopySwap::validateReplacePartition( qcStatement      * aStatement,
             /* BUG-48290 shard object에 대한 DDL 차단(source check) */
             IDE_TEST( sdi::checkShardObjectForDDLInternal( aStatement,
                                                            aParseTree->userName,
-                                                           aParseTree->mPartAttr->tablePartName ) != IDE_SUCCESS );
+                                                           aParseTree->mPartAttr->tablePartName,
+                                                           NULL ) != IDE_SUCCESS );
         }
 
         /* 2. table parttion key 관련체크 */

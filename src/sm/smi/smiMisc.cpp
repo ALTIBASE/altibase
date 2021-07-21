@@ -20,7 +20,7 @@
  **********************************************************************/
 
 /***********************************************************************
- * $Id: smiMisc.cpp 90936 2021-06-02 06:02:46Z emlee $
+ * $Id: smiMisc.cpp 91224 2021-07-14 05:36:12Z minku.kang $
  **********************************************************************/
 
 #include <smErrorCode.h>
@@ -2769,17 +2769,17 @@ void smiGetTableModifyCount( const void   * aTable,
     *aModifyCount = idCore::acpAtomicGet64( &sTableHeader->mSequence.mCurSequence );
 }
 
-IDE_RC smiWriteXaStartReqLog( ID_XID * aXID,
+IDE_RC smiWriteXaStartReqLog( ID_XID * aGlobalXID,
                               smTID    aTID,
                               smLSN  * aLSN )
 
 {
-    return smrUpdate::writeXaStartReqLog( aXID,
+    return smrUpdate::writeXaStartReqLog( aGlobalXID,
                                           aTID,
                                           aLSN );
 }
 
-IDE_RC smiWriteXaPrepareReqLog( ID_XID * aXID,
+IDE_RC smiWriteXaPrepareReqLog( ID_XID * aGlobalXID,
                                 smTID    aTID,
                                 UInt     aGlobalTxId,
                                 UChar  * aBranchTxInfo,
@@ -2787,7 +2787,7 @@ IDE_RC smiWriteXaPrepareReqLog( ID_XID * aXID,
                                 smLSN  * aLSN )
 
 {
-    return smrUpdate::writeXaPrepareReqLog( aXID,
+    return smrUpdate::writeXaPrepareReqLog( aGlobalXID,
                                             aTID,
                                             aGlobalTxId,
                                             aBranchTxInfo,

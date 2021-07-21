@@ -175,7 +175,6 @@ IDE_RC sdbDWRecoveryMgr::recoverDWFile(sddDWFile *aDWFile)
     idBool      sIsPageValid;
     scPageID    sPageID;
     scSpaceID   sSpaceID;
-    UInt        sFileID;
     UInt        i;
 
     /* TC/FIT/Limit/sm/sdbDWRecoveryMgr_recoverDWFile_malloc.sql */
@@ -239,12 +238,11 @@ IDE_RC sdbDWRecoveryMgr::recoverDWFile(sddDWFile *aDWFile)
             continue;
         }
 
-        IDE_TEST(sddDiskMgr::read(NULL,
-                                  sSpaceID,
-                                  sPageID,
-                                  sDataBuffer,
-                                  &sFileID)
-                 != IDE_SUCCESS);
+        IDE_TEST( sddDiskMgr::read( NULL,
+                                    sSpaceID,
+                                    sPageID,
+                                    sDataBuffer )
+                  != IDE_SUCCESS );
 
         if ( smLayerCallback::isPageCorrupted( sDataBuffer ) == ID_TRUE )
         {

@@ -104,6 +104,13 @@ public:
                                      void  *aNewValue,
                                      void  * /*aArg*/);
 
+    /* BUG-49108 */
+    static IDE_RC callbackJobTrcFlag( idvSQL * /*aStatistics*/,
+                                      SChar  * /*aName*/,
+                                      void   * /*aOldValue*/,
+                                      void   * aNewValue,
+                                      void   * /*aArg*/ );
+
     /* BUG-46138 */
     static IDE_RC callbackSdTrcFlag( idvSQL * /*aStatistics*/,
                                      SChar * /*aName*/,
@@ -437,6 +444,12 @@ public:
     static UInt getQpTrcFlag()
     {
         return mProperties->mQpTrcFlag;
+    }
+
+    /* BUG-49108 */
+    static UInt getJobTrcFlag()
+    {
+        return mProperties->mJobTrcFlag;
     }
 
     /* BUG-46138 */
@@ -1025,6 +1038,7 @@ private:
         UInt    mServerTrcFlag;
         UInt    mSmTrcFlag;
         UInt    mQpTrcFlag;
+        UInt    mJobTrcFlag;    /* BUG-49108 */
         UInt    mSdTrcFlag;     /* BUG-46138 */
         UInt    mSdTrcEnable;   /* BUG-46138 */
         UInt    mRpTrcFlag;

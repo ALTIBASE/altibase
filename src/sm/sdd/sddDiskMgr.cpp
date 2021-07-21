@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: sddDiskMgr.cpp 90899 2021-05-27 08:55:20Z jiwon.kim $
+ * $Id: sddDiskMgr.cpp 91197 2021-07-12 01:15:29Z emlee $
  *
  * Description :
  *
@@ -1234,8 +1234,7 @@ IDE_RC sddDiskMgr::removeTableSpace( idvSQL            *aStatistics,
 IDE_RC sddDiskMgr::read( idvSQL     * aStatistics,
                          scSpaceID    aTableSpaceID,
                          scPageID     aPageID,
-                         UChar      * aBuffer,
-                         UInt       * aDataFileID )
+                         UChar      * aBuffer )
 {
     sddTableSpaceNode* sSpaceNode;
     sddDataFileNode*   sFileNode;
@@ -1248,16 +1247,13 @@ IDE_RC sddDiskMgr::read( idvSQL     * aStatistics,
                                                         (void**)&sSpaceNode )
               != IDE_SUCCESS );
 
-    IDE_TEST( sddTableSpace::getDataFileNodeByPageID(
-                                    sSpaceNode,
-                                    aPageID,
-                                    &sFileNode,
-                                    ID_FALSE /* could be failed */)
+    IDE_TEST( sddTableSpace::getDataFileNodeByPageID( sSpaceNode,
+                                                      aPageID,
+                                                      &sFileNode,
+                                                      ID_FALSE ) // aFatal : could be failed
               != IDE_SUCCESS );
 
     IDE_ASSERT(sFileNode != NULL);
-    //PRJ-1149.
-    *aDataFileID =  sFileNode->mID;
 
     IDE_TEST( readPageFromDataFile( aStatistics,
                                     sFileNode,
@@ -1282,7 +1278,6 @@ IDE_RC sddDiskMgr::read( idvSQL     * aStatistics,
  *
  * aStatistics - [IN] 통계정보
  * aFileNode   - [IN] 파일노드
- * aSpaceID    - [IN] TableSpaceID
  * aPageID     - [IN] PageID
  * aPageCnt    - [IN] Page Count
  * aBuffer     - [IN] Page내용이 들어있는 Buffer
@@ -1420,16 +1415,17 @@ IDE_RC  sddDiskMgr::readvPageFromDataFile( idvSQL           * aStatistics,
  *   + 디스크관리자의 mutex 해제한다.
  *
  * aStatistics - [IN] 통계정보
- * aFileNode   - [IN] 파일노드
  * aSpaceID    - [IN] TableSpaceID
  * aFstPageID  - [IN] PageID
  * aBuffer     - [IN] Page내용이 들어있는 Buffer
+ * aFatal      - [IN] 예외발생시 동작 : FATAL 또는 ABORT
  **********************************************************************/
-IDE_RC sddDiskMgr::read( idvSQL*       aStatistics,
+IDE_RC sddDiskMgr::read( idvSQL      * aStatistics,
                          scSpaceID     aTableSpaceID,
                          scPageID      aFstPageID,
                          ULong         aPageCount,
-                         UChar*        aBuffer )
+                         UChar       * aBuffer,
+                         idBool        aFatal )
 {
     sddTableSpaceNode* sSpaceNode;
     sddDataFileNode*   sFileNode;
@@ -1444,9 +1440,10 @@ IDE_RC sddDiskMgr::read( idvSQL*       aStatistics,
                                                         (void**)&sSpaceNode )
               != IDE_SUCCESS );
 
-    IDE_TEST( sddTableSpace::getDataFileNodeByPageID(sSpaceNode,
-                                                     aFstPageID,
-                                                     &sFileNode )
+    IDE_TEST( sddTableSpace::getDataFileNodeByPageID( sSpaceNode,
+                                                      aFstPageID,
+                                                      &sFileNode,
+                                                      aFatal )
               != IDE_SUCCESS );
 
     IDE_TEST( readPageFromDataFile( aStatistics,
@@ -1488,7 +1485,7 @@ IDE_RC sddDiskMgr::read( idvSQL*       aStatistics,
  * aFstPageID  - [IN] PageID
  * aBuffer     - [IN] Page내용이 들어있는 Buffer
  **********************************************************************/
-IDE_RC sddDiskMgr::readv( idvSQL*        aStatistics,
+IDE_RC sddDiskMgr::readv( idvSQL       * aStatistics,
                           scSpaceID      aTableSpaceID,
                           scPageID       aFstPageID,
                           iduFileIOVec & aVec )
@@ -1505,9 +1502,11 @@ IDE_RC sddDiskMgr::readv( idvSQL*        aStatistics,
                                                         (void**)&sSpaceNode )
               != IDE_SUCCESS );
 
-    IDE_TEST( sddTableSpace::getDataFileNodeByPageID(sSpaceNode,
-                                                     aFstPageID,
-                                                     &sFileNode )
+    IDE_TEST( sddTableSpace::getDataFileNodeByPageID( sSpaceNode,
+                                                      aFstPageID,
+                                                      &sFileNode,
+                                                      ID_TRUE ) /* aFatal */
+                                                        
               != IDE_SUCCESS );
 
     IDE_TEST( sddDiskMgr::readvPageFromDataFile( aStatistics,
@@ -1541,10 +1540,10 @@ IDE_RC sddDiskMgr::readv( idvSQL*        aStatistics,
  *   + Write I/O 완료를 수행한다. -> completeIO
  *   + 디스크관리자 mutex 해제
  **********************************************************************/
-IDE_RC sddDiskMgr::write(idvSQL*    aStatistics,
-                         scSpaceID  aTableSpaceID,
-                         scPageID   aPageID,
-                         UChar*     aBuffer )
+IDE_RC sddDiskMgr::write( idvSQL    * aStatistics,
+                          scSpaceID   aTableSpaceID,
+                          scPageID    aPageID,
+                          UChar     * aBuffer )
 {
     sddTableSpaceNode *sSpaceNode;
     sddDataFileNode   *sFileNode;
@@ -1557,10 +1556,10 @@ IDE_RC sddDiskMgr::write(idvSQL*    aStatistics,
                                                         (void**)&sSpaceNode )
               != IDE_SUCCESS );
 
-    IDE_TEST( sddTableSpace::getDataFileNodeByPageID(
-                                    sSpaceNode,
-                                    aPageID,
-                                    &sFileNode)
+    IDE_TEST( sddTableSpace::getDataFileNodeByPageID( sSpaceNode,
+                                                      aPageID,
+                                                      &sFileNode,
+                                                      ID_TRUE ) /* aFatal */
               != IDE_SUCCESS );
 
     // 일반적으로는 Offline TBS에 Write를 요청하지 않는다.
@@ -1781,7 +1780,6 @@ IDE_RC sddDiskMgr::writevMultiPage2DataFile( idvSQL           * aStatistics,
  * aStatistics - [IN] 통계 정보
  * aFileNode   - [IN] FileNode
  * aFstPID     - [IN] 첫번째 PageID
- * aPageCnt    - [IN] Write Page Count
  * aBuffer     - [IN] Page내용을 가진 Buffer
  **********************************************************************/
 IDE_RC sddDiskMgr::writePage2DataFile(idvSQL            * aStatistics,
@@ -2115,7 +2113,8 @@ IDE_RC sddDiskMgr::writeMultiPage( idvSQL      * aStatistics,
 
     IDE_TEST( sddTableSpace::getDataFileNodeByPageID(sSpaceNode,
                                                      aFstPID,
-                                                     &sFileNode )
+                                                     &sFileNode,
+                                                     ID_TRUE ) /* aFatal */
               != IDE_SUCCESS );
 
     IDE_TEST( writeMultiPage2DataFile( aStatistics,
@@ -2175,7 +2174,8 @@ IDE_RC sddDiskMgr::writevMultiPage( idvSQL      * aStatistics,
 
     IDE_TEST( sddTableSpace::getDataFileNodeByPageID(sSpaceNode,
                                                      aFstPID,
-                                                     &sFileNode )
+                                                     &sFileNode,
+                                                     ID_TRUE ) /* aFatal */
               != IDE_SUCCESS );
 
     IDE_TEST( writevMultiPage2DataFile( aStatistics,
@@ -4593,9 +4593,9 @@ idBool sddDiskMgr::isValidPageID( idvSQL*    aStatistics,
 /***********************************************************************
  * Description : 해당 datafile 노드를 검색하여 datafile을 오픈한다.
  ***********************************************************************/
-IDE_RC sddDiskMgr::openDataFile( idvSQL *  aStatistics,
-                                 scSpaceID aTableSpaceID,
-                                 scPageID  aPageID)
+IDE_RC sddDiskMgr::openDataFile( idvSQL    * aStatistics,
+                                 scSpaceID   aTableSpaceID,
+                                 scPageID    aPageID )
 {
 
     sddTableSpaceNode* sSpaceNode;
@@ -4603,13 +4603,13 @@ IDE_RC sddDiskMgr::openDataFile( idvSQL *  aStatistics,
 
     IDE_TEST( sctTableSpaceMgr::findSpaceNodeBySpaceID( aTableSpaceID,
                                                         (void**)&sSpaceNode )
-                  != IDE_SUCCESS );
-
-    IDE_TEST( sddTableSpace::getDataFileNodeByPageID(
-                                    sSpaceNode,
-                                    aPageID,
-                                    &sFileNode )
               != IDE_SUCCESS );
+
+    IDE_TEST( sddTableSpace::getDataFileNodeByPageID( sSpaceNode,
+                                                      aPageID,
+                                                      &sFileNode,
+                                                      ID_TRUE ) /* aFatal */
+              != IDE_SUCCESS )
 
     IDE_TEST( prepareIO( aStatistics,
                          sFileNode ) != IDE_SUCCESS);
@@ -4625,8 +4625,8 @@ IDE_RC sddDiskMgr::openDataFile( idvSQL *  aStatistics,
 /***********************************************************************
  * Description : 해당 datafile 노드를 검색하여 datafile을 close한다.
  ***********************************************************************/
-IDE_RC sddDiskMgr::closeDataFile(scSpaceID aTableSpaceID,
-                                 scPageID  aPageID)
+IDE_RC sddDiskMgr::closeDataFile( scSpaceID aTableSpaceID,
+                                  scPageID  aPageID )
 {
     sddTableSpaceNode* sSpaceNode;
     sddDataFileNode*   sFileNode;
@@ -4637,10 +4637,10 @@ IDE_RC sddDiskMgr::closeDataFile(scSpaceID aTableSpaceID,
 
     IDE_ASSERT( sSpaceNode->mHeader.mID == aTableSpaceID );
 
-    IDE_TEST( sddTableSpace::getDataFileNodeByPageID(
-                                    sSpaceNode,
-                                    aPageID,
-                                    &sFileNode )
+    IDE_TEST( sddTableSpace::getDataFileNodeByPageID( sSpaceNode,
+                                                      aPageID,
+                                                      &sFileNode,
+                                                      ID_TRUE ) /* aFatal */
               != IDE_SUCCESS );
 
     IDE_TEST( closeDataFile( NULL, sFileNode ) != IDE_SUCCESS );
@@ -4653,6 +4653,7 @@ IDE_RC sddDiskMgr::closeDataFile(scSpaceID aTableSpaceID,
 
 }
 
+#if 0 // not used
 /***********************************************************************
  * Description : completeIO를 하여,max open대기상태에서 victim이 되도록 한다.
  * // Unit Test 용
@@ -4668,10 +4669,10 @@ IDE_RC sddDiskMgr::completeIO( idvSQL*   aStatistics,
                                                         (void**)&sSpaceNode)
                   != IDE_SUCCESS );
 
-    IDE_TEST( sddTableSpace::getDataFileNodeByPageID(
-                                    sSpaceNode,
-                                    aPageID,
-                                    &sFileNode )
+    IDE_TEST( sddTableSpace::getDataFileNodeByPageID( sSpaceNode,
+                                                      aPageID,
+                                                      &sFileNode,
+                                                      ID_TRUE ) /* aFatal */
               != IDE_SUCCESS );
 
     IDE_TEST( completeIO( aStatistics,
@@ -4684,7 +4685,7 @@ IDE_RC sddDiskMgr::completeIO( idvSQL*   aStatistics,
 
     return IDE_FAILURE;
 }
-
+#endif
 
 /*
   PRJ-1149,  주어진 데이타 파일의 헤더를 읽는다.
@@ -5902,8 +5903,6 @@ IDE_RC sddDiskMgr::tracePageInFile( UInt            aChkFlag,
                                     scPageID        aPageID,
                                     const SChar   * aTitle )
 {
-    UInt         sDummyFileID;
-    smLSN        sDummyLSN;
     smuAlignBuf  sPagePtr;
     UInt         sState = 0;
 
@@ -5914,13 +5913,11 @@ IDE_RC sddDiskMgr::tracePageInFile( UInt            aChkFlag,
               != IDE_SUCCESS );
     sState = 1;
 
-    SM_LSN_INIT( sDummyLSN );
-
     IDE_TEST( read( NULL,
                     aSpaceID,
                     aPageID,
-                    sPagePtr.mAlignPtr,
-                    &sDummyFileID ) != IDE_SUCCESS );
+                    sPagePtr.mAlignPtr )
+              != IDE_SUCCESS );
 
     if( aTitle != NULL )
     {

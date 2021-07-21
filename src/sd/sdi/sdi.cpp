@@ -12718,7 +12718,8 @@ IDE_RC sdi::clearPsmSvp( sdiClientInfo * aClientInfo )
 }
 
 IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
-                                    sdiDDLType    aDDLType )
+                                    sdiDDLType    aDDLType,
+                                    SChar       * aObjectName )
 {
     qdTableParseTree  * sQdParseTree = NULL;
     qsProcParseTree   * sQsParseTree = NULL;
@@ -12766,6 +12767,14 @@ IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
             sDisJoinParseTree = (qdDisjoinTableParseTree*)aQcStmt->myPlan->parseTree;
             sUserNamePos = &(sDisJoinParseTree->userName);
             sObjectNamePos = &(sDisJoinParseTree->tableName);
+            break;
+
+        case SDI_DDL_TYPE_INDEX_DROP:
+            sDropParseTree = (qdDropParseTree*)aQcStmt->myPlan->parseTree;
+            sUserNamePos = &(sDropParseTree->userName);
+            sObjectNamePos = &(sDropParseTree->objectName);
+            sObjectNamePos->size = -1;
+            break;
 
         default:
             IDE_CONT( NORMAL_EXIT );
@@ -12774,7 +12783,8 @@ IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
 
     IDE_TEST( checkShardObjectForDDLInternal( aQcStmt,
                                               *sUserNamePos,
-                                              *sObjectNamePos ) != IDE_SUCCESS );
+                                              *sObjectNamePos,
+                                               aObjectName ) != IDE_SUCCESS );
 
     IDE_EXCEPTION_CONT( NORMAL_EXIT );
 
@@ -12785,9 +12795,10 @@ IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
     return IDE_FAILURE;
 }
 
-IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement *    aQcStmt,
+IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement    * aQcStmt,
                                             qcNamePosition   aUserNamePos,
-                                            qcNamePosition   aObjectNamePos )
+                                            qcNamePosition   aObjectNamePos,
+                                            SChar          * aObjectName )
 {
     qcNamePosition    * sUserNamePos = NULL;
     qcNamePosition    * sObjectNamePos = NULL;
@@ -12851,6 +12862,13 @@ IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement *    aQcStmt,
         else
         {
             QC_STR_COPY( sObjectName, *sObjectNamePos );
+        }
+    }
+    else
+    {
+        if( aObjectName != NULL )
+        {
+            idlOS::strncpy( sObjectName, aObjectName, QC_MAX_OBJECT_NAME_LEN + 1 );
         }
     }
 
@@ -13264,10 +13282,10 @@ IDE_RC sdi::findRequestNodeNGetResultWithoutSession( ID_XID * aXID,
     SChar          * sDummyPrepareSQL = (SChar*)"select 1 from dual";
 
     const SChar    * sSql = "SELECT REQUEST_TRANSACTION, TRANSACTION_STATE, COMMIT_SCN FROM " 
-                            "V$DBLINK_SHARD_TRANSACTION_INFO WHERE XID LIKE '%s%%'";
+                            "V$DBLINK_SHARD_TRANSACTION_INFO WHERE GLOBAL_XID LIKE '%s%%'";
 
-    UChar            sXIDStr[ID_XID_DATA_MAX_LEN]; 
-    SChar            sQuery[ ID_SIZEOF(sSql) + ID_SIZEOF(sXIDStr)+ 1] = {0, };
+    UChar            sGlobalXIDStr[ID_XID_DATA_MAX_LEN]; 
+    SChar            sQuery[ ID_SIZEOF(sSql) + ID_SIZEOF(sGlobalXIDStr)+ 1] = {0, };
 
     sdiConnectInfo * sConnectInfo      = NULL;
     smiTrans       * sTrans = NULL;
@@ -13275,7 +13293,7 @@ IDE_RC sdi::findRequestNodeNGetResultWithoutSession( ID_XID * aXID,
     sdiDataNodes     sDataInfo;
     sdiDataNode    * sDataNode = sDataInfo.mNodes;
 
-    (void)idaXaConvertGlobalXIDToString( NULL, aXID, sXIDStr, ID_XID_DATA_MAX_LEN );
+    (void)idaXaConvertGlobalXIDToString( NULL, aXID, sGlobalXIDStr, ID_XID_DATA_MAX_LEN );
 
     SMI_INIT_SCN( &sGlobalCommitSCN );
 
@@ -13413,7 +13431,7 @@ IDE_RC sdi::findRequestNodeNGetResultWithoutSession( ID_XID * aXID,
                                           sConnectInfo )
                   != IDE_SUCCESS );
 
-        idlOS::snprintf( sQuery, ID_SIZEOF(sQuery), sSql, sXIDStr );
+        idlOS::snprintf( sQuery, ID_SIZEOF(sQuery), sSql, sGlobalXIDStr );
 
         IDE_TEST( sdl::bindCol( sConnectInfo,
                                 sRemoteStmt,

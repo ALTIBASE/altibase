@@ -712,7 +712,7 @@ public:
     SMU_PROPERTY_READONLY_DECLARE( UInt,  TempStatsWatchArraySize );
     SMU_PROPERTY_WRITABLE_DECLARE( UInt,  TempStatsWatchTime );
     SMU_PROPERTY_WRITABLE_STR_DECLARE( TempDumpDirectory );
-    SMU_PROPERTY_WRITABLE_DECLARE( UInt, TempDumpEnable );
+    SMU_PROPERTY_WRITABLE_DECLARE( UInt, TempDumpLevel );
     SMU_PROPERTY_WRITABLE_DECLARE( idBool, WCBCleanMemset );
     SMU_PROPERTY_WRITABLE_DECLARE( UInt, SmTempOperAbort );
     SMU_PROPERTY_READONLY_DECLARE( UInt, TempHashBucketDensity );

@@ -115,7 +115,7 @@ UInt    smuProperty::mTempMaxKeySize;
 UInt    smuProperty::mTempStatsWatchArraySize;
 UInt    smuProperty::mTempStatsWatchTime;
 SChar * smuProperty::mTempDumpDirectory;
-UInt    smuProperty::mTempDumpEnable;
+UInt    smuProperty::mTempDumpLevel;
 idBool  smuProperty::mWCBCleanMemset;
 UInt    smuProperty::mSmTempOperAbort;
 UInt    smuProperty::mTempHashBucketDensity;
@@ -1505,8 +1505,8 @@ void smuProperty::loadForSMR()
                                   TempStatsWatchTime );
     SMU_PROPERTY_READONLY_PTR_REGIST( "TEMPDUMP_DIRECTORY",
                                       TempDumpDirectory );
-    SMU_PROPERTY_WRITABLE_REGIST( "__TEMPDUMP_ENABLE",
-                                  TempDumpEnable );
+    SMU_PROPERTY_WRITABLE_REGIST( "__TEMPDUMP_LEVEL",
+                                  TempDumpLevel );
     SMU_PROPERTY_WRITABLE_REGIST( "__WCB_CLEAN_MEMSET",
                                   WCBCleanMemset );
     SMU_PROPERTY_WRITABLE_REGIST( "__SM_TEMP_OPER_ABORT",

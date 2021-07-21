@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smrRecoveryMgr.cpp 90522 2021-04-09 01:29:20Z emlee $
+ * $Id: smrRecoveryMgr.cpp 91224 2021-07-14 05:36:12Z minku.kang $
  **********************************************************************/
 
 #include <smErrorCode.h>
@@ -10814,7 +10814,7 @@ IDE_RC smrRecoveryMgr::processPrepareReqLog( SChar              * aLogPtr,
     /* smrRecoveryMgr_processPrepareReqLog_ManageDtxInfoFunc.tc */
     IDU_FIT_POINT( "smrRecoveryMgr::processPrepareReqLog::ManageDtxInfoFunc" );
     IDE_DASSERT( mManageDtxInfoFunc != NULL ); 
-    IDE_TEST( mManageDtxInfoFunc( &(aXaPrepareReqLog->mXID),
+    IDE_TEST( mManageDtxInfoFunc( &(aXaPrepareReqLog->mGlobalXID),
                                   smrLogHeadI::getTransID( &(aXaPrepareReqLog->mHead) ),
                                   aXaPrepareReqLog->mGlobalTxId,
                                   aXaPrepareReqLog->mBranchTxSize,

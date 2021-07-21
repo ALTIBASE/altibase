@@ -429,6 +429,17 @@ IDE_RC sdfCalculate_SetShardTableShardKey( mtcNode*     aNode,
                                                    sSqlStr )
                       != IDE_SUCCESS );
         }
+        else
+        {
+            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                             "SELECT COUNT(*) FROM SYSTEM_.SYS_INDICES_ WHERE TABLE_ID = "
+                             " ( SELECT TABLE_ID FROM SYSTEM_.SYS_TABLES_ WHERE TABLE_NAME = '%s' ) ",
+                             sTableNameStr );
+
+            IDE_TEST( sdf::checkShardObjectSchema( sStatement,
+                                                   sSqlStr )
+                      != IDE_SUCCESS );
+        }
 
         //---------------------------------
         // irregular option E
