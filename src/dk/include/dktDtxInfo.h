@@ -37,22 +37,19 @@ public:
     dktLinkerType  mLinkerType;
     iduListNode    mNode;
     ID_XID         mXID;
+    ID_XID         mGlobalXID;
     idBool         mIsFailoverRequestNode;
     idBool         mIsPassivePending;
     smSCN          mGlobalCommitSCN;
     smiTransNode * mFailoverTrans;
     iduMutex       mDtxInfoGlobalTxResultMutex;
 
-    IDE_RC initialize( ID_XID * aXID,
+    IDE_RC initialize( ID_XID * aGlobalXID,
                        UInt     aLocalTxId, 
                        UInt     aGlobalTxId,
                        idBool   aIsRequestNode );
 
     void finalize( );
-
-    IDE_RC createDtxInfo( ID_XID * aXID, 
-                          UInt     aTID, 
-                          UInt     aGlobalTxId );
 
     IDE_RC removeDtxBranchTx( ID_XID * aXID );
     IDE_RC removeDtxBranchTx( dktDtxBranchTxInfo * aDtxBranchTxInfo );

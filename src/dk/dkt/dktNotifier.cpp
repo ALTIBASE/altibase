@@ -520,6 +520,7 @@ IDE_RC dktNotifier::notifyXaResultForShard( dktDtxInfo    * aDtxInfo,
     iduListNode         * sIter = NULL;
     dktDtxBranchTxInfo  * sDtxBranchTxInfo = NULL;
     idBool                sAllSuccess = ID_TRUE;
+    ID_XID              * sXID = NULL;
 
     DK_UNUSED( aSession );
     DK_UNUSED( aCountFailXID );
@@ -535,9 +536,18 @@ IDE_RC dktNotifier::notifyXaResultForShard( dktDtxInfo    * aDtxInfo,
         sDtxBranchTxInfo = (dktDtxBranchTxInfo*)sIter->mObj;
         if ( sDtxBranchTxInfo->mIsValid == ID_TRUE )
         {
+            if ( aDtxInfo->mIsFailoverRequestNode != ID_TRUE )
+            {
+                sXID = &(sDtxBranchTxInfo->mXID);
+            }
+            else
+            {
+                sXID = &(aDtxInfo->mGlobalXID);
+            }
+
             if ( notifyOneBranchXaResultForShard( aDtxInfo, 
                                                   sDtxBranchTxInfo,
-                                                  &(aDtxInfo->mXID)) 
+                                                  sXID ) 
                  != IDE_SUCCESS )
             {
                 IDE_ERRLOG(IDE_DK_3);
@@ -1084,15 +1094,13 @@ void dktNotifier::destroyDtxInfoList()
 }
 
 IDE_RC dktNotifier::createDtxInfo( DK_NOTIFY_TYPE aType,
-                                   ID_XID      * aXID,
+                                   ID_XID      * aGlobalXID,
                                    UInt          aLocalTxId, 
                                    UInt          aGlobalTxId, 
                                    idBool        aIsRequestNode,
                                    dktDtxInfo ** aDtxInfo )
 {
     dktDtxInfo * sDtxInfo = NULL;
-
-    IDE_DASSERT( aXID != NULL );
 
     if ( findDtxInfo( aType,
                       aLocalTxId, 
@@ -1106,7 +1114,7 @@ IDE_RC dktNotifier::createDtxInfo( DK_NOTIFY_TYPE aType,
                                            IDU_MEM_IMMEDIATE )
                         != IDE_SUCCESS, ERR_MEMORY_ALLOC_DTX_INFO_HEADER );
 
-        IDE_TEST( sDtxInfo->initialize( aXID, 
+        IDE_TEST( sDtxInfo->initialize( aGlobalXID, 
                                         aLocalTxId, 
                                         aGlobalTxId,
                                         aIsRequestNode )
@@ -1158,9 +1166,10 @@ IDE_RC  dktNotifier::manageDtxInfoListByLog( ID_XID * aXID,
     switch ( aType )
     {
         case SMI_DTX_PREPARE :
+            /* PREPARE_REQ LOG */
             IDE_DASSERT( aBranchTxInfoSize != 0 );
             IDE_TEST( createDtxInfo( DK_NOTIFY_NORMAL,
-                                     aXID, 
+                                     aXID, /* GlobalXID */ 
                                      aLocalTxId, 
                                      aGlobalTxId, 
                                      ID_FALSE,
@@ -1351,6 +1360,8 @@ IDE_RC dktNotifier::getShardNotifierTransactionInfo( dktNotifierTransactionInfo 
                     idlOS::strncpy( sInfo[sIndex].mTransactionResult, "ROLLBACK", 9 );
                 }
             }
+            dktXid::copyXID( &(sInfo[sIndex].mGlobalXID),
+                             &(sDtxInfo->mGlobalXID) );
             dktXid::copyXID( &(sInfo[sIndex].mXID),
                              &(sBranchTxInfo->mXID) );
             dktXid::copyXID( &(sInfo[sIndex].mSourceXID),
@@ -1386,7 +1397,9 @@ IDE_RC dktNotifier::getShardNotifierTransactionInfo( dktNotifierTransactionInfo 
             idlOS::strncpy( sInfo[sIndex].mTransactionResult, "PENDING", 7 );
         }
 
-        dktXid::copyXID( &(sInfo[sIndex].mXID),
+        dktXid::copyXID( &(sInfo[sIndex].mGlobalXID),
+                         &(sDtxInfo->mGlobalXID) );
+        dktXid::copyXID( &(sInfo[sIndex].mSourceXID),
                          &(sDtxInfo->mXID) );
 
         sIndex++;
@@ -1461,6 +1474,7 @@ UInt dktNotifier::getAllShardBranchTxCnt()
   
 IDE_RC dktNotifier::addUnCompleteGlobalTxList( iduList * aGlobalTxList )
 {
+    ID_XID      * sXID     = NULL;
     iduListNode * sNode    = NULL;
     iduListNode * sDummy   = NULL;
     dktDtxInfo  * sDtxInfo = NULL;
@@ -1471,10 +1485,19 @@ IDE_RC dktNotifier::addUnCompleteGlobalTxList( iduList * aGlobalTxList )
         IDU_LIST_ITERATE_SAFE( aGlobalTxList, sNode, sDummy )
         {
             sGlobalTxNode = (dkiUnCompleteGlobalTxInfo*)sNode->mObj;
-           
+ 
+            if ( sGlobalTxNode->mIsRequestNode == ID_TRUE )
+            {
+                sXID = &(sGlobalTxNode->mXID);
+            }
+            else
+            {
+                sXID = NULL;
+            }
+          
             /* Failover list 는 xid 로 구분하기 때문에globaltxid 나 localtxid 가 의미가 없다 */
             IDE_TEST( createDtxInfo( DK_NOTIFY_FAILOVER,
-                                     &(sGlobalTxNode->mXID),
+                                     sXID,
                                      dktXid::getLocalTxIDFromXID( &(sGlobalTxNode->mXID) ),
                                      dktXid::getGlobalTxIDFromXID( &(sGlobalTxNode->mXID) ),
                                      sGlobalTxNode->mIsRequestNode,

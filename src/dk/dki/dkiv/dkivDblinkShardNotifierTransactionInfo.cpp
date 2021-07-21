@@ -29,6 +29,7 @@
  *  GLOBAL_TRANSACTION_ID ( bigint )
  *  LOCAL_TRANSACTION_ID ( integer )
  *  XID ( varchar )
+ *  GLOBAL_XID ( varchar )
  *  TRANSACTION_RESULT ( char )
  *  TARGET_INFO ( varchar )
  *  TRANSACTION_STATE( integer )
@@ -36,9 +37,9 @@
  */
 
 #define QUERY_FOR_VIEW "CREATE VIEW V$SHARD_NOTIFIER_TRANSACTION_INFO"      \
-    "( GLOBAL_TRANSACTION_ID, TRANSACTION_ID, XID, REQUEST_TRANSACTION, TRANSACTION_RESULT, TARGET_INFO, TRANSACTION_STATE, COMMIT_SCN )" \
+    "( GLOBAL_TRANSACTION_ID, TRANSACTION_ID, GLOBAL_XID, XID, REQUEST_TRANSACTION, TRANSACTION_RESULT, TARGET_INFO, TRANSACTION_STATE, COMMIT_SCN )" \
     "AS SELECT "                                                           \
-    " GLOBAL_TRANSACTION_ID, TRANSACTION_ID, XID, REQUEST_TRANSACTION, TRANSACTION_RESULT, TARGET_INFO, TRANSACTION_STATE, COMMIT_SCN "         \
+    " GLOBAL_TRANSACTION_ID, TRANSACTION_ID, GLOBAL_XID, XID, REQUEST_TRANSACTION, TRANSACTION_RESULT, TARGET_INFO, TRANSACTION_STATE, COMMIT_SCN "         \
     "FROM X$SHARD_NOTIFIER_TRANSACTION_INFO"
 
 static iduFixedTableColDesc gFixedTableColDesc[] =
@@ -57,6 +58,14 @@ static iduFixedTableColDesc gFixedTableColDesc[] =
         IDU_FT_SIZEOF( dkmNotifierTransactionInfo, mLocalTransactionId ),
         IDU_FT_TYPE_UINTEGER,
         NULL,
+        0, 0, NULL // for internal use
+    },
+    {
+        (SChar *)"GLOBAL_XID",
+        IDU_FT_OFFSETOF( dkmNotifierTransactionInfo, mGlobalXID ),
+        DKT_2PC_XID_STRING_LEN,
+        IDU_FT_TYPE_VARCHAR,
+        idaXaConvertXIDToString,
         0, 0, NULL // for internal use
     },
     {

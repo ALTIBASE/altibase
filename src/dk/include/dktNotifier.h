@@ -57,12 +57,12 @@ public:
     virtual ~dktNotifier() {};
 
     IDE_RC initialize();
-    IDE_RC createDtxInfo( DK_NOTIFY_TYPE aType,
-                          ID_XID      * aXID,
-                          UInt          aLocalTxId, 
-                          UInt          aGlobalTxId, 
-                          idBool        aIsRequestNode,
-                          dktDtxInfo ** aDtxInfo );
+    IDE_RC createDtxInfo( DK_NOTIFY_TYPE   aType,
+                          ID_XID         * aGlobalXID,
+                          UInt             aLocalTxId, 
+                          UInt             aGlobalTxId, 
+                          idBool           aIsRequestNode,
+                          dktDtxInfo    ** aDtxInfo );
     void   addDtxInfo( DK_NOTIFY_TYPE aType, dktDtxInfo * aDtxInfo );
     void   removeDtxInfo( DK_NOTIFY_TYPE aType, dktDtxInfo * aDtxInfo );
    
