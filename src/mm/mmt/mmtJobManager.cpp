@@ -166,7 +166,7 @@ void mmtJobThread::run()
         {
             sJob = (SInt)sItem;
 
-            ideLog::log( IDE_QP_32, "[JOB SCHEDLER : JOB THREAD %d JOB %d ASSIGNED]",
+            ideLog::log( IDE_JOB_32, "[JOB SCHEDLER : JOB THREAD %d JOB %d ASSIGNED]",
                          mIndex, sJob );
 
             sSleep = 1;
@@ -346,7 +346,7 @@ IDE_RC mmtJobScheduler::initializeThread()
     {
         IDE_TEST( mJobThreads[i]->waitToStart() != IDE_SUCCESS );
 
-        ideLog::log( IDE_SERVER_0, "[JOB SCHEDLER : JOB THREAD %d STARTED]", i );
+        ideLog::log( IDE_JOB_0, "[JOB SCHEDLER : JOB THREAD %d STARTED]", i );
     }
 
     return IDE_SUCCESS;
@@ -508,7 +508,7 @@ void mmtJobScheduler::run()
             {
                 if ( sFirstLog == ID_TRUE )
                 {
-                    ideLog::log( IDE_SERVER_0, "[JOB SCHEDLER : JOB QUEUE FULL]" );
+                    ideLog::log( IDE_JOB_0, "[JOB SCHEDLER : JOB QUEUE FULL]" );
                     sFirstLog = ID_FALSE;
                 }
                 else

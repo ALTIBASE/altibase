@@ -2851,7 +2851,7 @@ void mmcTrans::unfixSharedTrans( mmcTransObj *aTrans, mmcSessID aSessionID )
     {
         /* Nothing to do */
     }
-    
+
     IDE_ASSERT( sConcurrency->mMutex.unlock() == IDE_SUCCESS );
 }
 

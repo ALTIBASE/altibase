@@ -1521,6 +1521,56 @@ IDE_RC mmcSession::prepareForShardDelegateSession( mmcTransObj * aTransObj,
     return IDE_FAILURE;
 }
 
+/* BUG-48931 샤딩에서 COMMIT, ROLLBACK 수행시 FAC, FAR을 잘못 판단해 서버가 비정상 종료한다.
+             그래서 Library Session의 Statement 커서를 모두 닫아주어야 한다. */
+IDE_RC mmcSession::closeCursorForShardDelegateSession( mmcTransObj * aTransObj )
+{
+    mmcSession * sDelegatedSession = NULL;
+    idBool       sBlocked          = ID_FALSE;
+    idBool       sLocked           = ID_FALSE;
+    mmcSessID    sSessionID        = getSessionID();
+
+    mmcTrans::fixSharedTrans( aTransObj, sSessionID );
+    sLocked = ID_TRUE;
+
+    IDE_TEST( blockDelegateSession( aTransObj, &sDelegatedSession ) != IDE_SUCCESS );
+    sBlocked = ID_TRUE;
+
+    mmcTrans::unfixSharedTrans( aTransObj, sSessionID );
+    sLocked = ID_FALSE;
+
+    if ( sDelegatedSession != NULL )
+    {
+        IDE_TEST( sDelegatedSession->closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS );
+
+        mmcTrans::fixSharedTrans( aTransObj, sSessionID );
+        unblockDelegateSession( aTransObj );
+        mmcTrans::unfixSharedTrans( aTransObj, sSessionID );
+    }
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION_END;
+
+    if ( sBlocked == ID_TRUE )
+    {
+        mmcTrans::fixSharedTrans( aTransObj, sSessionID );
+
+        unblockDelegateSession( aTransObj );
+        sBlocked = ID_FALSE;
+
+        mmcTrans::unfixSharedTrans( aTransObj, sSessionID );
+    }
+
+    if ( sLocked == ID_TRUE )
+    {
+        mmcTrans::unfixSharedTrans( aTransObj, sSessionID );
+        sLocked = ID_FALSE;
+    }
+
+    return IDE_FAILURE;
+}
+
 /**
  * 설명 :
  *     DK 모듈에 데이터를 추가하는 것을 정지하고 Commit/Rollback하는 함수
@@ -1647,10 +1697,25 @@ IDE_RC mmcSession::commit(idBool aInStoredProc)
     {
         if (aInStoredProc == ID_FALSE)
         {
-            /* PROJ-1381 FAC : commit된 Holdable Fetch는 CommitedFetchList로 유지 */
-            /* BUG-38585 IDE_ASSERT remove */
-            IDU_FIT_POINT("mmcSession::commit::CloseCursor");
-            IDE_TEST(closeAllCursor(ID_TRUE, MMC_CLOSEMODE_REMAIN_HOLD) != IDE_SUCCESS);
+            /* BUG-48931 Sharding에서는 FAC, FAR이 아직 지원되지 않는다. */
+            if (mmcTrans::isShareableTrans(mTrans) == ID_TRUE)
+            {
+                IDE_TEST(closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS);
+
+                /* USER or COORD 세션에서 Client-side로 열린 커서를 닫아야 한다. */
+                if ( isShardLibrarySession() == ID_FALSE )
+                {
+                    IDE_TEST(closeCursorForShardDelegateSession(mTrans) != IDE_SUCCESS);
+                }
+            }
+            else
+            {
+                /* PROJ-1381 FAC : commit된 Holdable Fetch는 CommitedFetchList로 유지 */
+                /* BUG-38585 IDE_ASSERT remove */
+                IDU_FIT_POINT("mmcSession::commit::CloseCursor");
+                IDE_TEST(closeAllCursor(ID_TRUE, MMC_CLOSEMODE_REMAIN_HOLD) != IDE_SUCCESS);
+
+            }
 
             lockForFetchList();
             IDU_LIST_JOIN_LIST(getCommitedFetchList(), getFetchList());
@@ -1719,11 +1784,25 @@ IDE_RC mmcSession::commitForceDatabaseLink( idBool aInStoredProc )
     {
         if ( aInStoredProc == ID_FALSE )
         {
-            /* PROJ-1381 FAC : commit된 Holdable Fetch는 CommitedFetchList로 유지 */
-            /* BUG-38585 IDE_ASSERT remove */
-            IDU_FIT_POINT("mmcSession::commitForceDatabaseLink::CloseAllCursor");
-            IDE_TEST( closeAllCursor( ID_TRUE, MMC_CLOSEMODE_REMAIN_HOLD )
-                        != IDE_SUCCESS );
+            /* BUG-48931 Sharding에서는 FAC, FAR이 아직 지원되지 않는다. */
+            if (mmcTrans::isShareableTrans(mTrans) == ID_TRUE)
+            {
+                IDE_TEST(closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS);
+
+                /* USER or COORD 세션에서 Client-side로 열린 커서를 닫아야 한다. */
+                if ( isShardLibrarySession() == ID_FALSE )
+                {
+                    IDE_TEST(closeCursorForShardDelegateSession(mTrans) != IDE_SUCCESS);
+                }
+            }
+            else
+            {
+                /* PROJ-1381 FAC : commit된 Holdable Fetch는 CommitedFetchList로 유지 */
+                /* BUG-38585 IDE_ASSERT remove */
+                IDU_FIT_POINT("mmcSession::commitForceDatabaseLink::CloseAllCursor");
+                IDE_TEST( closeAllCursor( ID_TRUE, MMC_CLOSEMODE_REMAIN_HOLD )
+                            != IDE_SUCCESS );
+            }
 
             lockForFetchList();
             IDU_LIST_JOIN_LIST( getCommitedFetchList(), getFetchList() );
@@ -1813,14 +1892,28 @@ IDE_RC mmcSession::rollback(const SChar *aSavePoint, idBool aInStoredProc)
         {
             if (aInStoredProc == ID_FALSE)
             {
-                /* PROJ-1381 FAC, PROJ-2694 FAR : rollback 후에도 유지 가능한 hold 커서는 유지 */
-                if (mmcTrans::isReusableRollback(mTrans) == ID_TRUE)
+                /* BUG-48931 Sharding에서는 FAC, FAR이 아직 지원되지 않는다. */
+                if (mmcTrans::isShareableTrans(mTrans) == ID_TRUE)
                 {
-                    IDE_TEST( closeAllCursor(ID_TRUE, MMC_CLOSEMODE_REMAIN_HOLD) != IDE_SUCCESS );
+                    IDE_TEST(closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS);
+
+                    /* USER or COORD 세션에서 Client-side로 열린 커서를 닫아야 한다. */
+                    if (isShardLibrarySession() == ID_FALSE )
+                    {
+                        IDE_TEST(closeCursorForShardDelegateSession(mTrans) != IDE_SUCCESS);
+                    }
                 }
                 else
                 {
-                    IDE_TEST( closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS );
+                    /* PROJ-1381 FAC, PROJ-2694 FAR : rollback 후에도 유지 가능한 hold 커서는 유지 */
+                    if (mmcTrans::isReusableRollback(mTrans) == ID_TRUE)
+                    {
+                        IDE_TEST( closeAllCursor(ID_TRUE, MMC_CLOSEMODE_REMAIN_HOLD) != IDE_SUCCESS );
+                    }
+                    else
+                    {
+                        IDE_TEST( closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS );
+                    }
                 }
 
                 lockForFetchList();
@@ -1957,14 +2050,28 @@ IDE_RC mmcSession::rollbackForceDatabaseLink( idBool aInStoredProc )
     {
         if ( aInStoredProc == ID_FALSE )
         {
-            /* PROJ-1381 FAC, PROJ-2694 FAR : rollback 후에도 유지 가능한 hold 커서는 유지 */
-            if (mmcTrans::isReusableRollback(mTrans) == ID_TRUE)
+            /* BUG-48931 Sharding에서는 FAC, FAR이 아직 지원되지 않는다. */
+            if (mmcTrans::isShareableTrans(mTrans) == ID_TRUE)
             {
-                IDE_TEST( closeAllCursor(ID_TRUE, MMC_CLOSEMODE_REMAIN_HOLD) != IDE_SUCCESS );
+                IDE_TEST(closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS);
+
+                /* USER or COORD 세션에서 Client-side로 열린 커서를 닫아야 한다. */
+                if ( isShardLibrarySession() == ID_FALSE )
+                {
+                    IDE_TEST(closeCursorForShardDelegateSession(mTrans) != IDE_SUCCESS);
+                }
             }
             else
             {
-                IDE_TEST( closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS );
+                /* PROJ-1381 FAC, PROJ-2694 FAR : rollback 후에도 유지 가능한 hold 커서는 유지 */
+                if (mmcTrans::isReusableRollback(mTrans) == ID_TRUE)
+                {
+                    IDE_TEST( closeAllCursor(ID_TRUE, MMC_CLOSEMODE_REMAIN_HOLD) != IDE_SUCCESS );
+                }
+                else
+                {
+                    IDE_TEST( closeAllCursor(ID_TRUE, MMC_CLOSEMODE_NON_COMMITED) != IDE_SUCCESS );
+                }
             }
 
             lockForFetchList();

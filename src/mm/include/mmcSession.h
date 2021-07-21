@@ -741,6 +741,7 @@ public:
                                            ID_XID      * aXID,
                                            idBool      * aIsReadOnly,
                                            smSCN       * aPrepareSCN );
+    IDE_RC closeCursorForShardDelegateSession( mmcTransObj * aTransObj );  /* BUG-48931 */
 
     IDE_RC blockDelegateSession( mmcTransObj * aTransObj, mmcSession ** aDelegatedSession );
     void   unblockDelegateSession( mmcTransObj * aTransObj );
