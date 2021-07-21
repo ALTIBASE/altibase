@@ -15,7 +15,7 @@
  */
  
 /***********************************************************************
- * $Id: rpdMeta.cpp 91064 2021-06-25 00:58:22Z donghyun1 $
+ * $Id: rpdMeta.cpp 91258 2021-07-19 06:52:13Z minku.kang $
  **********************************************************************/
 
 #include <idl.h>
@@ -2055,8 +2055,7 @@ IDE_RC rpdMeta::equalColumnsAttr( rpdMetaItem    * aItem1,
     {
         if ( aItem1->mIsReplCol[sColumnPos1] == ID_TRUE )
         {
-            sColumnPos2 = aItem1->mMapColID[sColumnPos1];
-
+            sColumnPos2 = aItem2->mMapColID[sColumnPos1];
 
             if ( aItem2->mColumns[sColumnPos2].mColumn.type.dataTypeId == MTD_GEOMETRY_ID )
             {
@@ -7575,6 +7574,7 @@ IDE_RC rpdMetaItem::lockReplItem( smiTrans            * aTransForLock,
 }
 
 IDE_RC rpdMetaItem::lockReplItemForDDL( void                * aQcStatement,
+                                        idBool                aIsValidate,
                                         smiTBSLockValidType   aTBSLvType,
                                         smiTableLockMode      aLockMode,
                                         ULong                 aLockWaitMicroSec )
@@ -7613,12 +7613,24 @@ IDE_RC rpdMetaItem::lockReplItemForDDL( void                * aQcStatement,
 
         sTableInfo = (qcmTableInfo *) rpdCatalog::rpdGetTableTempInfo( sTableHandle );
 
-        IDE_TEST( qciMisc::getPartitionInfoList( aQcStatement,
-                                                 QCI_SMI_STMT( aQcStatement ),
-                                                 ( iduMemory * )QCI_QMX_MEM( aQcStatement ),
-                                                 sTableInfo->tableID,
-                                                 &sPartInfoList) 
-                  != IDE_SUCCESS );
+        if ( aIsValidate == ID_TRUE )
+        {
+            IDE_TEST( qciMisc::getPartitionInfoList( aQcStatement,
+                                                     QCI_SMI_STMT( aQcStatement ),
+                                                     QCI_QMP_MEM( aQcStatement ),
+                                                     sTableInfo->tableID,
+                                                     &sPartInfoList) 
+                      != IDE_SUCCESS );
+        }
+        else
+        {
+            IDE_TEST( qciMisc::getPartitionInfoList( aQcStatement,
+                                                     QCI_SMI_STMT( aQcStatement ),
+                                                     QCI_QMX_MEM( aQcStatement ),
+                                                     sTableInfo->tableID,
+                                                     &sPartInfoList) 
+                      != IDE_SUCCESS );
+        }
 
         IDE_TEST( lockPartitionList( aQcStatement, 
                                      sPartInfoList, 

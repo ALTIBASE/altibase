@@ -56,6 +56,9 @@ static IDE_RC mmmPhaseActionEndShutdown(mmmPhase         /*aPhase*/,
     
     ideLog::log(IDE_QP_0, MM_TRC_SHUTDOWN);
 
+    /* BUG-49108 */
+    ideLog::log(IDE_JOB_0, MM_TRC_SHUTDOWN);
+
     /* BUG-46138 */
     if ( iduProperty::getSdTrcEnable() == 1 )
     {

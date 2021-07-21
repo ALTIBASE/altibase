@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smrUpdate.cpp 90522 2021-04-09 01:29:20Z emlee $
+ * $Id: smrUpdate.cpp 91224 2021-07-14 05:36:12Z minku.kang $
  **********************************************************************/
 
 #include <idl.h>
@@ -3628,7 +3628,7 @@ IDE_RC smrUpdate::writeLogSetAutoExtDBF(idvSQL*           aStatistics,
     return IDE_FAILURE;
 }
 
-IDE_RC smrUpdate::writeXaStartReqLog( ID_XID * aXID,
+IDE_RC smrUpdate::writeXaStartReqLog( ID_XID * aGlobalXID,
                                       smTID    aTID,
                                       smLSN  * aLSN )
 {
@@ -3651,7 +3651,7 @@ IDE_RC smrUpdate::writeXaStartReqLog( ID_XID * aXID,
     smrLogHeadI::setType( &sXaStartReqLog->mHead, sLogType );
     smrLogHeadI::setSize( &sXaStartReqLog->mHead, SMR_LOGREC_SIZE( smrXaStartReqLog ) );
     sXaStartReqLog->mTail = SMR_LT_XA_START_REQ;
-    idlOS::memcpy( &(sXaStartReqLog->mXID), aXID, ID_SIZEOF(ID_XID) );
+    idlOS::memcpy( &(sXaStartReqLog->mGlobalXID), aGlobalXID, ID_SIZEOF(ID_XID) );
 
     IDE_TEST( smrLogMgr::writeLog( NULL, /* idvSQL* */
                                    sTrans,
@@ -3681,7 +3681,7 @@ IDE_RC smrUpdate::writeXaStartReqLog( ID_XID * aXID,
  *
  * aStatistics         - [IN] 통계정보
  * aTrans              - [IN] 트랜잭션 포인터
- * aXID                - [IN] In-Doubt 트랜잭션 ID
+ * aXID                - [IN] In-Doubt 트랜잭션 Global ID
  * aLogBuffer          - [IN] 트랜잭션 LogBuffer 포인터
  * aTXSegEntryIdx      - [IN] 트랜잭션 Segment Entry ID
  * aExtRID4TSS         - [IN] TSS를 할당한 Extent RID
@@ -3769,7 +3769,7 @@ IDE_RC smrUpdate::writeXaSegsLog( idvSQL      * aStatistics,
 
 #define SMR_XA_PREPARE_REQ_LOG_BUFFER_SIZE (2048)
 
-IDE_RC smrUpdate::writeXaPrepareReqLog( ID_XID * aXID,
+IDE_RC smrUpdate::writeXaPrepareReqLog( ID_XID * aGlobalXID,
                                         smTID    aTID,
                                         UInt     aGlobalTxId,
                                         UChar  * aBranchTx,
@@ -3816,7 +3816,7 @@ IDE_RC smrUpdate::writeXaPrepareReqLog( ID_XID * aXID,
     sXaPrepareReqLog.mGlobalTxId = aGlobalTxId;
     sXaPrepareReqLog.mBranchTxSize = aBranchTxSize;
 
-    idlOS::memcpy( &(sXaPrepareReqLog.mXID), aXID, ID_SIZEOF(ID_XID) );
+    idlOS::memcpy( &(sXaPrepareReqLog.mGlobalXID), aGlobalXID, ID_SIZEOF(ID_XID) );
 
     idlOS::memcpy( sBuffer,
                    &sXaPrepareReqLog,

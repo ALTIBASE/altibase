@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smnbModule.cpp 89963 2021-02-09 05:22:10Z justin.kwon $
+ * $Id: smnbModule.cpp 91256 2021-07-19 01:28:30Z emlee $
  **********************************************************************/
 
 #include <idl.h>
@@ -7882,8 +7882,7 @@ IDE_RC smnbBTree::beforeFirstInternalQ( smnbIterator* a_pIterator )
                         a_pIterator->rows[i] = sRowPtr; 
                     }
                 }
-                else
-                {
+                else{
                     if ( SM_SCN_IS_FREE_ROW( ((smpSlotHeader*)sRowPtr)->mLimitSCN ) )
                     {
                         i++;
@@ -10234,7 +10233,7 @@ IDE_RC smnbBTree::retraverse( idvSQL        * /* aStatistics */,
     IDE_EXCEPTION( ERR_INVALID_FLAG )
     {
         IDE_SET( ideSetErrorCode( smERR_ABORT_INCONSISTENT_INDEX ) );
-        ideLog::log( IDE_ERR_0, "[SM] flag is RETRAVERSE_NEXT %["ID_UINT32_FMT"]",
+        ideLog::log( IDE_ERR_0, "[SM] flag is RETRAVERSE_NEXT [%"ID_UINT32_FMT"]",
                      sFlag );
     }
     IDE_EXCEPTION_END;

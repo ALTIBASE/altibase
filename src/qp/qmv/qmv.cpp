@@ -15,7 +15,7 @@
  */
 
 /***********************************************************************
- * $Id: qmv.cpp 91140 2021-07-05 02:08:29Z donovan.seo $
+ * $Id: qmv.cpp 91235 2021-07-16 00:41:05Z donovan.seo $
  **********************************************************************/
 
 #include <idl.h>
@@ -366,6 +366,9 @@ IDE_RC qmv::parseInsertValuesInternal(qcStatement * aStatement)
             ( sParseTree->tableRef->tableType != QCM_PERFORMANCE_VIEW ))
         {
             sViewSFWGH = sViewParseTree->querySet->SFWGH; /* BUG-46124 */
+
+            /* BUG-49136 */
+            IDE_TEST_RAISE( sViewSFWGH == NULL, ERR_NOT_KEY_PRESERVED_TABLE );
 
             if (sParseTree->columns != NULL)
             {
@@ -1351,6 +1354,9 @@ IDE_RC qmv::parseInsertAllDefault(qcStatement * aStatement)
         {
             sViewSFWGH = sViewParseTree->querySet->SFWGH; /* BUG-46124 */
 
+            /* BUG-49136 */
+            IDE_TEST_RAISE( sViewSFWGH == NULL, ERR_NOT_KEY_PRESERVED_TABLE );
+
             /* column list 없는 경우 insert되는 테이블의 columns 만큼
              * insertColumns 생성 */
             for ( sTarget = sViewParseTree->querySet->target;
@@ -1879,6 +1885,9 @@ IDE_RC qmv::parseInsertSelect(qcStatement * aStatement)
             ( sParseTree->tableRef->tableType != QCM_PERFORMANCE_VIEW ))
         {
             sViewSFWGH = sViewParseTree->querySet->SFWGH; /* BUG-46124 */
+
+            /* BUG-49136 */
+            IDE_TEST_RAISE( sViewSFWGH == NULL, ERR_NOT_KEY_PRESERVED_TABLE );
 
             if (sParseTree->columns != NULL)
             {
@@ -2560,6 +2569,9 @@ IDE_RC qmv::parseMultiInsertSelect(qcStatement * aStatement)
                 ( sParseTree->tableRef->tableType != QCM_PERFORMANCE_VIEW ))
             {
                 sViewSFWGH = sViewParseTree->querySet->SFWGH; /* BUG-46124 */
+
+                /* BUG-49136 */
+                IDE_TEST_RAISE( sViewSFWGH == NULL, ERR_NOT_KEY_PRESERVED_TABLE );
 
                 if (sParseTree->columns != NULL)
                 {
@@ -4419,6 +4431,9 @@ IDE_RC qmv::validateDelete(qcStatement * aStatement)
             sDeleteTableRef = NULL;
             sViewSFWGH      = sViewParseTree->querySet->SFWGH;  /* BUG-46124 */
             sTarget         = sViewParseTree->querySet->target; /* BUG-46124 */
+
+            /* BUG-49136 */
+            IDE_TEST_RAISE( sViewSFWGH == NULL, ERR_NOT_KEY_PRESERVED_TABLE );
 
             // view의 from절에서 첫번째 key preseved table을 얻어온다.
             if ( sViewParseTree->querySet->SFWGH != NULL )
@@ -13525,6 +13540,9 @@ IDE_RC qmv::validateMultiDelete( qcStatement * aStatement )
                 sDeleteTableRef = NULL;
                 sViewParseTree = ( qmsParseTree *)sTmp->mTableRef->view->myPlan->parseTree;
                 sViewSFWGH     = sViewParseTree->querySet->SFWGH; /* BUG-46124 */
+
+                /* BUG-49136 */
+                IDE_TEST_RAISE( sViewSFWGH == NULL, ERR_NOT_KEY_PRESERVED_TABLE );
 
                 /* BUG-36350 Updatable Join DML WITH READ ONLY*/
                 if ( sTmp->mTableRef->tableInfo->tableID != 0 )

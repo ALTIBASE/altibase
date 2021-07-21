@@ -7186,10 +7186,11 @@ IDE_RC qmvShardTransform::processTransformForNonShard( qcStatement * aStatement,
  *
  ***********************************************************************/
 
-    qciStmtType     sStmtKind  = QCI_STMT_MASK_MAX;
-    qcShardStmtType sStmtType  = QC_STMT_SHARD_NONE;
-    qmsParseTree  * sParseTree = NULL;
-    qmsQuerySet   * sQuerySet  = NULL;
+    qciStmtType        sStmtKind  = QCI_STMT_MASK_MAX;
+    qcShardStmtType    sStmtType  = QC_STMT_SHARD_NONE;
+    qmsParseTree     * sParseTree = NULL;
+    qmsQuerySet      * sQuerySet  = NULL;
+    sdiShardAnalysis * sAnalysis  = NULL;
 
     IDE_TEST_RAISE( aParseTree == NULL, ERR_NULL_PARSETREE );
 
@@ -7220,6 +7221,27 @@ IDE_RC qmvShardTransform::processTransformForNonShard( qcStatement * aStatement,
             break;
 
         case QCI_STMT_EXEC_PROC:
+
+            /* BUG-49051
+             * Unspecified shard key parameter를 가지는 sharded procedure에 대해서 제약한다.
+             */
+            IDE_TEST( sdi::getParseTreeAnalysis( aParseTree,
+                                                 &( sAnalysis ) )
+                      != IDE_SUCCESS );
+
+            IDE_TEST_RAISE( sAnalysis == NULL, ERR_INVALID_ANALYSIS_INFO );
+
+            if ( sAnalysis->mAnalysisFlag.mNonShardFlag[SDI_UNSPECIFIED_SHARD_KEY_VALUE] == ID_TRUE )
+            {
+                IDE_TEST( sdi::raiseInvalidShardQueryError( aStatement,
+                                                            aParseTree )
+                          != IDE_SUCCESS );
+            }
+            else
+            {
+                /* Nothing to do. */
+            }
+
             break;
 
         default:
@@ -7251,6 +7273,12 @@ IDE_RC qmvShardTransform::processTransformForNonShard( qcStatement * aStatement,
         IDE_SET( ideSetErrorCode( qpERR_ABORT_QMC_UNEXPECTED_ERROR,
                                   "qmvShardTransform::processTransformForNonShard",
                                   "stmt kind is invalid" ) );
+    }
+    IDE_EXCEPTION( ERR_INVALID_ANALYSIS_INFO )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QMC_UNEXPECTED_ERROR,
+                                  "qmvShardTransform::processTransformForNonShard",
+                                  "Shard analysis information is invalid" ) );
     }
     IDE_EXCEPTION_END;
 

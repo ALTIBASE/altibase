@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smuUtility.cpp 85333 2019-04-26 02:34:41Z et16 $
+ * $Id: smuUtility.cpp 91197 2021-07-12 01:15:29Z emlee $
  **********************************************************************/
 
 #include <smDef.h>
@@ -143,7 +143,7 @@ void smuUtility::getTimeString( UInt    aTimeValue,
  * DESCRIPTION : 
  *    특정함수 및 변수를 받아 해당 내용을 덤프한다. 
  *
- * 1.디스크템프 테이블에서만 사용하고 있어서  __TEMPDUMP_ENABLE에
+ * 1.디스크템프 테이블에서만 사용하고 있어서  __TEMPDUMP_LEVEL에
  *     따라 콜스택 Dump여부를 결정한다.
  * 2.Callstack 출력은 지금 error.log 로 고정되어 있다. 
  ******************************************************************/
@@ -155,8 +155,8 @@ void smuUtility::dumpFuncWithBuffer( UInt           aChkFlag,
 {
     SChar        * sTempBuf;
 
-    /* __TEMPDUMP_ENABLE에 따라 Dump함 */
-    if ( smuProperty::getTempDumpEnable() == 1 )
+    /* __TEMPDUMP_LEVEL에 따라 Dump함 */
+    if ( smuProperty::getTempDumpLevel() == 2 )
     {
         ideLog::logCallStack( aChkFlag, aModule, aLevel );
     }

@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qmnScan.h 89517 2020-12-15 06:08:38Z donovan.seo $
+ * $Id: qmnScan.h 91237 2021-07-16 04:28:37Z donovan.seo $
  *
  * Description :
  *     SCAN Node
@@ -124,6 +124,11 @@
 #define QMNC_SCAN_FAST_SELECT_FIXED_TABLE_MASK  (0x00004000)
 #define QMNC_SCAN_FAST_SELECT_FIXED_TABLE_FALSE (0x00000000)
 #define QMNC_SCAN_FAST_SELECT_FIXED_TABLE_TRUE  (0x00004000)
+
+/* BUG-49127 */
+#define QMNC_SCAN_MOVE_AND_DELETE_MASK  (0x00008000)
+#define QMNC_SCAN_MOVE_AND_DELETE_FALSE (0x00000000)
+#define QMNC_SCAN_MOVE_AND_DELETE_TRUE  (0x00008000)
 
 //-----------------
 // Data Node Flags

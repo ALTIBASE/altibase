@@ -17,7 +17,7 @@
 
 
 /***********************************************************************
- * $Id: smiMisc.h 90444 2021-04-02 10:15:58Z minku.kang $
+ * $Id: smiMisc.h 91224 2021-07-14 05:36:12Z minku.kang $
  **********************************************************************/
 
 #ifndef _O_SMI_MISC_H_
@@ -517,7 +517,7 @@ IDE_RC smiWriteXaStartReqLog( ID_XID * aGlobalXID,
                               smTID    aTID,
                               smLSN  * aLSN );
 
-IDE_RC smiWriteXaPrepareReqLog( ID_XID * aXID,
+IDE_RC smiWriteXaPrepareReqLog( ID_XID * aGlobalXID,
                                 smTID    aTID,
                                 UInt     aGlobalTxId,
                                 UChar  * aBranchTxInfo,

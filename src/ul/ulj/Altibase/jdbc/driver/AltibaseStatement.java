@@ -20,6 +20,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 import Altibase.jdbc.driver.cm.*;
 import Altibase.jdbc.driver.datatype.Column;
@@ -60,7 +61,6 @@ public class AltibaseStatement extends WrapperAdapter implements Statement
     public static final int            DEFAULT_UPDATE_COUNT = -1;
     // BUG-42424 ColumnInfo에서 BYTES_PER_CHAR를 사용하기 때문에 public으로 변경
     public static final int            BYTES_PER_CHAR             = 2;
-    private static final String        PING_SQL_PATTERN           = "/* PING */ SELECT 1";
 
     protected AltibaseConnection       mConnection;
     protected boolean                  mEscapeProcessing          = true;
@@ -103,6 +103,9 @@ public class AltibaseStatement extends WrapperAdapter implements Statement
     // BUG-48892 스펙에 따라 Statement pool을 직접 구현하고 있지 않더라도 flag 값을 셋팅할 수 있도록 선언
     private boolean                    mIsPoolable;
     private boolean                    mIsSuccess = true;    // BUG-48762 sharding statementAC partial rollback 지원
+
+    // BUG-49143 ping query 판별용 정규표현식 패턴
+    private final Pattern              mPingQueryPattern = Pattern.compile("^\\s*/\\*\\s+(?i)ping\\s+\\*/\\s+(?i)select\\s+1\\s*$");
 
     protected class ExecuteResultManager
     {
@@ -828,10 +831,10 @@ public class AltibaseStatement extends WrapperAdapter implements Statement
     }
 
     /**
-     * BUG-39149 내부적으로 ping메소드를 호출한 다음 정상적일 경우 SELECT 1의 결과에 해당하는 row를 수동으로 생성한 후 반환한다.
-     * @throws SQLException
+     *  내부적으로 ping메소드를 호출한 다음 정상적일 경우 SELECT 1의 결과에 해당하는 row를 수동으로 생성한 후 반환한다.
+     *  @throws SQLException Column객체에 setValue를 수행했을때 에러가 발생한 경우.
      */
-    private void pingAndCreateLightweightResultSet() throws SQLException
+    protected void pingAndCreateLightweightResultSet() throws SQLException
     {
         mConnection.ping();
         ExecuteResult sExecResult = new ExecuteResult(true, DEFAULT_UPDATE_COUNT);
@@ -846,7 +849,7 @@ public class AltibaseStatement extends WrapperAdapter implements Statement
                                   (byte)0,                                      // arguments
                                   0,                                            // precision
                                   0,                                            // scale
-                                  (byte)ColumnInfo.IN_OUT_TARGET_TYPE_TARGET,   // in-out type
+                                  ColumnInfo.IN_OUT_TARGET_TYPE_TARGET,         // in-out type
                                   true,                                         // nullable
                                   false,                                        // updatable
                                   null,                                         // catalog name
@@ -863,22 +866,18 @@ public class AltibaseStatement extends WrapperAdapter implements Statement
     }
 
     /**
-     * BUG-39149 sql이 validation check용 ping 쿼리인지 체크한다.
-     * @param aSql
-     * @return
+     * sql이 validation check용 ping 쿼리인지 여부를 정규 표현식을 이용해 판별한다.
+     * @param aSql 쿼리 스트링
+     * @return ping 쿼리인지 여부
      */
-    private boolean isPingSQL(String aSql)
+    protected boolean isPingSQL(String aSql)
     {
-        if (StringUtils.isEmpty(aSql)) return false;
-        if (aSql.charAt(0) == '/')
+        if (StringUtils.isEmpty(aSql))
         {
-            if (aSql.toUpperCase().equals(PING_SQL_PATTERN))
-            {
-                return true;
-            }
+            return false;
         }
 
-        return false;
+        return mPingQueryPattern.matcher(aSql).matches();
     }
 
     // BUGBUG (2012-11-06) 지원하는 것이 스펙에서 설명하는것과 조금 다르다.

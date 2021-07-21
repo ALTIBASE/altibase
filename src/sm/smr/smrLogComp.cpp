@@ -59,6 +59,7 @@ IDE_RC smrLogComp::readLog( iduMemoryHandle    * aDecompBufferHandle,
     sValidLogMagic = smrLogFile::makeMagicNumber( aLogFile->getFileNo(),
                                                   aLogOffset );
 
+    IDU_FIT_POINT( "BUG-48375@smrLogComp::readLog" );
     IDE_TEST( getRawLog( aDecompBufferHandle,
                          aLogOffset,
                          sRawOrCompLog,
@@ -72,10 +73,8 @@ IDE_RC smrLogComp::readLog( iduMemoryHandle    * aDecompBufferHandle,
     IDE_EXCEPTION_END;
 
     // BUG-26695 log decompress size 불일치로 Recovery 실패합니다.
-    IDE_PUSH();
     IDE_SET( ideSetErrorCode( smERR_ABORT_INVALID_LOGFILE,
                               aLogFile->getFileName() ) );
-    IDE_POP();
 
     return IDE_FAILURE;
 }
@@ -1040,11 +1039,8 @@ IDE_RC smrLogComp::readLog4RP( smrLogFile         * aLogFile,
     IDE_EXCEPTION_END;
 
     // BUG-26695 log decompress size 불일치로 Recovery 실패합니다.
-    IDE_PUSH();
     IDE_SET( ideSetErrorCode( smERR_ABORT_INVALID_LOGFILE,
                               aLogFile->getFileName() ) );
-    IDE_POP();
-
     return IDE_FAILURE;
 }
 

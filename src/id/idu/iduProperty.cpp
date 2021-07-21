@@ -103,6 +103,10 @@ IDE_RC iduProperty::load()
     IDE_ASSERT(idp::read("QP_MSGLOG_FLAG", &mProperties->mQpTrcFlag)
                == IDE_SUCCESS);
 
+    /* BUG-49108 */
+    IDE_ASSERT(idp::read("JOB_MSGLOG_FLAG", &mProperties->mJobTrcFlag)
+               == IDE_SUCCESS);
+
     /* BUG-46138 */
     IDE_ASSERT(idp::read("SD_MSGLOG_FLAG", &mProperties->mSdTrcFlag)
                == IDE_SUCCESS);
@@ -626,6 +630,10 @@ IDE_RC iduProperty::registCallbacks()
                                             callbackQpTrcFlag)
               != IDE_SUCCESS);
 
+    /* BUG-49108 */
+    IDE_TEST( idp::setupAfterUpdateCallback("JOB_MSGLOG_FLAG", callbackJobTrcFlag)
+              != IDE_SUCCESS );
+
     /* BUG-46138 */
     IDE_TEST( idp::setupAfterUpdateCallback("SD_MSGLOG_FLAG", callbackSdTrcFlag)
               != IDE_SUCCESS );
@@ -857,6 +865,18 @@ IDE_RC iduProperty::callbackQpTrcFlag(idvSQL * /*aStatistics*/,
                                       void  * /*aArg*/)
 {
     mProperties->mQpTrcFlag = *((UInt *)aNewValue);
+
+    return IDE_SUCCESS;
+}
+
+/* BUG-49108 */
+IDE_RC iduProperty::callbackJobTrcFlag(idvSQL * /*aStatistics*/,
+                                       SChar  * /*aName*/,
+                                       void   * /*aOldValue*/,
+                                       void   * aNewValue,
+                                       void   * /*aArg*/)
+{
+    mProperties->mJobTrcFlag = *((UInt *)aNewValue);
 
     return IDE_SUCCESS;
 }

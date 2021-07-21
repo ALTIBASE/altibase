@@ -98,6 +98,9 @@ private:
     static void   dumpTempTableHeader( void   * aTableHeader, 
                                        SChar  * aOutBuf, 
                                        UInt     aOutSize );
+    static void   dumpTempTableSegment( void   * aTableHeader, 
+                                        SChar  * aOutBuf, 
+                                        UInt     aOutSize );
     static void   dumpTempStats( smiTempTableStats * aTempStats,
                                  SChar             * aOutBuf, 
                                  UInt                aOutSize );

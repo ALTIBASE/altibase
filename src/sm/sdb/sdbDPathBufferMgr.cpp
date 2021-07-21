@@ -16,7 +16,7 @@
  
 
 /*******************************************************************************
- * $Id: sdbDPathBufferMgr.cpp 86110 2019-09-02 04:52:04Z et16 $
+ * $Id: sdbDPathBufferMgr.cpp 91197 2021-07-12 01:15:29Z emlee $
  *
  * Description : DPath Insert를 수행할 때 사용하는 전용 버퍼를 관리한다.
  ******************************************************************************/
@@ -994,10 +994,10 @@ IDE_RC sdbDPathBufferMgr::addNode4BulkIO( sdbDPathBulkIOInfo *aDPathBulkIOInfo,
  *                    return시 현재 BCB의 SpaceID로 변경.
  **********************************************************************/
 IDE_RC sdbDPathBufferMgr::writePagesByBulkIO(
-    idvSQL             *aStatistics,
-    sdbDPathBuffInfo   *aDPathBuffInfo,
-    sdbDPathBulkIOInfo *aDPathBulkIOInfo,
-    scSpaceID          *aPrevSpaceID )
+                                        idvSQL             *aStatistics,
+                                        sdbDPathBuffInfo   *aDPathBuffInfo,
+                                        sdbDPathBulkIOInfo *aDPathBulkIOInfo,
+                                        scSpaceID          *aPrevSpaceID )
 {
     smLSN               sLstLSN;
     UChar               *sBuffFrame;
@@ -1068,7 +1068,7 @@ IDE_RC sdbDPathBufferMgr::writePagesByBulkIO(
             smLayerCallback::setPageLSN( sBuffFrame, &sLstLSN );
             smLayerCallback::calcAndSetCheckSum( sBuffFrame );
 
-            idlOS::memcpy( aDPathBulkIOInfo->mADIOBuffPtr + SD_PAGE_SIZE * i,
+            idlOS::memcpy( aDPathBulkIOInfo->mADIOBuffPtr + (SD_PAGE_SIZE * i),
                            sBuffFrame,
                            SD_PAGE_SIZE );
 
@@ -1108,7 +1108,8 @@ IDE_RC sdbDPathBufferMgr::writePagesByBulkIO(
 
             IDE_TEST( sddTableSpace::getDataFileNodeByPageID(sSpaceNode,
                                                              sPageID,
-                                                             &sFileNode )
+                                                             &sFileNode,
+                                                             ID_TRUE ) /* aFatal */
               != IDE_SUCCESS );
 
             for( i = 0; i < aDPathBulkIOInfo->mIORequestCnt; i++ )

@@ -1476,7 +1476,6 @@ IDE_RC sdbBufferPool::readPageFromDisk( idvSQL                 *aStatistics,
                                         sdbBCB                 *aBCB,
                                         idBool                 *aIsCorruptPage )
 {
-    UInt            sDummy;
     UInt            sState = 0;
     idvTime         sBeginTime;
     idvTime         sEndTime;
@@ -1500,8 +1499,7 @@ IDE_RC sdbBufferPool::readPageFromDisk( idvSQL                 *aStatistics,
     IDE_TEST( sddDiskMgr::read( aStatistics,
                                 aBCB->mSpaceID,
                                 aBCB->mPageID,
-                                aBCB->mFrame,
-                                &sDummy )
+                                aBCB->mFrame )
               != IDE_SUCCESS );
 
     sState = 0;
@@ -3008,8 +3006,8 @@ IDE_RC sdbBufferPool::copyToFrame(
  *  aKey        - [IN]  MPR Key
  ****************************************************************/
 IDE_RC sdbBufferPool::fetchMultiPagesNormal(
-    idvSQL                 * aStatistics,
-    sdbMPRKey              * aKey )
+                                    idvSQL                 * aStatistics,
+                                    sdbMPRKey              * aKey )
 {
     SInt i;
     sdbReadUnit *sReadUnit;
@@ -3034,11 +3032,12 @@ IDE_RC sdbBufferPool::fetchMultiPagesNormal(
             mStatistics.applyBeforeMultiReadPages( aStatistics );
         }
 
-        IDE_TEST(sddDiskMgr::read(aStatistics,
-                                  aKey->mSpaceID,
-                                  sReadUnit->mFirstPID,
-                                  sReadUnit->mReadBCBCount,
-                                  aKey->mReadIOB)
+        IDE_TEST( sddDiskMgr::read( aStatistics,
+                                    aKey->mSpaceID,
+                                    sReadUnit->mFirstPID,
+                                    sReadUnit->mReadBCBCount,
+                                    aKey->mReadIOB,
+                                    ID_TRUE )  /* aFatal */
                  != IDE_SUCCESS);
 
         if( sReadUnit->mReadBCBCount == 1 )
@@ -3095,10 +3094,10 @@ IDE_RC sdbBufferPool::fetchMultiPagesNormal(
  *  aKey        - [IN]  MPR Key
  ****************************************************************/
 IDE_RC sdbBufferPool::fetchMultiPagesAtOnce(
-    idvSQL                 *aStatistics,
-    scPageID                aStartPID,
-    UInt                    aPageCount,
-    sdbMPRKey              *aKey )
+                                idvSQL                 *aStatistics,
+                                scPageID                aStartPID,
+                                UInt                    aPageCount,
+                                sdbMPRKey              *aKey )
 {
     UInt         sIndex;
     SInt         i;
@@ -3119,11 +3118,12 @@ IDE_RC sdbBufferPool::fetchMultiPagesAtOnce(
         mStatistics.applyBeforeMultiReadPages( aStatistics );
     }
 
-    IDE_TEST(sddDiskMgr::read(aStatistics,
-                              aKey->mSpaceID,
-                              aStartPID,
-                              aPageCount,
-                              aKey->mReadIOB)
+    IDE_TEST( sddDiskMgr::read( aStatistics,
+                                aKey->mSpaceID,
+                                aStartPID,
+                                aPageCount,
+                                aKey->mReadIOB,
+                                ID_TRUE ) /* aFatal */
              != IDE_SUCCESS);
 
     if( aKey->mReadUnit[0].mReadBCBCount == 1 )
@@ -3169,9 +3169,9 @@ IDE_RC sdbBufferPool::fetchMultiPagesAtOnce(
 }
 
 IDE_RC sdbBufferPool::fetchSinglePage(
-    idvSQL                 * aStatistics,
-    scPageID                 aPageID,
-    sdbMPRKey              * aKey )
+                            idvSQL                 * aStatistics,
+                            scPageID                 aPageID,
+                            sdbMPRKey              * aKey )
 {
     sdbBCB   *sBCB;
     SInt      sState = 0;
@@ -3188,11 +3188,12 @@ IDE_RC sdbBufferPool::fetchSinglePage(
     mStatistics.applyBeforeSingleReadPage( aStatistics );
     sState = 1;
 
-    IDE_TEST(sddDiskMgr::read( aStatistics,
-                               aKey->mSpaceID,
-                               aPageID,
-                               1,
-                               sBCB->mFrame )
+    IDE_TEST( sddDiskMgr::read( aStatistics,
+                                aKey->mSpaceID,
+                                aPageID,
+                                1,
+                                sBCB->mFrame,
+                                ID_TRUE ) /* aFatal */
              != IDE_SUCCESS);
 
     sState = 0;

@@ -1593,8 +1593,10 @@ IDE_RC sdiZookeeper::validateState( ZKState   aState,
     }
     else if( ( sOldState == ZK_RUN ) && ( sIsAlive == ID_FALSE ) )
     {
-        /* 기존 상태가 RUN(die)일 경우에는 RUN/FAILBACK만 가능하다. */
-        IDE_TEST_RAISE( ( aState != ZK_RUN ) && ( aState != ZK_FAILBACK ), validate_Fail );
+        /* 기존 상태가 RUN(die)일 경우에는 RUN/FAILBACK/KILL만 가능하다. */        
+        IDE_TEST_RAISE( ( aState != ZK_RUN ) &&
+                        ( aState != ZK_FAILBACK ) &&
+                        ( aState != ZK_KILL ), validate_Fail );
     }
     else if( sOldState == ZK_FAILBACK )
     {

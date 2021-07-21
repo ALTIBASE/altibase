@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: sddTableSpace.h 86125 2019-09-05 02:22:00Z et16 $
+ * $Id: sddTableSpace.h 91197 2021-07-12 01:15:29Z emlee $
  *
  * Description :
  *
@@ -141,54 +141,52 @@ public:
 
     /* datafile 노드의 remove 가능여부 확인 */
     static IDE_RC canRemoveDataFileNodeByName(
-                     sddTableSpaceNode* aSpaceNode,
-                     SChar*             aDataFileName,
-                     scPageID           aUsedPageLimit,
-                     sddDataFileNode**  aFileNode );
+                                     sddTableSpaceNode* aSpaceNode,
+                                     SChar*             aDataFileName,
+                                     scPageID           aUsedPageLimit,
+                                     sddDataFileNode**  aFileNode );
 
     /* 페이지 ID가 유효할때 DBF Node를 반환 */
-    static IDE_RC getDataFileNodeByPageID( sddTableSpaceNode* aSpaceNode,
-                                           scPageID           aPageID,
-                                           sddDataFileNode**  aFileNode,
-                                           idBool             aFatal = ID_TRUE );
+    static IDE_RC getDataFileNodeByPageID( sddTableSpaceNode * aSpaceNode,
+                                           scPageID            aPageID,
+                                           sddDataFileNode  ** aFileNode,
+                                           idBool              aFatal );
 
     /* 페이지 ID가 유효할때 DBF Node를 반환 */
     static void getDataFileNodeByPageIDWithoutException(
-                                           sddTableSpaceNode* aSpaceNode,
-                                           scPageID           aPageID,
-                                           sddDataFileNode**  aFileNode );
-
+                                           sddTableSpaceNode * aSpaceNode,
+                                           scPageID            aPageID,
+                                           sddDataFileNode  ** aFileNode );
 
     /* 해당 파일명을 가지는 datafile 노드 반환 */
-    static IDE_RC getDataFileNodeByName( sddTableSpaceNode*   aSpaceNode,
-                                         SChar*               aFileName,
-                                         sddDataFileNode**    aFileNode );
+    static IDE_RC getDataFileNodeByName( sddTableSpaceNode   * aSpaceNode,
+                                         SChar               * aFileName,
+                                         sddDataFileNode    ** aFileNode );
 
     /*PRJ-1671 다음 파일노드를 얻어낸다*/
-    static void getNextFileNode(sddTableSpaceNode* aSpaceNode,
-                                sdFileID           aCurFileID,
-                                sddDataFileNode**  aFileNode);
+    static void getNextFileNode( sddTableSpaceNode * aSpaceNode,
+                                 sdFileID            aCurFileID,
+                                 sddDataFileNode  ** aFileNode );
 
 
     /* autoextend 모드를 설정할 datafile 노드를 검색 */
     static IDE_RC getDataFileNodeByAutoExtendMode(
-                     sddTableSpaceNode* aSpaceNode,
-                     SChar*             aDataFileName,
-                     idBool             aAutoExtendMode,
-                     scPageID           aUsedPageLimit,
-                     sddDataFileNode**  aFileNode );
+                                         sddTableSpaceNode * aSpaceNode,
+                                         SChar             * aDataFileName,
+                                         idBool              aAutoExtendMode,
+                                         scPageID            aUsedPageLimit,
+                                         sddDataFileNode  ** aFileNode );
 
     /* DBF ID로 FileNode 반환 없다면 Exception 발생 */
-    static IDE_RC getDataFileNodeByID(
-                     sddTableSpaceNode*  aSpaceNode,
-                     UInt                aFileID,
-                     sddDataFileNode**   aFileNode);
+    static IDE_RC getDataFileNodeByID( sddTableSpaceNode*  aSpaceNode,
+                                       UInt                aFileID,
+                                       sddDataFileNode**   aFileNode );
 
     /* 데이타파일이 존재하지 않으면 Null을 반환한다 */
     static void getDataFileNodeByIDWithoutException(
-                     sddTableSpaceNode*  aSpaceNode,
-                     UInt                aFileID,
-                     sddDataFileNode**   aFileNode);
+                                         sddTableSpaceNode  * aSpaceNode,
+                                         UInt                 aFileID,
+                                         sddDataFileNode   ** aFileNode);
 
     /* datafile 노드의 page 구간을 반환 */
     static IDE_RC getPageRangeByName( sddTableSpaceNode* aSpaceNode,

@@ -220,6 +220,7 @@ public:
     IDE_RC initTransTable( void );
     void rollbackAllTrans( void );
     rpdTransTbl * getTransTbl( void );
+    idBool isExistActiveTrans();
     void getMinTransFirstSN( smSN * aSN );
 
     IDE_RC initializeLogMgr( smSN     aInitSN,

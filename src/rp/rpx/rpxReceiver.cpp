@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpxReceiver.cpp 90890 2021-05-26 08:38:25Z yoonhee.kim $
+ * $Id: rpxReceiver.cpp 91224 2021-07-14 05:36:12Z minku.kang $
  **********************************************************************/
 
 #include <idl.h>
@@ -5483,7 +5483,7 @@ IDE_RC rpxReceiver::collectUnCompleteGlobalTxList( iduList * aGlobalTxList )
             switch ( sXLog.mType )
             {
                 case RP_X_XA_START_REQ:
-                    IDE_TEST( createNAddGlobalTxNodeToList( &(sXLog.mXID),
+                    IDE_TEST( createNAddGlobalTxNodeToList( &(sXLog.mXID), /* GlobalXID */
                                                             sXLog.mTID, 
                                                             SMI_DTX_NONE,
                                                             &sGlobalTxList,

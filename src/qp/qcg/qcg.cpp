@@ -7261,6 +7261,10 @@ IDE_RC qcg::runProcforJob( UInt     aJobThreadIndex,
                  aJobThreadIndex,
                  aJob );
 
+    ideLog::log( IDE_JOB_1, "[JOB THREAD %d][JOB %d : BEGIN]",
+                 aJobThreadIndex,
+                 aJob );
+
     IDE_TEST( qcd::allocStmtNoParent( aMmSession,
                                       ID_TRUE,  // dedicated mode
                                       & sHstmt )
@@ -7291,6 +7295,10 @@ IDE_RC qcg::runProcforJob( UInt     aJobThreadIndex,
                  aJobThreadIndex,
                  aJob );
 
+    ideLog::log( IDE_JOB_1, "[JOB THREAD %d][JOB %d : END SUCCESS]",
+                 aJobThreadIndex,
+                 aJob );
+
     return IDE_SUCCESS;
 
     IDE_EXCEPTION_END;
@@ -7298,6 +7306,12 @@ IDE_RC qcg::runProcforJob( UInt     aJobThreadIndex,
     *aErrorCode = ideGetErrorCode();
 
     ideLog::log( IDE_QP_3, "[JOB THREAD %d][JOB %d : END FAILURE] ERR-%05X : %s",
+                 aJobThreadIndex, 
+                 aJob,
+                 E_ERROR_CODE(ideGetErrorCode()),
+                 ideGetErrorMsg(ideGetErrorCode()));
+
+    ideLog::log( IDE_JOB_1, "[JOB THREAD %d][JOB %d : END FAILURE] ERR-%05X : %s",
                  aJobThreadIndex, 
                  aJob,
                  E_ERROR_CODE(ideGetErrorCode()),

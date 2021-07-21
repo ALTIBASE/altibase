@@ -831,7 +831,15 @@ IDE_RC smiSortTempTable::sort( void * aTable )
     generateSortStats( sHeader,
                        SMI_TTOPR_SORT );
 
-    return sdtSortModule::sort( sHeader );
+    IDE_TEST( sdtSortModule::sort( sHeader ) != IDE_SUCCESS );  
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION_END;
+
+    smiTempTable::checkAndDump( sHeader );
+
+    return IDE_FAILURE;
 }
 
 /**************************************************************************
@@ -1083,6 +1091,7 @@ IDE_RC smiSortTempTable::restartCursor( smiSortTempCursor   * aCursor,
 
     IDE_TEST( sHeader->mOpenCursor( sHeader, aCursor )
               != IDE_SUCCESS);
+
     return IDE_SUCCESS;
 
     IDE_EXCEPTION_END;

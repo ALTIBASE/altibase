@@ -110,6 +110,7 @@ qmoPushPred::doPushDownViewPredicate( qcStatement  * aStatement,
                                             NULL, /* aOuterQuery */
                                             aPredicate->node,
                                             ID_FALSE,  // next는 검사하지 않는다.
+                                            ID_FALSE,  // aPushIntoShardView
                                             & sCanPushDown )
                       != IDE_SUCCESS );
         }
@@ -398,6 +399,7 @@ qmoPushPred::canPushDownPredicate( qcStatement  * aStatement,
                                    qmsSFWGH     * aOuterQuery,
                                    qtcNode      * aNode,
                                    idBool         aContainRootsNext,
+                                   idBool         aPushIntoShardView,
                                    idBool       * aCanPushDown )
 {
 /***********************************************************************
@@ -445,6 +447,53 @@ qmoPushPred::canPushDownPredicate( qcStatement  * aStatement,
         if ( ( aNode->depInfo.depCount + aViewQuerySet->depInfo.depCount ) > QC_MAX_REF_TABLE_CNT )
         {
             *aCanPushDown = ID_FALSE;
+        }
+        else
+        {
+            /* Nothing to do. */
+        }
+    }
+    else
+    {
+        /* Nothing to do. */
+    }
+
+    /* BUG-49053
+     * Shard view 최적화 시에는 SQL로 unparsing 할 수 없는
+     * columnName이 NULL name인 column node 에 대해서는 push하지 않도록 설정한다.
+     */
+    if ( ( aPushIntoShardView == ID_TRUE ) &&
+         ( aNode->node.module == &qtc::columnModule ) )
+    {
+        if ( aNode->node.table == aViewTupleId )
+        {
+            sColumnId =
+                QTC_STMT_COLUMN(aStatement, aNode)->column.id;
+            sColumnOrder = sColumnId & SMI_COLUMN_ID_MASK;
+
+            sTargetOrder = 0;
+            for ( sViewTarget  = aViewTarget;
+                  sViewTarget != NULL;
+                  sViewTarget  = sViewTarget->next )
+            {
+                if ( sTargetOrder == sColumnOrder )
+                {
+                    break;
+                }
+                else
+                {
+                    sTargetOrder++;
+                }
+            }
+
+            if ( QC_IS_NULL_NAME( sViewTarget->targetColumn->columnName ) == ID_TRUE )
+            {
+                *aCanPushDown = ID_FALSE;
+            }
+            else
+            {
+                /* Nothing to do. */
+            }
         }
         else
         {
@@ -623,6 +672,7 @@ qmoPushPred::canPushDownPredicate( qcStatement  * aStatement,
                                                 aOuterQuery,
                                                 (qtcNode*) aNode->node.arguments,
                                                 ID_TRUE,
+                                                aPushIntoShardView,
                                                 aCanPushDown )
                           != IDE_SUCCESS );
             }
@@ -648,6 +698,7 @@ qmoPushPred::canPushDownPredicate( qcStatement  * aStatement,
                                             aOuterQuery,
                                             (qtcNode*) aNode->node.next,
                                             ID_TRUE,
+                                            aPushIntoShardView,
                                             aCanPushDown )
                       != IDE_SUCCESS );
         }
@@ -1752,6 +1803,7 @@ IDE_RC qmoPushPred::checkPushDownPredicate( qcStatement  * aStatement,
                                             aOuterQuery,
                                             aPredicate->node,
                                             ID_FALSE, /* Next는 검사하지 않는다. */
+                                            ID_TRUE, /* aPushIntoShardView */
                                             &( sCanPushDown ) )
                       != IDE_SUCCESS );
         }

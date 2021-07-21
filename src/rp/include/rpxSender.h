@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpxSender.h 90266 2021-03-19 05:23:09Z returns $
+ * $Id: rpxSender.h 91226 2021-07-14 08:01:24Z lswhh $
  **********************************************************************/
 
 #ifndef _O_RPX_SENDER_H_
@@ -229,6 +229,7 @@ public:
     smSN getRestartSN();
     void setRestartSN(smSN aSN);
     smSN getNextRestartSN();
+    void setCommitXSNForFileEndLog(smSN aFileEndSN);
     smSN getLastArrivedSN();
     
     void getMinRestartSNFromAllApply( smSN* aRestartSN );

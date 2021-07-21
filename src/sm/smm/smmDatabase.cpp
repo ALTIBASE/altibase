@@ -262,9 +262,9 @@ IDE_RC smmDatabase::setLstSystemSCN( smSCN * aLstSystemSCNPtr, smSCN * aNewLstSy
                   aLstSystemSCNPtr 까지 증가시켜야 한다 
                3.sPrev 가 sLstSystemSCN 보다 작을수 없다.. */
             IDE_DASSERT_MSG ( sPrev > sLstSystemSCN,
-                              "sPrev : %"ID_UINT64_FMT","
-                              "sLstSystemSCN :"ID_UINT64_FMT","
-                              "aLstSystemSCNPtr :"ID_UINT64_FMT"\n",
+                              "sPrevSCN : %"ID_UINT64_FMT","
+                              "sLstSystemSCN : %"ID_UINT64_FMT","
+                              "aLstSystemSCNPtr : 0x%"ID_xINT64_FMT"\n",
                               sPrev,
                               sLstSystemSCN,
                               aLstSystemSCNPtr );

@@ -1969,6 +1969,13 @@ public:
 
     static IDE_RC getLanguage( SChar * aLanguage, mtlModule ** aModule );
 
+    
+    static IDE_RC getPartitionInfoList( void                  * aQcStatement,
+                                        smiStatement          * aSmiStmt,
+                                        iduVarMemList         * aMem,
+                                        UInt                    aTableID,
+                                        qcmPartitionInfoList ** aPartInfoList );
+
     static IDE_RC getPartitionInfoList( void                  * aQcStatement,
                                         smiStatement          * aSmiStmt,
                                         iduMemory             * aMem,

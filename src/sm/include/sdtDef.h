@@ -147,13 +147,6 @@ typedef enum
     SDT_TEMP_PAGETYPE_MAX
 } sdtTempPageType;
 
-typedef struct sdtTempPageHdr
-{
-    /* 하위 13bit를 FreeOffset, 상위 3bit를 Type으로 사용함 */
-    scPageID mSelfNPID;
-    UShort   mTypeAndFreeOffset;
-    UShort   mDummy;
-} sdtTempPageHdr;
 
 /*****************************************************************************
  * PROJ-2201 Innovation in sorting and hashing(temp)

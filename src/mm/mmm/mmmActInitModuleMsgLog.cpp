@@ -42,6 +42,9 @@ static IDE_RC mmmPhaseActionInitModuleMsgLog(mmmPhase         /*aPhase*/,
 
     ideLog::log(IDE_QP_0, MM_TRC_STARTUP);
 
+    /* BUG-49108 */
+    ideLog::log(IDE_JOB_0, MM_TRC_STARTUP);
+
     /* BUG-46138 */
     if ( iduProperty::getSdTrcEnable() == 1 )
     {

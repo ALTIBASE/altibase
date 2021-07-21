@@ -17,7 +17,7 @@
 #include <idu.h>
 #include <dktDtxInfo.h>
 
-IDE_RC dktDtxInfo::initialize( ID_XID * aXID,
+IDE_RC dktDtxInfo::initialize( ID_XID * aGlobalXID,
                                UInt     aLocalTxId, 
                                UInt     aGlobalTxId,
                                idBool   aIsRequestNode )
@@ -36,11 +36,12 @@ IDE_RC dktDtxInfo::initialize( ID_XID * aXID,
     IDU_LIST_INIT( &mBranchTxInfo );
 
     dktXid::initXID( &mXID );
+    dktXid::initXID( &mGlobalXID );
     mIsPassivePending = ID_FALSE;
 
-    if ( aXID != NULL )
+    if ( aGlobalXID != NULL )
     {
-        dktXid::copyXID( &mXID, aXID );
+        dktXid::copyXID( &mGlobalXID, aGlobalXID );
     }
 
     SM_INIT_SCN( &mGlobalCommitSCN );

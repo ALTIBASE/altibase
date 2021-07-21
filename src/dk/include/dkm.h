@@ -215,6 +215,8 @@ typedef struct dkmNotifierTransactionInfo
     UInt  mLocalTransactionId;
 
     ID_XID mXID;
+    
+    ID_XID mGlobalXID;
 
     UInt  mIsRequestNode;
 

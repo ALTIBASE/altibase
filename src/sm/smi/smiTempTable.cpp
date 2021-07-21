@@ -333,9 +333,8 @@ void   smiTempTable::checkAndDump( smiTempTableHeader * aHeader )
         IDE_CONT( skip );
         break;
     default:
-        ideLog::log(IDE_ERR_0,"checkAndDump %d\n",ideGetErrorCode() );
-        /* 그 외의 경우는 __TEMPDUMP_ENABLE에 따라 Dump함 */
-        if( smuProperty::getTempDumpEnable() == 1 )
+        /* 그 외의 경우는 __TEMPDUMP_LEVEL에 따라 Dump함 */
+        if( smuProperty::getTempDumpLevel() == 2 )
         {
             dumpToFile( aHeader );
         }
@@ -351,6 +350,7 @@ void   smiTempTable::checkAndDump( smiTempTableHeader * aHeader )
     IDE_EXCEPTION_END;
 
     IDE_POP();
+
     idlOS::snprintf( sErrorBuffer,
                      256,
                      "[FAILURE] ERR-%05X(error=%"ID_UINT32_FMT") %s",
@@ -361,6 +361,12 @@ void   smiTempTable::checkAndDump( smiTempTableHeader * aHeader )
     ideLog::log( IDE_ERR_0,
                  "%s\n",
                  sErrorBuffer );
+
+    if ( smuProperty::getTempDumpLevel() == 1 )
+    {
+        smuUtility::dumpFuncWithBuffer( IDE_DUMP_0, dumpTempTableHeader, aHeader );
+        smuUtility::dumpFuncWithBuffer( IDE_DUMP_0, dumpTempTableSegment, aHeader );
+    }
 
     IDE_SET( ideSetErrorCode(smERR_ABORT_INTERNAL_ARG, sErrorBuffer) );
 
@@ -907,8 +913,6 @@ IDE_RC smiTempTable::buildTempInfoRecord( idvSQL              * /*aStatistics*/,
  ***************************************************************************/
 void smiTempTable::dumpToFile( smiTempTableHeader * aHeader )
 {
-    smuUtility::dumpFuncWithBuffer( IDE_DUMP_0, dumpTempTableHeader, aHeader );
-
     switch( aHeader->mTTFlag & SMI_TTFLAG_TYPE_MASK )
     {
         case SMI_TTFLAG_TYPE_SORT:
@@ -1004,8 +1008,10 @@ void smiTempTable::dumpTempTableHeader( void  * aTableHeader,
                              sHeader->mColumns[ i ].mColumn.offset,
                              sHeader->mColumns[ i ].mColumn.size );
     }
+    (void)idlVA::appendFormat( aOutBuf, aOutSize, "\n" );
 
     dumpTempStats( sHeader->mStatsPtr, aOutBuf, aOutSize );
+    (void)idlVA::appendFormat( aOutBuf, aOutSize, "\n" );
 
     if(sHeader->mTempCursorList != NULL )
     {
@@ -1025,6 +1031,45 @@ void smiTempTable::dumpTempTableHeader( void  * aTableHeader,
                 IDE_ASSERT(0);
                 break;
         }
+    }
+
+    return;
+
+    IDE_EXCEPTION_END;
+
+    return;
+}
+
+/**************************************************************************
+ * Description : Temp Table Segment 정보를 출력
+ *
+ * aTempHeader  - [IN] 대상 TempTableHeader
+ * aOutBuf      - [OUT] 정보를 기록할 Buffer
+ * aOutSize     - [OUT] Buffer의 크기
+ ***************************************************************************/
+void smiTempTable::dumpTempTableSegment( void  * aTableHeader,
+                                         SChar  * aOutBuf, 
+                                         UInt     aOutSize )
+{
+    smiTempTableHeader * sHeader = (smiTempTableHeader*)aTableHeader; 
+
+    IDE_ERROR( aTableHeader != NULL );
+
+    switch( sHeader->mTTFlag & SMI_TTFLAG_TYPE_MASK )
+    {
+        case SMI_TTFLAG_TYPE_SORT:
+            sdtSortSegment::dumpWASegment( (sdtSortSegHdr*)sHeader->mWASegment,
+                                            aOutBuf,
+                                            aOutSize );
+            break;
+        case SMI_TTFLAG_TYPE_HASH:
+            sdtHashModule::dumpHashSegment( (sdtHashSegHdr*)sHeader->mWASegment,
+                                             aOutBuf,
+                                             aOutSize );
+            break;
+        default:
+            IDE_ASSERT(0);
+            break;
     }
 
     return;

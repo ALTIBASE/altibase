@@ -21,7 +21,7 @@
  **********************************************************************/
 
 /***********************************************************************
- * $Id: smxTrans.cpp 90936 2021-06-02 06:02:46Z emlee $
+ * $Id: smxTrans.cpp 91255 2021-07-19 01:08:26Z emlee $
  **********************************************************************/
 
 #include <ida.h>
@@ -1928,10 +1928,13 @@ IDE_RC smxTrans::abort( idBool    aIsLegacyTrans,
     idvSQL   * sTempStatistics       = NULL;
     smTID      sTempTransID          = SM_NULL_TID;
     smLSN      sTempLastWritedLSN;
+    smxStatus  sPreStatus4FT = mStatus4FT;
+    smxStatus  sPreStatus    = mStatus;
+    UInt       sState = 0;
     
     IDE_DASSERT( mStatus    != SMX_TX_END );
     IDE_DASSERT( mStatus4FT == SMX_TX_BEGIN );
-
+     
     mStatus4FT = SMX_TX_ABORT;
     mStatus    = SMX_TX_ABORT;
 
@@ -1987,7 +1990,8 @@ IDE_RC smxTrans::abort( idBool    aIsLegacyTrans,
     {
         /* Nothing to do */
     }
-
+    
+    sState = 1;
     /* ovl에 있는 OID 리스트의 lock과 SCN을 갱신하고
      * pol과 ovl을 logical ager에게 넘긴다. */
     if ( ( mTXSegEntry != NULL ) ||
@@ -2099,9 +2103,14 @@ IDE_RC smxTrans::abort( idBool    aIsLegacyTrans,
     return IDE_SUCCESS;
 
     IDE_EXCEPTION_END;
+    
+    if ( sState == 0 )
+    {
+        mStatus4FT = sPreStatus4FT;
+        mStatus    = sPreStatus; 
+    }
 
     return IDE_FAILURE;
-
 }
 
 IDE_RC smxTrans::end()
@@ -5896,10 +5905,6 @@ IDE_RC smxTrans::closeAllLobCursors( idvSQL *aStatistics,
     /* TASK-7219 Non-shard DML */
     idBool          sMutexLocked = ID_FALSE;
 
-    /* TASK-7219 Non-shard DML */
-    lock();
-    sMutexLocked = ID_TRUE;
-
     if ( aIsClosingShardLobCursors == ID_TRUE )
     {
         (void) closeAllShardLobCursors( aStatistics, aInfo );
@@ -5908,6 +5913,10 @@ IDE_RC smxTrans::closeAllLobCursors( idvSQL *aStatistics,
     {
         // Nothing to do.
     }
+
+    /* TASK-7219 Non-shard DML */
+    lock();
+    sMutexLocked = ID_TRUE;
 
     IDE_TEST( closeAllLobCursors( aStatistics, aInfo ) != IDE_SUCCESS );
 

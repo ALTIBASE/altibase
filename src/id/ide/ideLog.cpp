@@ -74,6 +74,7 @@ const SChar *ideLog::mMsgModuleName[] =
     "SM",
     "RP",
     "QP",
+    "JOB",  /* BUG-49108 */
     "SD",   /* BUG-46138 */
     "DK",
     "XA",

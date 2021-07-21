@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdx.cpp 90824 2021-05-13 05:35:21Z minku.kang $
+ * $Id: qdx.cpp 91206 2021-07-12 07:33:20Z seulki $
  **********************************************************************/
 
 #include <idl.h>
@@ -6536,15 +6536,17 @@ IDE_RC qdx::validateAlterRename( qcStatement * aStatement )
                  &sIndexID)
              != IDE_SUCCESS);
 
-    /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_INDEX ) != IDE_SUCCESS );
-
     IDE_TEST(qcm::getTableInfoByID(aStatement,
                                    sTableID,
                                    &(sParseTree->tableInfo),
                                    &(sParseTree->tableSCN),
                                    &(sParseTree->tableHandle))
              != IDE_SUCCESS);
+
+    /* BUG-48290 shard object에 대한 DDL 차단 */
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, 
+                                           SDI_DDL_TYPE_INDEX, 
+                                           sParseTree->tableInfo->name ) != IDE_SUCCESS );
 
     IDE_TEST(qcm::lockTableForDDLValidation(aStatement,
                                             sParseTree->tableHandle,

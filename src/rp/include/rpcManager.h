@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpcManager.h 90444 2021-04-02 10:15:58Z minku.kang $
+ * $Id: rpcManager.h 91258 2021-07-19 06:52:13Z minku.kang $
  **********************************************************************/
 
 #ifndef _O_RPC_MANAGER_H_
@@ -1225,6 +1225,7 @@ private:
 
 public:
     static IDE_RC lockTables( void                * aQcStatement,
+                              idBool                aIsValidate,
                               rpdMeta             * aMeta,
                               smiTBSLockValidType   aTBSLvType );
 

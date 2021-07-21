@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: sddTableSpace.cpp 86110 2019-09-02 04:52:04Z et16 $
+ * $Id: sddTableSpace.cpp 91197 2021-07-12 01:15:29Z emlee $
  *
  * Description :
  *
@@ -702,11 +702,11 @@ IDE_RC sddTableSpace::createDataFile4Redo(
             if ( smLayerCallback::isCTMgrEnabled() == ID_TRUE )
             {
                 IDE_TEST( smriChangeTrackingMgr::addDataFile2CTFile( 
-                        aSpaceNode->mHeader.mID,
-                        aFileAttr->mID,
-                        SMRI_CT_DISK_TBS,
-                        &sSlotID )
-                    != IDE_SUCCESS );
+                                                    aSpaceNode->mHeader.mID,
+                                                    aFileAttr->mID,
+                                                    SMRI_CT_DISK_TBS,
+                                                    &sSlotID )
+                          != IDE_SUCCESS );
 
                 sDataFileDescState = ID_TRUE;
             }
@@ -721,12 +721,11 @@ IDE_RC sddTableSpace::createDataFile4Redo(
             // 데이타파일헤더에 설정한다.
             // CreateLSN은 SCT_UPDATE_DRDB_CREATE_DBF 로그의 LSN
             // 파일헤더에 설정한다.
-            sddDataFile::setDBFHdr(
-                &(sFileNode->mDBFileHdr),
-                sctTableSpaceMgr::getDiskRedoLSN(),
-                &sCreateLSN,
-                &sMustRedoToLSN,
-                sSlotID );
+            sddDataFile::setDBFHdr( &(sFileNode->mDBFileHdr),
+                                    sctTableSpaceMgr::getDiskRedoLSN(),
+                                    &sCreateLSN,
+                                    &sMustRedoToLSN,
+                                    sSlotID );
 
             //PRJ-1149 , 파일 생성 시점의 LSN기록을 한다.
             if(sFileNode->mCreateMode == SMI_DATAFILE_REUSE)
@@ -919,24 +918,24 @@ IDE_RC sddTableSpace::removeDataFile( idvSQL              * aStatistics,
     {
         IDE_ASSERT( aTrans != NULL );
 
-        IDE_TEST( smLayerCallback::writeLogDropDBF(
-                      aStatistics,
-                      aTrans,
-                      aSpaceNode->mHeader.mID,
-                      aFileNode,
-                      aTouchMode,
-                      NULL ) != IDE_SUCCESS );
-
+        IDE_TEST( smLayerCallback::writeLogDropDBF( aStatistics,
+                                                    aTrans,
+                                                    aSpaceNode->mHeader.mID,
+                                                    aFileNode,
+                                                    aTouchMode,
+                                                    NULL ) 
+                   != IDE_SUCCESS );
+  
 
         /* ====================================
          * [2] 데이타 화일 리스트에서 논리적으로 삭제
          * ==================================== */
-        IDE_TEST( sddDataFile::addPendingOperation(
-                    aTrans,
-                    aFileNode,
-                    ID_TRUE, /* commit시 동작 */
-                    SCT_POP_DROP_DBF,
-                    &sPendingOp ) != IDE_SUCCESS );
+        IDE_TEST( sddDataFile::addPendingOperation( aTrans,
+                                                    aFileNode,
+                                                    ID_TRUE, /* commit시 동작 */
+                                                    SCT_POP_DROP_DBF,
+                                                    &sPendingOp )
+                  != IDE_SUCCESS );
 
 
         sPendingOp->mPendingOpFunc  = sddDiskMgr::removeFilePending;
@@ -1040,10 +1039,10 @@ IDE_RC sddTableSpace::removeAllDataFiles( idvSQL*             aStatistics,
  * 노드라면, 제거가 가능하다.
  ***********************************************************************/
 IDE_RC sddTableSpace::canRemoveDataFileNodeByName(
-    sddTableSpaceNode* aSpaceNode,
-    SChar*             aDataFileName,
-    scPageID           aUsedPageLimit,
-    sddDataFileNode**  aFileNode )
+                                        sddTableSpaceNode* aSpaceNode,
+                                        SChar*             aDataFileName,
+                                        scPageID           aUsedPageLimit,
+                                        sddDataFileNode**  aFileNode )
 {
 
     idBool           sFound;
@@ -1120,26 +1119,23 @@ IDE_RC sddTableSpace::canRemoveDataFileNodeByName(
 
  [IN]  aSpaceNode  - 테이블스페이스 노드
  [IN]  aPageID     - 검색할 페이지ID
- [OUT] aFileNode   - 페이지를 포함하는 데이타파일 노드
+ [OUT] aFileNode   - 페이지를 포함하는 데이타파일 노드 
                      유효하지 않은 경우 NULL 반환
- [OUT] aPageOffset - 데이타파일 내에서의 페이지 오프셋
- [OUT] aFstPageID  - 데이타파일의 첫번재 페이지ID
  [IN]  aFatal      - 에러타입 : FATAL 또는 ABORT
 */
 IDE_RC sddTableSpace::getDataFileNodeByPageID(
-    sddTableSpaceNode* aSpaceNode,
-    scPageID           aPageID,
-    sddDataFileNode**  aFileNode,
-    idBool             aFatal)
+                                        sddTableSpaceNode  * aSpaceNode,
+                                        scPageID             aPageID,
+                                        sddDataFileNode   ** aFileNode,
+                                        idBool               aFatal )
 {
     idBool           sFound;
     sddDataFileNode* sFileNode;
 
     IDE_ASSERT( aSpaceNode != NULL );
-    IDE_ASSERT( aFileNode != NULL);
+    IDE_ASSERT( aFileNode != NULL );
 
-    sFileNode =
-      (sddDataFileNode*)aSpaceNode->mFileNodeArr[ SD_MAKE_FID(aPageID)];
+    sFileNode = (sddDataFileNode*)aSpaceNode->mFileNodeArr[ SD_MAKE_FID(aPageID)];
 
     if( sFileNode != NULL )
     {
@@ -1167,6 +1163,7 @@ IDE_RC sddTableSpace::getDataFileNodeByPageID(
     }
     else
     {
+        IDU_FIT_POINT_RAISE( "BUG-49107@sddTableSpace::getDataFileNodeByPageID::NotFound",error_abort_not_found_filenode );
         IDE_TEST_RAISE( sFound != ID_TRUE, error_abort_not_found_filenode );
     }
 
@@ -1247,10 +1244,9 @@ void sddTableSpace::getDataFileNodeByPageIDWithoutException(
  * tablespace 노드의 datafile 노드 연결 리스트에서 주어진 파일ID에
  * 해당하는 datafile 노드를 반환한다.
  ***********************************************************************/
-IDE_RC sddTableSpace::getDataFileNodeByID(
-    sddTableSpaceNode*  aSpaceNode,
-    UInt                aID,
-    sddDataFileNode**   aFileNode)
+IDE_RC sddTableSpace::getDataFileNodeByID( sddTableSpaceNode * aSpaceNode,
+                                           UInt                aID,
+                                           sddDataFileNode  ** aFileNode )
 {
 
     sddDataFileNode* sFileNode;
@@ -1261,8 +1257,8 @@ IDE_RC sddTableSpace::getDataFileNodeByID(
     sFileNode = (sddDataFileNode*)aSpaceNode->mFileNodeArr[ aID ];
 
     if( ( sFileNode == NULL ) ||
-        SMI_FILE_STATE_IS_DROPPED( sFileNode->mState ) ||
-        ( aSpaceNode->mNewFileID <= aID ))
+        ( SMI_FILE_STATE_IS_DROPPED( sFileNode->mState ) ) ||
+        ( aSpaceNode->mNewFileID <= aID ) )
     {
         IDE_RAISE( error_not_found_filenode );
     }

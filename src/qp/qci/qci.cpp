@@ -9535,7 +9535,11 @@ IDE_RC qci::revertPropertyForShardMeta( qciStatement *aStatement )
                                           sSqlStr,
                                           sStatement->session->mMmSession )
               != IDE_SUCCESS );
-    
+
+    /* BUG-49129 shard DDL시session에 internal operation이 세팅되는데 DDL 정리시 해제해줘야 한다. */
+    IDE_TEST( qci::mSessionCallback.mSetShardInternalLocalOperation( sStatement->session->mMmSession,
+                                                                     SDI_INTERNAL_OP_NOT ) != IDE_SUCCESS );
+
     return IDE_SUCCESS;
     
     IDE_EXCEPTION_END;

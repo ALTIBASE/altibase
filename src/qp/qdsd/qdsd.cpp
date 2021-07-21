@@ -8906,7 +8906,6 @@ IDE_RC qdsd::failoverResetShardMeta( qcStatement        * aStatement,
                     switch ( sShardTableType )
                     {
                         case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
-                        case SDI_SOLO_DIST_OBJECT:
                             /* send resetShardPartitionNode to All Alive Node */
                             if ( sTableInfo->mObjectType == 'T' ) /* Table */
                             {
@@ -8980,6 +8979,44 @@ IDE_RC qdsd::failoverResetShardMeta( qcStatement        * aStatement,
                                                           aTargetNodeName,
                                                           aAliveNodeList ) != IDE_SUCCESS );
                             break;
+                        case SDI_SOLO_DIST_OBJECT:
+                            /* send resetShardPartitionNode to All Alive Node */
+                            if ( sTableInfo->mObjectType == 'T' ) /* Table */
+                            {
+                                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                 "exec dbms_shard.reset_shard_partition_node('"
+                                                 QCM_SQL_STRING_SKIP_FMT"', '"
+                                                 QCM_SQL_STRING_SKIP_FMT"', '"
+                                                 QCM_SQL_STRING_SKIP_FMT"', '"
+                                                 QCM_SQL_STRING_SKIP_FMT"', "
+                                                 QCM_SQL_VARCHAR_FMT" )",
+                                                 sTableInfo->mUserName,
+                                                 sTableInfo->mObjectName,
+                                                 aTargetNodeName,
+                                                 aFailoverNodeName,
+                                                 sRangeInfos.mRanges[j].mPartitionName );
+                            }
+                            else /* Procedure */
+                            {
+                                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                 "exec dbms_shard.reset_shard_resident_node('"
+                                                 QCM_SQL_STRING_SKIP_FMT"', '"
+                                                 QCM_SQL_STRING_SKIP_FMT"', '"
+                                                 QCM_SQL_STRING_SKIP_FMT"', '"
+                                                 QCM_SQL_STRING_SKIP_FMT"' )",
+                                                 sTableInfo->mUserName,
+                                                 sTableInfo->mObjectName,
+                                                 aTargetNodeName,
+                                                 aFailoverNodeName );
+                            }
+
+                            IDE_TEST( executeSQLNodeList( aStatement,
+                                                          SDI_INTERNAL_OP_FAILOVER,
+                                                          QCI_STMT_MASK_SP,
+                                                          sSqlStr,
+                                                          aTargetNodeName,
+                                                          aAliveNodeList ) != IDE_SUCCESS );
+                            break;
                         case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
                             /* Composite는 HA를 제공하지 않기 때문에 Failover 대상이 아니다. */
                             continue;
@@ -9000,40 +9037,14 @@ IDE_RC qdsd::failoverResetShardMeta( qcStatement        * aStatement,
                             }
                             else /* Procedure */
                             {
-                                IDE_TEST( sdi::getValueStr( sTableInfo->mKeyDataType,
-                                                            &sRangeInfos.mRanges[j].mValue,
-                                                            &sValueStr )
-                                          != IDE_SUCCESS );
-
-                                if ( sValueStr.mCharMax.value[0] == '\'' )
-                                {
-                                    // INPUT ARG ('''A''') => 'A' => '''A'''
-                                    idlOS::snprintf( sObjectValue,
-                                                     SDI_RANGE_VARCHAR_MAX_PRECISION + 1,
-                                                     "''%s''",
-                                                     sValueStr.mCharMax.value );
-                                }
-                                else
-                                {
-                                    // INPUT ARG ('A') => A => 'A'
-                                    idlOS::snprintf( sObjectValue,
-                                                     SDI_RANGE_VARCHAR_MAX_PRECISION + 1,
-                                                     "'%s'",
-                                                     sValueStr.mCharMax.value );
-                                }
-
                                 idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
                                                  "exec dbms_shard.reset_shard_resident_node('"
                                                  QCM_SQL_STRING_SKIP_FMT"', '"
                                                  QCM_SQL_STRING_SKIP_FMT"', '"
-                                                 QCM_SQL_STRING_SKIP_FMT"', '', "
-                                                 "%s, "
-                                                 QCM_SQL_VARCHAR_FMT" )",
+                                                 QCM_SQL_STRING_SKIP_FMT"', '' )",
                                                  sTableInfo->mUserName,
                                                  sTableInfo->mObjectName,
-                                                 aTargetNodeName,
-                                                 sObjectValue,
-                                                 "" );
+                                                 aTargetNodeName );
                             }
 
                             IDE_TEST( executeSQLNodeList( aStatement,
@@ -9081,40 +9092,14 @@ IDE_RC qdsd::failoverResetShardMeta( qcStatement        * aStatement,
                             }
                             else /* Procedure */
                             {
-                                IDE_TEST( sdi::getValueStr( sTableInfo->mKeyDataType,
-                                                            &sRangeInfos.mRanges[j].mValue,
-                                                            &sValueStr )
-                                          != IDE_SUCCESS );
-
-                                if ( sValueStr.mCharMax.value[0] == '\'' )
-                                {
-                                    // INPUT ARG ('''A''') => 'A' => '''A'''
-                                    idlOS::snprintf( sObjectValue,
-                                                     SDI_RANGE_VARCHAR_MAX_PRECISION + 1,
-                                                     "''%s''",
-                                                     sValueStr.mCharMax.value );
-                                }
-                                else
-                                {
-                                    // INPUT ARG ('A') => A => 'A'
-                                    idlOS::snprintf( sObjectValue,
-                                                     SDI_RANGE_VARCHAR_MAX_PRECISION + 1,
-                                                     "'%s'",
-                                                     sValueStr.mCharMax.value );
-                                }
-
                                 idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
                                                  "exec dbms_shard.reset_shard_resident_node('"
                                                  QCM_SQL_STRING_SKIP_FMT"', '"
                                                  QCM_SQL_STRING_SKIP_FMT"', '"
-                                                 QCM_SQL_STRING_SKIP_FMT"', '', "
-                                                 "%s, "
-                                                 QCM_SQL_VARCHAR_FMT" )",
+                                                 QCM_SQL_STRING_SKIP_FMT"', '') ",
                                                  sTableInfo->mUserName,
                                                  sTableInfo->mObjectName,
-                                                 aTargetNodeName,
-                                                 sObjectValue,
-                                                 "" );
+                                                 aTargetNodeName );
                             }
 
                             IDE_TEST( executeSQLNodeList( aStatement,

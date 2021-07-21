@@ -248,7 +248,7 @@ void sdtWASortMap::dumpWASortMap( sdtWASortMapHdr * aMapHdr,
                         (void)idlVA::appendFormat( aOutBuf,
                                                    aOutSize,
                                                    "%6"ID_UINT32_FMT" : "
-                                                   "0x%\n"ID_xINT64_FMT,
+                                                   "0x%"ID_xINT64_FMT"\n",
                                                    i,
                                                    (vULong)sSlotPtr );
                     }

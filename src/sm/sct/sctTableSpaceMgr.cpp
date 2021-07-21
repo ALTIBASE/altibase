@@ -889,6 +889,8 @@ IDE_RC sctTableSpaceMgr::findSpaceNodeBySpaceID( idvSQL   * aStatistics,
     sSpaceNode  = mSpaceNodeArray[aSpaceID];
     *aSpaceNode = sSpaceNode; 
 
+    IDU_FIT_POINT_RAISE ( "BUG-45857@sctTableSpaceMgr::findSpaceNodeBySpaceID",
+                           error_not_found_tablespace_node );
     IDE_TEST_RAISE( sSpaceNode == NULL,
                     error_not_found_tablespace_node );
 

@@ -92,6 +92,7 @@ private:
                                         qmsSFWGH     * aOuterQuery,
                                         qtcNode      * aNode,
                                         idBool         aContainRootsNext,
+                                        idBool         aPushIntoShardView,
                                         idBool       * aCanPushDown );
 
     /* TASK-7219 Non-shard DML */

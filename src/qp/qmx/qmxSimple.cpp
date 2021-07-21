@@ -2486,8 +2486,8 @@ IDE_RC qmxSimple::executeFastSelect( smiTrans     * aSmiTrans,
     UShort              * sBindInfo;
     const void          * sOrgRow = NULL;
     const void          * sPreRow = NULL;
-    idBool                sIsDequeue;  
-
+    idBool                sIsDequeue = ID_FALSE;
+    idBool                sIsMoveAndDelete = ID_FALSE;
     idBool                sFetchOnlyOneRow = ID_FALSE;
 
     // 초기화
@@ -2693,7 +2693,7 @@ IDE_RC qmxSimple::executeFastSelect( smiTrans     * aSmiTrans,
         {
             if ( sParseTree->forUpdate->isMoveAndDelete == ID_TRUE )
             {
-                /* Nothing to do */
+                sIsMoveAndDelete = ID_TRUE;
             }
             else
             {
@@ -2743,8 +2743,11 @@ IDE_RC qmxSimple::executeFastSelect( smiTrans     * aSmiTrans,
     sCursor.setDumpObject( sSCAN->dumpObject );
 
     //BUG-48230: DEQUEUE 성능 개선
-    sIsDequeue = ( aStatement->myPlan->parseTree->stmtKind == QCI_STMT_DEQUEUE ) ?
-                 ID_TRUE : ID_FALSE;
+    if ( ( aStatement->myPlan->parseTree->stmtKind == QCI_STMT_DEQUEUE ) &&
+         ( sIsMoveAndDelete == ID_FALSE ) )
+    {
+        sIsDequeue = ID_TRUE;
+    }
    
     IDE_TEST( sCursor.open( sSmiStmt,
                             sSCAN->table,

@@ -28,7 +28,7 @@
 #if defined(ALTIBASE_PRODUCT_HDB)
 /* HDB Version Info */
 # define IDU_ALTIBASE_MAJOR_VERSION   7
-# define IDU_ALTIBASE_MINOR_VERSION   2
+# define IDU_ALTIBASE_MINOR_VERSION   3
 # define IDU_ALTIBASE_DEV_VERSION     0
 # define IDU_ALTIBASE_PATCHSET_LEVEL  0
 # define IDU_ALTIBASE_PATCH_LEVEL     0
@@ -37,22 +37,22 @@
 #if defined(IBM_AIX) 
    #if (OS_MAJORVER >= 5) && defined(ALTIBASE_HEAPMIN)
       #if defined(COMPILE_FOR_NO_SMP)
-      #define IDU_ALTIBASE_VERSION_STRING  "7.2.0.0.0-nosmp"
+      #define IDU_ALTIBASE_VERSION_STRING  "7.3.0.0.0-nosmp"
       #else
-      #define IDU_ALTIBASE_VERSION_STRING "7.2.0.0.0"
+      #define IDU_ALTIBASE_VERSION_STRING "7.3.0.0.0"
       #endif
    #else
       #if defined(COMPILE_FOR_NO_SMP)
-      #define IDU_ALTIBASE_VERSION_STRING  "7.2.0.0.0-nosmp-noheapmin"
+      #define IDU_ALTIBASE_VERSION_STRING  "7.3.0.0.0-nosmp-noheapmin"
       #else
-      #define IDU_ALTIBASE_VERSION_STRING "7.2.0.0.0-noheapmin"
+      #define IDU_ALTIBASE_VERSION_STRING "7.3.0.0.0-noheapmin"
       #endif
    #endif
 # else
    #if defined(COMPILE_FOR_NO_SMP)
-   #define IDU_ALTIBASE_VERSION_STRING  "7.2.0.0.0-nosmp"
+   #define IDU_ALTIBASE_VERSION_STRING  "7.3.0.0.0-nosmp"
    #else
-   #define IDU_ALTIBASE_VERSION_STRING "7.2.0.0.0"
+   #define IDU_ALTIBASE_VERSION_STRING "7.3.0.0.0"
    #endif
 #endif
 

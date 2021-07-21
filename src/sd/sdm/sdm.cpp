@@ -12097,6 +12097,7 @@ IDE_RC sdm::validateShardObjectTable( smiStatement   * aStatement,
     sdfArgument          * sIterator = NULL;
     idBool                 sFound = ID_FALSE;
     sdiLocalMetaInfo       sLocalMetaInfo;
+    qcmIndex             * sTempIndex = NULL;
     
     sSmiStmtFlag = SMI_STATEMENT_NORMAL | SMI_STATEMENT_MEMORY_CURSOR;
 
@@ -12155,6 +12156,10 @@ IDE_RC sdm::validateShardObjectTable( smiStatement   * aStatement,
     // CHECK VIEW
     IDE_TEST_RAISE( ( sTableInfo->tableType == QCM_VIEW ) ||
                     ( sTableInfo->tableType == QCM_MVIEW_VIEW ), ERR_CANT_VIEW );
+
+    // CHECK NON PARTITIONED INDEX
+    IDE_TEST_RAISE( qcm::existGlobalNonPartitionedIndex( sTableInfo, &sTempIndex ) == ID_TRUE,
+                    ERR_NOT_SUPPORT_GLOBAL_NON_PARTITION_INDEX );
 
     if ( sTableInfo->tablePartitionType == QCM_NONE_PARTITIONED_TABLE )
     {
@@ -12286,6 +12291,12 @@ IDE_RC sdm::validateShardObjectTable( smiStatement   * aStatement,
     {    
         IDE_SET( ideSetErrorCode( qpERR_ABORT_QRC_CANNOT_USE_VOLATILE_TABLE )); 
     }
+    IDE_EXCEPTION( ERR_NOT_SUPPORT_GLOBAL_NON_PARTITION_INDEX );
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_ROLLBACKABLE_DDL_GLOBAL_NOT_ALLOWED_NON_PART_INDEX,
+                                  sTempIndex->name ) );
+    }
+
     IDE_EXCEPTION_END;
 
     switch ( sState )

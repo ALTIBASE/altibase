@@ -149,6 +149,20 @@ IDE_RC qciMisc::createDB( idvSQL * aStatistics,
 
 IDE_RC qciMisc::getPartitionInfoList( void                  * aQcStatement,
                                       smiStatement          * aSmiStmt,
+                                      iduVarMemList         * aMem,
+                                      UInt                    aTableID,
+                                      qcmPartitionInfoList ** aPartInfoList )
+{
+    return qcmPartition::getPartitionInfoList( ( qcStatement *)aQcStatement,
+                                               aSmiStmt,
+                                               aMem,
+                                               aTableID,
+                                               aPartInfoList,
+                                               ID_TRUE );
+}
+
+IDE_RC qciMisc::getPartitionInfoList( void                  * aQcStatement,
+                                      smiStatement          * aSmiStmt,
                                       iduMemory             * aMem,
                                       UInt                    aTableID,
                                       qcmPartitionInfoList ** aPartInfoList )
@@ -2173,7 +2187,7 @@ void qciMisc::getExecJobItems( SInt * aIems,
             break;
     }
 
-    ideLog::log( IDE_QP_0, "[GET JOB ITEMS : FAILURE] ERR-%05X : %s\n",
+    ideLog::log( IDE_JOB_0, "[GET JOB ITEMS : FAILURE] ERR-%05X : %s\n",
                  E_ERROR_CODE(ideGetErrorCode()),
                  ideGetErrorMsg(ideGetErrorCode()));
     return;
@@ -2267,7 +2281,7 @@ void qciMisc::executeJobItem( UInt     aJobThreadIndex,
             if ( qci::mSessionCallback.mCommit( aSession, ID_FALSE )
                  != IDE_SUCCESS )
             {
-                ideLog::log( IDE_QP_0, "[JOB THREAD %d][JOB %d : COMMIT FAILURE] ERR-%05X : %s",
+                ideLog::log( IDE_JOB_1, "[JOB THREAD %d][JOB %d : COMMIT FAILURE] ERR-%05X : %s",
                              aJobThreadIndex,
                              aJob,
                              E_ERROR_CODE(ideGetErrorCode()),
@@ -2278,7 +2292,7 @@ void qciMisc::executeJobItem( UInt     aJobThreadIndex,
                 if ( qci::mSessionCallback.mRollback( aSession, NULL, ID_FALSE )
                      != IDE_SUCCESS )
                 {
-                    ideLog::log( IDE_QP_0, "[JOB THREAD %d][JOB %d : COMMIT-ROLLBACK FAILURE] ERR-%05X : %s",
+                    ideLog::log( IDE_JOB_1, "[JOB THREAD %d][JOB %d : COMMIT-ROLLBACK FAILURE] ERR-%05X : %s",
                                  aJobThreadIndex,
                                  aJob,
                                  E_ERROR_CODE(ideGetErrorCode()),
@@ -2300,7 +2314,7 @@ void qciMisc::executeJobItem( UInt     aJobThreadIndex,
             if ( qci::mSessionCallback.mRollback( aSession, NULL, ID_FALSE )
                  != IDE_SUCCESS )
             {
-                ideLog::log( IDE_QP_0, "[JOB THREAD %d][JOB %d : ROLLBACK FAILURE] ERR-%05X : %s",
+                ideLog::log( IDE_JOB_1, "[JOB THREAD %d][JOB %d : ROLLBACK FAILURE] ERR-%05X : %s",
                              aJobThreadIndex,
                              aJob,
                              E_ERROR_CODE(ideGetErrorCode()),

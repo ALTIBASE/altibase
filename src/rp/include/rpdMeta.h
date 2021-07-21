@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpdMeta.h 90612 2021-04-15 08:16:38Z donghyun1 $
+ * $Id: rpdMeta.h 91258 2021-07-19 06:52:13Z minku.kang $
  **********************************************************************/
 
 #ifndef _O_RPD_META_H_
@@ -435,6 +435,7 @@ public :
                          ULong                 aLockWaitMicroSec );
 
     IDE_RC lockReplItemForDDL( void                * aQcStatement,
+                               idBool                aIsValidate,
                                smiTBSLockValidType   aTBSLvType,
                                smiTableLockMode      aLockMode,
                                ULong                 aLockWaitMicroSec );

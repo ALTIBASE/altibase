@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smrDef.h 90444 2021-04-02 10:15:58Z minku.kang $
+ * $Id: smrDef.h 91224 2021-07-14 05:36:12Z minku.kang $
  *
  * Description :
  *
@@ -730,7 +730,7 @@ typedef struct smrXaPrepareLog
 typedef struct smrXaStartReqLog
 {
     smrLogHead     mHead;
-    ID_XID         mXID;         /* PROJ-2747 Global Tx Consistent */
+    ID_XID         mGlobalXID;   /* PROJ-2747 Global Tx Consistent */
     smrLogTail     mTail;
     UChar          mLogRecFence; /* log record의 크기를 구하기 위해 사용됨 */
 } smrXaStartReqLog;
@@ -738,7 +738,7 @@ typedef struct smrXaStartReqLog
 typedef struct smrXaPrepareReqLog
 {
     smrLogHead     mHead;
-    ID_XID         mXID;         /* PROJ-2747 Global Tx Consistent */
+    ID_XID         mGlobalXID;   /* PROJ-2747 Global Tx Consistent */
     UInt           mGlobalTxId;
     UInt           mBranchTxSize;
     UChar          mLogRecFence; /* log record의 크기를 구하기 위해 사용됨 */

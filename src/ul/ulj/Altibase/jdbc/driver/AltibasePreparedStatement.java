@@ -55,6 +55,7 @@ public class AltibasePreparedStatement extends AbstractPreparedStatement
     // BUG-40081 batch처리시 임시컬럼값을 저장할때 사용된다.
     private List mTempArgValueList = new ArrayList();
     private static Logger mLogger;
+    private final boolean    mIsPingQuery;      // BUG-49143 ping query 판별용 flag
 
     public AltibasePreparedStatement(AltibaseConnection aConnection, String aSql, int aResultSetType, int aResultSetConcurrency, int aResultSetHoldability) throws SQLException
     {
@@ -75,6 +76,13 @@ public class AltibasePreparedStatement extends AbstractPreparedStatement
             aSql = AltiSqlProcessor.processEscape(aSql);
         }
         setSql(aSql);
+
+        mIsPingQuery = isPingSQL(aSql);
+        if (mIsPingQuery) // BUG-49143 ping 쿼리일 경우 prepare 요청을 처리하지 않고 그냥 리턴한다.
+        {
+            return;
+        }
+
         prepare(aSql);  // BUG-47357 prepare요청만 재사용이 가능하게 하기 위해 메소드 추출
     }
 
@@ -763,6 +771,13 @@ public class AltibasePreparedStatement extends AbstractPreparedStatement
     {
         throwErrorForClosed();
         throwErrorForBatchJob("execute");
+
+        if (mIsPingQuery)  // BUG-49143 ping 쿼리일 경우에는 execute프로토콜을 서버로 전송하지 않고 내부적으로 처리한다.
+        {
+            pingAndCreateLightweightResultSet();
+            return true;
+        }
+
         checkParameters();
 
         clearAllResults();
@@ -798,6 +813,12 @@ public class AltibasePreparedStatement extends AbstractPreparedStatement
     {
         throwErrorForClosed();
         throwErrorForBatchJob("executeQuery");
+
+        if (mIsPingQuery)  // BUG-49143 ping 쿼리일 경우에는 execute프로토콜을 서버로 전송하지 않고 내부적으로 처리한다.
+        {
+            pingAndCreateLightweightResultSet();
+            return mCurrentResultSet;
+        }
 
         // BUGBUG (2013-02-21) ResultSet을 만들지 않는 PSM을 수행하면 예외는 나지만 수행은 된다.
         // 서버에서 확인하지 않으므로 ResultSet을 만들 가능성이 있는 SELECT, PSM, DEQUEUE가 아닐때만 바로 예외를 던진다.

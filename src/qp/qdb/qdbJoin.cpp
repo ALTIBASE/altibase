@@ -223,7 +223,8 @@ IDE_RC qdbJoin::validateJoinTable( qcStatement * aStatement )
         /* BUG-48290 shard object에 대한 DDL 차단 */
         IDE_TEST( sdi::checkShardObjectForDDLInternal( aStatement,
                                                        sParseTree->userName,
-                                                       sPartAttr->oldTableName ) != IDE_SUCCESS );
+                                                       sPartAttr->oldTableName,
+                                                       NULL ) != IDE_SUCCESS );
     }
 
     /* 6. 옵션 검사 */

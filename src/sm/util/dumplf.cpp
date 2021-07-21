@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: dumplf.cpp 90489 2021-04-07 06:20:27Z justin.kwon $
+ * $Id: dumplf.cpp 91224 2021-07-14 05:36:12Z minku.kang $
  **********************************************************************/
 
 #include <idl.h>
@@ -651,7 +651,7 @@ IDE_RC dumpLogBody( UInt aLogType, smrLogHead * aLogHead, SChar *aLogPtr )
 
         case SMR_LT_XA_START_REQ:
             idlOS::memcpy( &sStartReqLog, aLogPtr, ID_SIZEOF( smrXaStartReqLog ) );
-            (void)idaXaConvertXIDToString(NULL, &sStartReqLog.mXID, sXidString, SMR_XID_DATA_MAX_LEN);
+            (void)idaXaConvertXIDToString(NULL, &sStartReqLog.mGlobalXID, sXidString, SMR_XID_DATA_MAX_LEN);
             idlOS::printf("XID: %s ", sXidString );
             break;
 

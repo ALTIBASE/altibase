@@ -103,6 +103,7 @@ extern IDE_RC dkiNotifierAddUnCompleteGlobalTxList( iduList * aGlobalTxList );
 
 typedef struct dkiUnCompleteGlobalTxInfo
 {
+    /* if Request Node == TRUE , mXID = mGlobalXID */
     ID_XID          mXID;
     smTID           mTID;
     idBool          mIsRequestNode;

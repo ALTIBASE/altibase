@@ -50,11 +50,11 @@ void sdtTempPage::init( sdtSortPageHdr  * aPageHdr,
 {
     IDE_DASSERT( SD_PAGE_SIZE -1 <= SDT_TEMP_FREEOFFSET_BITMASK );
 
-    aPageHdr->mTypeAndFreeOffset = ( aType << SDT_TEMP_TYPE_SHIFT ) |
-        ( SD_PAGE_SIZE - 1 );
+    aPageHdr->mTypeAndFreeOffset = ( aType << SDT_TEMP_TYPE_SHIFT ) | ( SD_PAGE_SIZE - 1 );
 
     IDE_DASSERT( getType( aPageHdr ) == aType );
     IDE_DASSERT( getFreeOffset( aPageHdr ) == SD_PAGE_SIZE - 1 );
+
     aPageHdr->mPrevPID   = aPrev;
     aPageHdr->mSelfPID   = aSelf;
     aPageHdr->mNextPID   = aNext;
