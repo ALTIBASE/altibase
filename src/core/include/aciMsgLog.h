@@ -53,6 +53,7 @@ typedef enum aci_log_module_t
     ACI_SM,
     ACI_RP,
     ACI_QP,
+    ACI_JOB, /* BUG-49108 */
     ACI_SD, /* BUG-46138 */
     ACI_DL,
     ACI_LK,
@@ -359,6 +360,81 @@ typedef enum aci_log_module_t
 #define ACI_QP_30   ACI_TRC_QP_30, ACI_QP, 30
 #define ACI_QP_31   ACI_TRC_QP_31, ACI_QP, 31
 #define ACI_QP_32   ACI_TRC_QP_32, ACI_QP, 32
+
+/* ------------------------------------------------
+ *  JOB
+ *  Macro: ACI_*_LEV   ==> DO_FLAG,MODULE,LEVEL
+ * 
+ * ----------------------------------------------*/
+
+#define ACI_TRC_JOB_0   1           /* always do */
+#define ACI_TRC_JOB_1   (iduProperty::getJobTrcFlag() & 0x00000001)
+#define ACI_TRC_JOB_2   (iduProperty::getJobTrcFlag() & 0x00000002)
+#define ACI_TRC_JOB_3   (iduProperty::getJobTrcFlag() & 0x00000004)
+#define ACI_TRC_JOB_4   (iduProperty::getJobTrcFlag() & 0x00000008)
+#define ACI_TRC_JOB_5   (iduProperty::getJobTrcFlag() & 0x00000010)
+#define ACI_TRC_JOB_6   (iduProperty::getJobTrcFlag() & 0x00000020)
+#define ACI_TRC_JOB_7   (iduProperty::getJobTrcFlag() & 0x00000040)
+#define ACI_TRC_JOB_8   (iduProperty::getJobTrcFlag() & 0x00000080)
+#define ACI_TRC_JOB_9   (iduProperty::getJobTrcFlag() & 0x00000100)
+#define ACI_TRC_JOB_10  (iduProperty::getJobTrcFlag() & 0x00000200)
+#define ACI_TRC_JOB_11  (iduProperty::getJobTrcFlag() & 0x00000400)
+#define ACI_TRC_JOB_12  (iduProperty::getJobTrcFlag() & 0x00000800)
+#define ACI_TRC_JOB_13  (iduProperty::getJobTrcFlag() & 0x00001000)
+#define ACI_TRC_JOB_14  (iduProperty::getJobTrcFlag() & 0x00002000)
+#define ACI_TRC_JOB_15  (iduProperty::getJobTrcFlag() & 0x00004000)
+#define ACI_TRC_JOB_16  (iduProperty::getJobTrcFlag() & 0x00008000)
+#define ACI_TRC_JOB_17  (iduProperty::getJobTrcFlag() & 0x00010000)
+#define ACI_TRC_JOB_18  (iduProperty::getJobTrcFlag() & 0x00020000)
+#define ACI_TRC_JOB_19  (iduProperty::getJobTrcFlag() & 0x00040000)
+#define ACI_TRC_JOB_20  (iduProperty::getJobTrcFlag() & 0x00080000)
+#define ACI_TRC_JOB_21  (iduProperty::getJobTrcFlag() & 0x00100000)
+#define ACI_TRC_JOB_22  (iduProperty::getJobTrcFlag() & 0x00200000)
+#define ACI_TRC_JOB_23  (iduProperty::getJobTrcFlag() & 0x00400000)
+#define ACI_TRC_JOB_24  (iduProperty::getJobTrcFlag() & 0x00800000)
+#define ACI_TRC_JOB_25  (iduProperty::getJobTrcFlag() & 0x01000000)
+#define ACI_TRC_JOB_26  (iduProperty::getJobTrcFlag() & 0x02000000)
+#define ACI_TRC_JOB_27  (iduProperty::getJobTrcFlag() & 0x04000000)
+#define ACI_TRC_JOB_28  (iduProperty::getJobTrcFlag() & 0x08000000)
+#define ACI_TRC_JOB_29  (iduProperty::getJobTrcFlag() & 0x10000000)
+#define ACI_TRC_JOB_30  (iduProperty::getJobTrcFlag() & 0x20000000)
+#define ACI_TRC_JOB_31  (iduProperty::getJobTrcFlag() & 0x40000000)
+#define ACI_TRC_JOB_32  (iduProperty::getJobTrcFlag() & 0x80000000)
+
+
+#define ACI_JOB_0    ACI_TRC_JOB_0,  ACI_JOB, 0
+#define ACI_JOB_1    ACI_TRC_JOB_1,  ACI_JOB, 1
+#define ACI_JOB_2    ACI_TRC_JOB_2,  ACI_JOB, 2 
+#define ACI_JOB_3    ACI_TRC_JOB_3,  ACI_JOB, 3 
+#define ACI_JOB_4    ACI_TRC_JOB_4,  ACI_JOB, 4 
+#define ACI_JOB_5    ACI_TRC_JOB_5,  ACI_JOB, 5 
+#define ACI_JOB_6    ACI_TRC_JOB_6,  ACI_JOB, 6 
+#define ACI_JOB_7    ACI_TRC_JOB_7,  ACI_JOB, 7 
+#define ACI_JOB_8    ACI_TRC_JOB_8,  ACI_JOB, 8 
+#define ACI_JOB_9    ACI_TRC_JOB_9,  ACI_JOB, 9 
+#define ACI_JOB_10   ACI_TRC_JOB_10, ACI_JOB, 10 
+#define ACI_JOB_11   ACI_TRC_JOB_11, ACI_JOB, 11 
+#define ACI_JOB_12   ACI_TRC_JOB_12, ACI_JOB, 12 
+#define ACI_JOB_13   ACI_TRC_JOB_13, ACI_JOB, 13 
+#define ACI_JOB_14   ACI_TRC_JOB_14, ACI_JOB, 14 
+#define ACI_JOB_15   ACI_TRC_JOB_15, ACI_JOB, 15 
+#define ACI_JOB_16   ACI_TRC_JOB_16, ACI_JOB, 16 
+#define ACI_JOB_17   ACI_TRC_JOB_17, ACI_JOB, 17 
+#define ACI_JOB_18   ACI_TRC_JOB_18, ACI_JOB, 18 
+#define ACI_JOB_19   ACI_TRC_JOB_19, ACI_JOB, 19
+#define ACI_JOB_20   ACI_TRC_JOB_20, ACI_JOB, 20 
+#define ACI_JOB_21   ACI_TRC_JOB_21, ACI_JOB, 21
+#define ACI_JOB_22   ACI_TRC_JOB_22, ACI_JOB, 22
+#define ACI_JOB_23   ACI_TRC_JOB_23, ACI_JOB, 23
+#define ACI_JOB_24   ACI_TRC_JOB_24, ACI_JOB, 24
+#define ACI_JOB_25   ACI_TRC_JOB_25, ACI_JOB, 25
+#define ACI_JOB_26   ACI_TRC_JOB_26, ACI_JOB, 26
+#define ACI_JOB_27   ACI_TRC_JOB_27, ACI_JOB, 27
+#define ACI_JOB_28   ACI_TRC_JOB_28, ACI_JOB, 28
+#define ACI_JOB_29   ACI_TRC_JOB_29, ACI_JOB, 29
+#define ACI_JOB_30   ACI_TRC_JOB_30, ACI_JOB, 30
+#define ACI_JOB_31   ACI_TRC_JOB_31, ACI_JOB, 31
+#define ACI_JOB_32   ACI_TRC_JOB_32, ACI_JOB, 32
 
 /* ------------------------------------------------
  *  SD  BUG-46138 

@@ -46,6 +46,7 @@ typedef struct aciProperty
     acp_uint32_t   mServerTrcFlag;
     acp_uint32_t   mSmTrcFlag;
     acp_uint32_t   mQpTrcFlag;
+    acp_uint32_t   mJobTrcFlag; /* BUG-49108 */
     acp_uint32_t   mSdTrcFlag;  /* BUG-46138 */
     acp_uint32_t   mRpTrcFlag;
     acp_uint32_t   mDlTrcFlag;
@@ -173,6 +174,12 @@ ACP_INLINE acp_uint32_t aciPropertyGetSmTrcFlag(void)
 ACP_INLINE acp_uint32_t aciPropertyGetQpTrcFlag(void)
 {
     return gAciProperty.mQpTrcFlag;
+}
+
+/* BUG-49108 */
+ACP_INLINE acp_uint32_t aciPropertyGetJobTrcFlag(void)
+{
+    return gAciProperty.mJobTrcFlag;
 }
 
 /* BUG-46138 */

@@ -49,6 +49,9 @@ void testGetMethods(void)
 
     ACT_CHECK(aciPropertyGetQpTrcFlag() == 0);
 
+    /* BUG-49108*/
+    ACT_CHECK(aciPropertyGetJobTrcFlag() == 0);
+
     /* BUG-46138 */
     ACT_CHECK(aciPropertyGetSdTrcFlag() == 0);
 
