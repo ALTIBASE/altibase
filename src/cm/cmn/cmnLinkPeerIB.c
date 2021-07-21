@@ -418,7 +418,9 @@ ACI_RC cmnLinkPeerConnectIB(cmnLinkPeer        *aLink,
 
     ACI_EXCEPTION(FailedToLoadIBLibrary)
     {
-        aciSetErrorCodeAndMsg(gIB.mLibErrorCode, gIB.mLibErrorMsg);
+        ACI_SET(aciSetErrorCode(cmERR_ABORT_DLSYM,
+                                CMN_IB_RDMACM_LIB_NAME,
+                                gIB.mLibErrorMsg));
     }
     ACI_EXCEPTION_END;
 

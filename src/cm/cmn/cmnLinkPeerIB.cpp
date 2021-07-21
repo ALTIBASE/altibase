@@ -417,7 +417,9 @@ IDE_RC cmnLinkPeerConnectIB(cmnLinkPeer       *aLink,
 
     IDE_EXCEPTION(FailedToLoadIBLibrary)
     {
-        IDE_SET(ideSetErrorCodeAndMsg(gIB.mLibErrorCode, gIB.mLibErrorMsg));
+        IDE_SET(ideSetErrorCode( cmERR_ABORT_DLSYM,
+                                 CMN_IB_RDMACM_LIB_NAME,
+                                 gIB.mLibErrorMsg ));
     }
     IDE_EXCEPTION(GetAddrInfoError);
     {
