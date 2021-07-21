@@ -23,7 +23,6 @@ compile:
 
 alint:
 	$(MAKE) $(DIRS) SUBDIR_TARGET=alint
-
 clean:
 	$(MAKE) $(DIRS) SUBDIR_TARGET=clean
 	$(MAKE) -C lib clean
