@@ -1,0 +1,9 @@
+package Altibase.jdbc.driver;
+
+import Altibase.jdbc.driver.logging.TraceFlag;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class AltibaseVersion 
+{

@@ -1,0 +1,11 @@
+Replication Module
+    include/ : header files
+    msg/ : error code and message
+    rpr/ : Recovery
+    rpi/ : External Interface
+    rpu/ : Utility
+    rpn/ : Network
+    rpx/ : eXecutor
+    rpd/ : Data, Meta
+    rps/ : Storage
+    rpc/ : Control

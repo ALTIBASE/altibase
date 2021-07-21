@@ -1,0 +1,24 @@
+/***********************************************************************
+ * Copyright 1999-2000, RTBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: config-altibase.h.in 26440 2008-06-10 04:02:48Z jdlee $
+ **********************************************************************/
+
+#ifndef PDL_CONFIG_ALTIBASE_H
+#define PDL_CONFIG_ALTIBASE_H
+
+#undef ALTIBASE_LIMIT_CHECK
+
+// # if defined(ALTIBASE_LIMIT_CHECK)
+//
+//  extern int iduCheckMemoryError();
+//  extern int iduCheckDiskError();
+//  extern int iduCheckDescError();
+//  extern int iduCheckShmError();
+//
+// # endif
+
+#endif /* PDL_CONFIG_ALTIBASE_H */

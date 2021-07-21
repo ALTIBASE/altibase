@@ -1,0 +1,20 @@
+##############  Altibase Client Config File ###################
+
+[ newjdbc_unittest ]
+
+Server=127.0.0.1
+Port=20300
+User=sys
+Password=manager
+
+[ newjdbc_failovertest ]
+
+Server=127.0.0.1
+Port=21300
+User=sys
+Password=manager
+SessionFailOver=off
+ConnectionRetryCount=1
+ConnectionRetryDelay=7
+AlternateServers=(127.0.0.1:20300)
+

@@ -1,0 +1,16 @@
+package Altibase.jdbc.driver.ex;
+
+final class SQLStateMap
+{
+    public static String getSQLState(int aErrorCode)
+    {
+        for (int i = 0; i < MAP_ERRORCODE.length; i++)
+        {
+            if (MAP_ERRORCODE[i] == aErrorCode)
+            {
+                return MAP_SQLSTATE[i];
+            }
+        }
+        return "HY000"; // General Error
+    }
+

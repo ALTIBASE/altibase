@@ -1,0 +1,24 @@
+# if running bash
+if [ -n "$BASH_VERSION" ]; then
+    # include .bashrc if it exists
+    if [ -f "$HOME/.bashrc" ]; then
+        . "$HOME/.bashrc"
+    fi
+fi
+
+# set PATH so it includes user's private bin directories
+PATH="$HOME/bin:$HOME/.local/bin:$PATH"
+
+
+export ALTIDEV_HOME=/home/picocluster/altidev4
+export ALTIBASE_DEV=${ALTIDEV_HOME}
+export ALTIBASE_HOME=${ALTIDEV_HOME}/altibase_home
+export ALTI_HOME=${ALTIDEV_HOME}/altibase_home
+export ALTIBASE_NLS_USE=US7ASCII
+export ALTIBASE_PORT_NO=20300
+export ADAPTER_JAVA_HOME=/usr/lib/jvm/java-8-oracle
+#export JAVA_HOME=/usr/java/jdk1.5.0_22
+export PATH=.:${ALTIBASE_HOME}/bin:${JAVA_HOME}/bin:${PATH}
+export CLASSPATH=.:${JAVA_HOME}/lib:${JAVA_HOME}/jre/lib:${ALTIBASE_HOME}/lib/Altibase.jar:${CLASSPATH}
+export LD_LIBRARY_PATH=$ADAPTER_JAVA_HOME/jre/lib/amd64/server:${ALTIBASE_HOME}/lib:${LD_LIBRARY_PATH}
+

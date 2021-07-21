@@ -1,0 +1,34 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-DUMMY.ic 48789 2011-09-27 08:36:15Z djin $
+ **********************************************************************/
+/* ------------------------------------------------
+ *
+ * DUMMY Latch Implementation
+ *
+ * ----------------------------------------------*/
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj)    0
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_DASSERT(1); /* Not support */
+    
+    return 0;
+}
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_DASSERT(1);  /* Not support */
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_DASSERT(1);  /* Not support */
+}
+

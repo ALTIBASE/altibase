@@ -1,0 +1,68 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-IBM_AIX.ic 48789 2011-09-27 08:36:15Z djin $
+ **********************************************************************/
+
+/* ------------------------------------------------
+ *
+ * AIX O/S Latch Implementation
+ *
+ * ----------------------------------------------*/
+
+#include <sys/atomic_op.h>
+#include <unistd.h>
+#include <sched.h>
+
+#if defined(__GNUC__)
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj)    0
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return 0;
+    
+}
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+}
+#else
+  /* ------------------------------------------------
+   *  Native Compilter 
+   * ----------------------------------------------*/
+
+void do_sync (void);      /* prototype */
+#pragma mc_func do_sync {"7c0004ac"}
+#pragma reg_killed_by do_sync
+
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return (_check_lock((SInt*)aObj, 0, 1) == 0) ? 1 : 0;
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) ((*obj) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  do_sync();
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    do_sync();
+    _clear_lock((SInt*)aObj, 0);
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    releaseNativeMutex(aObj);
+}
+
+#endif /* native compiler */
+

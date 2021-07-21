@@ -1,0 +1,13 @@
+stripslash.o: stripslash.c /usr/include/stdc-predef.h config.h dirname.h \
+ /usr/lib/gcc/aarch64-linux-gnu/5/include/stdbool.h \
+ /usr/lib/gcc/aarch64-linux-gnu/5/include/stddef.h
+
+/usr/include/stdc-predef.h:
+
+config.h:
+
+dirname.h:
+
+/usr/lib/gcc/aarch64-linux-gnu/5/include/stdbool.h:
+
+/usr/lib/gcc/aarch64-linux-gnu/5/include/stddef.h:

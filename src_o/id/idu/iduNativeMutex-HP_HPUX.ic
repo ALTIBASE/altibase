@@ -1,0 +1,110 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-HP_HPUX.ic 48789 2011-09-27 08:36:15Z djin $
+ **********************************************************************/
+
+/* ------------------------------------------------
+ *
+ * HPUX O/S Latch Implementation
+ *
+ * ----------------------------------------------*/
+
+#include <sys/pstat.h>
+#include <stdio.h>
+#include <time.h>
+
+#if defined(__GNUC__)
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj)    0
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return 0;
+    
+}
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+}
+
+#else
+  /* ------------------------------------------------
+   *  Native Compilter 
+   * ----------------------------------------------*/
+
+# if defined(IA64_HP_HPUX)
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return _Asm_xchg((_Asm_sz)_SZ_W, (int*)aObj, 1, (_Asm_ldhint)_LDHINT_NONE) == 0 ? 1 : 0;
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj)   ((*obj) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  _Asm_mf();
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    _Asm_mf();
+    _Asm_st_volatile((_Asm_sz)_SZ_W, (_Asm_sthint)_STHINT_NONE, (int*)aObj, 0);
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    _Asm_st_volatile((_Asm_sz)_SZ_W, (_Asm_sthint)_STHINT_NONE, (int*)aObj, 0);
+    _Asm_mf();
+}
+
+#  else /* other hpux except ia64 */
+
+#if defined(COMPILE_64BIT)
+    #define IDU_LATCH_ALIGNADDR(x) (volatile int*)((long)(x)+15&~0xf) /* 64 bit */
+#else
+    #define IDU_LATCH_ALIGNADDR(x) (volatile int*)((int)(x)+15&~0xf) /* 32 bit */
+#endif
+
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    register sValue;
+    register volatile int *lptr;
+    
+    lptr = IDU_LATCH_ALIGNADDR(aObj); /* Move input argument to register */
+    
+    *((volatile char*)lptr) = 0;
+                
+    _asm("LDCWS", 0, 0, lptr, sValue);
+    
+    return (sValue != 0 ? 1 : 0);
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) (*(IDU_LATCH_ALIGNADDR(obj)) == 1)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    if(1)                                     
+    {
+        (*IDU_LATCH_ALIGNADDR(aObj) = 1);
+    }
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    aObj->sema[0] = 1;
+    aObj->sema[1] = 1;
+    aObj->sema[2] = 1;
+    aObj->sema[3] = 1;
+}
+
+#  endif
+
+#endif /* native compiler */
+

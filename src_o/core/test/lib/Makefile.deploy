@@ -1,0 +1,28 @@
+# Copyright 1999-2007, ALTIBASE Corporation or its subsidiaries.
+# All rights reserved.
+
+# $Id: Makefile 11322 2010-06-23 05:38:37Z djin $
+#
+
+ifeq ($(COMPILE_BIT),)
+COMPILE_BIT=32
+endif
+
+include ../../makefiles/root.mk
+
+INCLUDES += $(ALTICORE_HOME)/include
+LIBDIRS += $(ALTICORE_HOME)/lib$(COMPILE_BIT)
+
+CORE_LIBS = alticore_$(ALTICORE_VERSION)
+
+SHOBJ_TARGETS              = libtestAcpDl_shobj
+SHLIB_TARGETS              = libtestAcpDl_shlib
+
+libtestAcpDl_shobj_SRCS    = libtestAcpDl.c
+libtestAcpDl_shobj_DEFINES = ACP_CFG_DL_EXPORT
+
+libtestAcpDl_shlib_NAME    = testAcpDl
+libtestAcpDl_shlib_OBJS    = $(libtestAcpDl_shobj_SRCS:.c=$(SHOBJ_SUF))
+libtestAcpDl_shlib_SHLIBS  = $(CORE_LIBS)
+
+include $(MAKEFILES_DIR)/rule.mk

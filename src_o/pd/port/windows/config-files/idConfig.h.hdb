@@ -1,0 +1,7 @@
+/* -*- c -*- */
+
+#define ALTIBASE_PRODUCT "hdb"
+#define ALTIBASE_PRODUCT_HDB 1
+
+#define ALTIBASE_ENV_PREFIX "ALTIBASE_"
+#define PRODUCT_PREFIX ""

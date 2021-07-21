@@ -1,0 +1,97 @@
+#!/usr/bin/env python
+#encoding: utf-8
+
+# List of files with unittest data which should be placed
+# to build directory before unittest run
+ut_data_files = [
+        'testAcpStdText',
+        'testAcpDir.c',
+        'testAclConf.0.conf',
+        'testAclConf.1.conf',
+        'testAclConf.2.conf',
+        'testAclConf.3.conf'
+]
+
+# List unittest sources which using message object
+ut_msg_files_str = [
+        'testAceMsgTable.c',
+        'testAclLog.c',
+        'testAclLogThreads.c',
+        'testAcpList.c'
+]
+
+# List of files which should be excluded from unittesting
+ut_search_exclude = [
+        'testPerf*.c',
+        'test*Perf.c',
+        'testAcpByteOrder.c'
+]
+
+# Add unittests with message using to exclude list
+# They will be processed separately
+ut_search_exclude.extend(ut_msg_files_str)
+
+# Find unittest sources files
+ut_files_list = bld.path.ant_glob('test*.c', excl=ut_search_exclude)
+# Find unittests which using message object
+ut_msg_files_list = bld.path.ant_glob(ut_msg_files_str)
+
+# TODO: place it to tools
+# Copy unittest data files to build directory
+from shutil import copy
+for data_file_str in ut_data_files:
+    data_file_node = bld.path.find_node(data_file_str)
+    data_file_node.get_bld().parent.mkdir()
+    copy(data_file_node.abspath(), data_file_node.get_bld().abspath())
+
+# Build message obect
+bld.objects(
+        name         = 'msg_obj',
+        features     = 'c',
+        source       = 'msg/testMsg.msg',
+        target       = 'testMsg',
+        use          = 'alticore_includes'
+)
+
+# Build libtestAcpDl
+bld.shlib(
+        name         = 'testAcpDl',
+        source       = 'lib/libtestAcpDl.c',
+        target       = 'lib/testAcpDl',
+        install_path = None,
+        use          = 'alticore_includes alticore_shlib'
+)
+
+# Build testDll
+bld.shlib(
+        name         = 'testDll',
+        source       = 'dll/testDllMain.c',
+        target       = 'dll/testDll',
+        install_path = None,
+        use          = 'alticore_includes alticore_shlib'
+)
+
+# Add group to be sure that libtestAcpDl, testDll and testMsg build before unittests
+bld.add_group()
+
+# Build generic unittests
+for ut_file in ut_files_list:
+    ut_name = ut_file.get_bld().change_ext('')
+    bld.program(
+            features     = 'test',
+            source       = [ut_file],
+            target       = ut_name,
+            install_path = None,
+            use          = 'alticore_includes altictest_stlib alticore_stlib'
+    )
+
+# Build unittests which using message object
+for ut_file in ut_msg_files_list:
+    ut_name = ut_file.get_bld().change_ext('')
+    bld.program(
+            features     = 'test',
+            source       = [ut_file],
+            target       = ut_name,
+            install_path = None,
+            use          = 'msg_obj altictest_stlib alticore_stlib'
+    )

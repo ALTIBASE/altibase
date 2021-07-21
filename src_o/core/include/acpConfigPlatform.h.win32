@@ -1,0 +1,58 @@
+/* -*- c++ -*- */
+
+#if !defined(_O_ACP_CONFIG_PLATFORM_H_)
+#define _O_ACP_CONFIG_PLATFORM_H_
+
+
+/* CPU Information */
+
+#define ALTI_CFG_CPU "X86"
+/* #undef ALTI_CFG_CPU_ALPHA */
+/* #undef ALTI_CFG_CPU_IA64 */
+/* #undef ALTI_CFG_CPU_PARISC */
+/* #undef ALTI_CFG_CPU_POWERPC */
+/* #undef ALTI_CFG_CPU_SPARC */
+#define ALTI_CFG_CPU_X86 1
+
+/* OS Information */
+
+#define ALTI_CFG_OS "WINDOWS"
+/* #undef ALTI_CFG_OS_AIX */
+/* #undef ALTI_CFG_OS_CYGWIN */
+/* #undef ALTI_CFG_OS_HPUX */
+/* #undef ALTI_CFG_OS_ITRON */
+/* #undef ALTI_CFG_OS_LINUX */
+/* #undef ALTI_CFG_OS_QNX */
+/* #undef ALTI_CFG_OS_SOLARIS */
+/* #undef ALTI_CFG_OS_TRU64 */
+#define ALTI_CFG_OS_WINDOWS 1
+
+/* OS Version */
+
+#define ALTI_CFG_OS_MAJOR 0
+#define ALTI_CFG_OS_MINOR 0
+
+/* Byte Order */
+
+/* #undef ACP_CFG_BIG_ENDIAN */
+#define ACP_CFG_LITTLE_ENDIAN 1
+
+/* Library Extension Set */
+
+#define ACP_DL_MOD_FULL_FORMAT "%s\\%s"
+#define ACP_DL_MOD_NAME_FORMAT "%s"
+#define ACP_DL_LIB_FULL_FORMAT "%s\\%s.dll"
+#define ACP_DL_LIB_NAME_FORMAT "%s.dll"
+#define ACP_DL_LIB_EXT "dll"
+
+/* Binary Extension Set */
+
+#define ACP_PROC_EXE_NAME_FORMAT "%s.exe"
+#define ACP_PROC_EXE_EXT "exe"
+
+/* C Library Support */
+#define HAVE_ECVT_S
+#define HAVE_FCVT_S
+#define HAVE_GCVT_S
+
+#endif

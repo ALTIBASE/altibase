@@ -1,0 +1,161 @@
+#!/bin/sh
+
+#if [ "$#" -eq 1 -o  "$#" -ge 4 -a "$1" == "-f" -a "$3" == "-t" ]
+#then
+#	if [ $# -eq 4 ]
+#	then
+#		startFile=$2
+#		endFile=$4
+#fi
+#else
+#	echo "Usage: tdxlf 로그파일"
+#	echo "       tdxlf [-f] [시작파일] [-t] [마지막파일] [-v] [tid1] [tid2] ..."
+#fi
+
+#file list 생성
+fileList=$1
+
+filtLogList="
+:SMR_LT_CHKPT_BEGIN,
+:SMR_LT_CHKPT_END,
+:SMR_LT_TRANS_COMMIT,
+:SMR_LT_TRANS_ABORT,
+:SMR_LT_SAVEPOINT_SET,
+:SMR_LT_SAVEPOINT_ABORT,
+:SMR_LT_UPDATE,
+:SMR_SMC_PERS_INSERT_ROW,
+:SMR_SMC_PERS_UPDATE_INPLACE_ROW,
+:SMR_SMC_PERS_UPDATE_VERSION_ROW,
+:SMR_SMC_PERS_DELETE_VERSION_ROW,
+:SDR_DLT_UNDOABLE,
+:SDR_SDC_INSERT_UNDO_REC,
+:SMR_DLT_REDOONLY,
+:SDR_SDC_INSERT_REC,
+:SDR_SDC_UPDATE_REC,               
+:SDR_SDC_DELETE_MARK_REC_FOR_UPDATE,
+:SDR_SDC_INSERT_REC_FOR_UPDATE,
+:SDR_SDC_DELETE_MARK_REC,  
+:SMR_LT_NTA,
+:SMR_OP_CREATE_TABLE,
+:SMR_OP_CREATE_INDEX,
+:SMR_DLT_FILEOPER,
+:SDD_FOP_CREATE_TBS,
+:SDD_FOP_DROP_TBS,
+:SDD_FOP_CREATE_DBF,
+:SDD_FOP_DROP_DBF,
+:SDD_FOP_EXTEND_DBF,
+:SDD_FOP_SHRINK_DBF,
+:SDD_FOP_SET_AUTOEXTMODE_DBF,
+"
+# Initialize
+rm -f logfile.tdx analyzelf
+
+#
+maxProcessNum=`grep TRANSACTION_TABLE_SIZE $ALTIBASE_HOME/conf/altibase.properties | gawk -F"=" '{ print $2; }' | sed 's/ //g'`
+
+# Execute dumplf
+for fileName in $fileList
+do
+    $ALTIBASE_HOME/bin/dumplf $fileName | sed 's/ //g' >> dumplf_result
+done
+
+# It makes TID List & sets Process Number
+flag=0
+pCount=0
+filtTidList=""
+pidList=""
+					
+if [ "$2" == "-v" -o "$5" == "-v" ]
+then
+	for arg
+	do
+	    if [ $arg = @ ]
+	    then
+	        break
+	    fi
+	    if [ $flag -eq 1 ]
+	    then
+	        filtTidList=$filtTidList"TID:"$arg", "
+	        pidList=$pidList$arg":P"$pCount" "
+	        pCount=`expr $pCount + 1`
+	    fi
+	    if [ $arg = "-v" ]
+	    then
+	        flag=1
+	    fi
+	done
+	for filt in $filtTidList
+	do
+		grep "$filt" dumplf_result >> filtedTID_dumplf
+	done
+else
+	sed 's/[:,]/\|/g' dumplf_result | gawk -F"|" '{ print $6; }' | sort -u -n | sed '/^$/d' > filtTidList
+	for arg in `cat filtTidList`
+	do
+		slotNum=`echo $(( $arg & ( $maxProcessNum - 1 ) ))`
+        pidList=$pidList$arg":P"$slotNum" "
+        pCount=`expr $pCount + 1`
+    done
+	mv dumplf_result filtedTID_dumplf
+fi
+echo $pidList
+for filt in $filtLogList
+do
+	grep "$filt" filtedTID_dumplf >> filted_dumplf
+done
+							
+# { print $2"|"$6"|"$10"|"$22"|"$25"|"$32; } => { SN|LSN|TID|LT|UTYPE|OID }        
+sed 's/[<,:,>]/\|/g' filted_dumplf > tdxTemp
+
+temp=""
+tempForTdx=""
+tempForAnalize=""
+export LANG=C
+for line in `cat tdxTemp`
+do
+    LT=`echo $line | gawk -F"|" '{ print $22; }'`
+    UT=`echo $line | gawk -F"|" '{ print $25; }'`
+	if [ "$LT" == "SMR_SMC_PERS_INSERT_ROW" -o "$UT" == "SMR_SMC_PERS_INSERT_ROW" ]
+	then
+        temp=`echo $line | gawk -F"|" '{ print $2"|"$6"|"$10"|TID:"$10",LT:"$22",UT:"$25",TblOID:"$32; }'`
+		tempForTdx=`printf "$tempForTdx$temp\r"`
+        temp=`echo $line | gawk -F"|" '{ print "TID : "$10", SN : "$2", LSN : "$6", LT : "$22", UT : "$25", TblOID : "$32; }'`
+		tempForAnalyze=`printf "$tempForAnalyze$temp\r"`
+	else
+        temp=`echo $line | gawk -F"|" '{ print $2"|"$6"|"$10"|TID:"$10",LT:"$22; }'`
+		tempForTdx=`printf "$tempForTdx$temp\r"`
+        temp=`echo $line | gawk -F"|" '{ print "TID : "$10", SN : "$2", LSN : "$6", LT : "$22; }'`
+		tempForAnalyze=`printf "$tempForAnalyze$temp\r"`
+    fi
+done
+echo $tempForTdx | sed 's//\n/g' > tdxTemp_dump
+echo $tempForAnalyze | sed 's//\n/g' > analyzelf
+#echo $tempForTdx > tdxTemp_dumplf
+#echo $tempForAnalyze > tempAnalyze
+#sed 's//\n/g' tdxTemp_dumplf > tdxTemp_dump
+#sed 's//\n/g' tempAnalyze > analyzelf
+
+#if [ "$2" == "-v" -o "$5" == "-v" ]
+#then
+	sed 's/ //g' tdxTemp_dump | sed '1d' | sed '$d' > tdxTemp_arrange
+	mv tdxTemp_arrange tdxTemp_dump
+	for line in `cat tdxTemp_dump`
+	do
+		tid=`echo $line | gawk -F"|" '{ print $3 }'`
+		for comp in $pidList 
+		do
+			compTid=`echo $comp | gawk -F":" '{ print $1; }'`
+			if [ "$tid" == "$compTid" ]
+			then
+				pid=`echo $comp | gawk -F":" '{ print $2; }'`
+				head=`echo $line | gawk -F"|" '{ print "&^<@!START!@>&^"$1"&^"; }' | sed 's/ //g'`
+				tail=`echo $line | gawk -F"|" '{ print "&^"$4; }' | sed 's/ //g'`
+				echo $head""$pid""$tail >> logfile.tdx
+				break;
+			fi
+		done	
+	done
+	echo "<@!START!@>" >> logfile.tdx
+#fi
+# Finalize
+rm -f dumplf_result filtedLog_dumplf filted_dumplf tdxTemp tdxTemp_dump filtTidList filtedTID_dumplf

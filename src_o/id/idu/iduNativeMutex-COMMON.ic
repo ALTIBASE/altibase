@@ -1,0 +1,51 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-COMMON.ic 29277 2008-11-13 07:17:24Z newdaily $
+ **********************************************************************/
+
+/* ------------------------------------------------
+ *
+ * COMMON Defines & Functions for Native Latch
+ *
+ * ----------------------------------------------*/
+
+#define IDU_LATCH_MAX_RANDOM_VALUE                  0x7FFFFFFF
+
+static void sleepForNativeMutex()
+{
+    if(iduMutexSleepType() == IDU_MUTEX_SLEEP)
+    {
+        idlOS_sleep(0, iduLatchMinSleep());
+    }
+    else
+    {
+        idlOS_thryield();
+    }
+}
+
+static void holdNativeMutex(iduNativeMutexObj *aObj, UInt aSpinCount)
+{
+    UInt sSpins;
+
+    IDE_DASSERT(aSpinCount > 0);
+
+    while(1)
+    {
+        for(sSpins = 0; sSpins < aSpinCount; sSpins++)
+        {
+            if( IDU_NATIVEMUTEX_IS_UNLOCKED(aObj))
+            {
+                if (tryHoldNativeMutex(aObj) == 1)
+                {
+                    IDU_NATIVEMUTEX_HOLD_POST_OP(aObj);
+                    return;
+                }
+            }
+        }
+        sleepForNativeMutex();
+    }
+}

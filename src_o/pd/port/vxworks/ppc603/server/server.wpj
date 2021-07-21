@@ -1,0 +1,246 @@
+Document file - DO NOT EDIT
+
+<BEGIN> BUILD_PPC603gnu_BUILDRULE
+server.out
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_AR
+arppc
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_ARCHIVE
+$(PRJ_DIR)/PPC603gnu/server.a
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_AS
+ccppc
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_CC
+ccppc
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_CC_ARCH_SPEC
+-mcpu=603 -mstrict-align
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_CFLAGS
+-O2 \
+	-mcpu=603 \
+	-mstrict-align \
+	-ansi \
+	-fno-builtin \
+	-I. \
+	-I$(WIND_BASE)/target/h/ \
+	-IC:/work/altidev4/src/pd/include \
+	-IC:/work/altidev4/src/pd/makeinclude \
+	-IC:/work/altidev4/src/id \
+	-IC:/work/altidev4/src/id/include \
+	-IC:/work/altidev4/src/id/msg \
+	-IC:/work/altidev4/src/cm/include \
+	-IC:/work/altidev4/src/cm/msg \
+	-IC:/work/altidev4/src/sm/include \
+	-IC:/work/altidev4/src/sm/msg \
+	-IC:/work/altidev4/src/mt/include \
+	-IC:/work/altidev4/src/mt/msg \
+	-IC:/work/altidev4/src/qp/include \
+	-IC:/work/altidev4/src/qp/msg \
+	-IC:/work/altidev4/src/rp/include \
+	-IC:/work/altidev4/src/rp/msg \
+	-IC:/work/altidev4/src/pd/port/windows/include \
+	-IC:/work/altidev4/src/qp/qcp \
+	-IC:/work/altidev4/src/st/include \
+	-IC:/work/altidev4/src/st/msg \
+	-IC:/work/altidev4/src/mm/include \
+	-IC:/work/altidev4/src/mm/msg \
+	-IC:/work/altidev4/src/lk/include \
+	-IC:/work/altidev4/src/lk/msg \
+	-IC:/work/altidev4/src/ul/include \
+	-IC:/work/altidev4/src/ul/msg \
+	-IC:/work/altidev4/src/ul/include/unix-odbc \
+	-IC:/work/altidev4/src/em/include \
+	-DCPU=PPC603 \
+	-DTOOL_FAMILY=gnu \
+	-DTOOL=gnu
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_CFLAGS_AS
+-g \
+	-mcpu=603 \
+	-mstrict-align \
+	-ansi \
+	-fno-builtin \
+	-P \
+	-xassembler-with-cpp \
+	-I. \
+	-I$(WIND_BASE)/target/h/ \
+	-DCPU=PPC603 \
+	-DTOOL_FAMILY=gnu \
+	-DTOOL=gnu
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_CPP
+ccppc -E -P
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_HEX_FLAGS
+
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_LD
+ldppc
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_LDDEPS
+
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_LDFLAGS
+-X -N
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_LD_PARTIAL
+ccppc -r -nostdlib -Wl,-X
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_LD_PARTIAL_FLAGS
+-X -r
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_NM
+nmppc
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_OPTION_DEFINE_MACRO
+-D
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_OPTION_DEPEND
+-M -w
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_OPTION_GENERATE_DEPENDENCY_FILE
+-MD
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_OPTION_INCLUDE_DIR
+-I
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_OPTION_LANG_C
+-xc
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_OPTION_UNDEFINE_MACRO
+-U
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_POST_BUILD_RULE
+
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_PRJ_LIBS
+$(PRJ_DIR)/../altibase\PPC603gnu\altibase.a \
+	$(WIND_BASE)\host\$(WIND_HOST_TYPE)\lib\gcc-lib\powerpc-wrs-vxworks\gcc-2.96\PPC603gnu\libgcc.a
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_SIZE
+sizeppc
+<END>
+
+<BEGIN> BUILD_PPC603gnu_MACRO_TOOL_FAMILY
+gnu
+<END>
+
+<BEGIN> BUILD_PPC603gnu_RO_DEPEND_PATH
+{$(WIND_BASE)/target/h/} \
+	{$(WIND_BASE)/target/src/} \
+	{$(WIND_BASE)/target/config/}
+<END>
+
+<BEGIN> BUILD_PPC603gnu_TC
+::tc_PPC603gnu
+<END>
+
+<BEGIN> BUILD_RULE_archive
+
+<END>
+
+<BEGIN> BUILD_RULE_objects
+
+<END>
+
+<BEGIN> BUILD_RULE_server.out
+
+<END>
+
+<BEGIN> BUILD_RULE_server.pl
+
+<END>
+
+<BEGIN> BUILD__CURRENT
+PPC603gnu
+<END>
+
+<BEGIN> BUILD__LIST
+PPC603gnu
+<END>
+
+<BEGIN> CORE_INFO_TYPE
+::prj_vxApp
+<END>
+
+<BEGIN> CORE_INFO_VERSION
+2.2
+<END>
+
+<BEGIN> FILE_C:/work/altidev4/src/pd/port/vxworks/pentium/server/sample.cpp_dependDone
+TRUE
+<END>
+
+<BEGIN> FILE_C:/work/altidev4/src/pd/port/vxworks/pentium/server/sample.cpp_dependencies
+$(WIND_BASE)/host/$(WIND_HOST_TYPE)/lib/gcc-lib/powerpc-wrs-vxworks/gcc-2.96/include/stddef.h \
+	$(WIND_BASE)/host/$(WIND_HOST_TYPE)/lib/gcc-lib/powerpc-wrs-vxworks/gcc-2.96/include/stdarg.h \
+	$(WIND_BASE)/host/$(WIND_HOST_TYPE)/lib/gcc-lib/powerpc-wrs-vxworks/gcc-2.96/include/va-ppc.h \
+	c:/work/altidev4/src/ul/include/sqlcli.h \
+	c:/work/altidev4/src/ul/include/unix-odbc/sqltypes.h \
+	c:/work/altidev4/src/ul/include/unix-odbc/sql.h \
+	c:/work/altidev4/src/ul/include/unix-odbc/sqlext.h \
+	c:/work/altidev4/src/ul/include/unix-odbc/sqlucode.h
+<END>
+
+<BEGIN> FILE_C:/work/altidev4/src/pd/port/vxworks/pentium/server/sample.cpp_objects
+sample.o
+<END>
+
+<BEGIN> FILE_C:/work/altidev4/src/pd/port/vxworks/pentium/server/sample.cpp_tool
+C/C++ compiler
+<END>
+
+<BEGIN> FILE_C:/work/altidev4/src/pd/port/vxworks/pentium/server/server.cpp_dependDone
+TRUE
+<END>
+
+<BEGIN> FILE_C:/work/altidev4/src/pd/port/vxworks/pentium/server/server.cpp_dependencies
+$(WIND_BASE)/host/$(WIND_HOST_TYPE)/lib/gcc-lib/powerpc-wrs-vxworks/gcc-2.96/include/stddef.h \
+	$(WIND_BASE)/host/$(WIND_HOST_TYPE)/lib/gcc-lib/powerpc-wrs-vxworks/gcc-2.96/include/stdarg.h \
+	$(WIND_BASE)/host/$(WIND_HOST_TYPE)/lib/gcc-lib/powerpc-wrs-vxworks/gcc-2.96/include/va-ppc.h
+<END>
+
+<BEGIN> FILE_C:/work/altidev4/src/pd/port/vxworks/pentium/server/server.cpp_objects
+server.o
+<END>
+
+<BEGIN> FILE_C:/work/altidev4/src/pd/port/vxworks/pentium/server/server.cpp_tool
+C/C++ compiler
+<END>
+
+<BEGIN> PROJECT_FILES
+C:/work/altidev4/src/pd/port/vxworks/pentium/server/server.cpp \
+	C:/work/altidev4/src/pd/port/vxworks/pentium/server/sample.cpp
+<END>
+
+<BEGIN> userComments
+<Enter description here>
+<END>
+
