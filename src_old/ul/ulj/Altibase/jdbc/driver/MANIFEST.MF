@@ -1,0 +1,2 @@
+Main-Class: Altibase.jdbc.driver.AltibaseVersion
+Sealed: true

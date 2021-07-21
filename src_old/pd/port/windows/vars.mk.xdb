@@ -1,0 +1,103 @@
+# -*- makefile -*-
+
+DEV_DIR=$(ALTIBASE_DEV)
+TARGET_DIR=$(DEV_DIR)/target/$(BUILD_MODE)
+ALTI_HOME=$(DEV_DIR)/xdbaltibase_home
+CORE_DIR=$(DEV_DIR)/src/core
+PD_DIR=$(DEV_DIR)/src/pd
+ID_DIR=$(DEV_DIR)/src/id
+CM_DIR=$(DEV_DIR)/xdbsrc/cm
+SM_DIR=$(DEV_DIR)/xdbsrc/sm
+ST_DIR=$(DEV_DIR)/src/st
+MT_DIR=$(DEV_DIR)/src/mt
+QP_DIR=$(DEV_DIR)/src/qp
+RP_DIR=$(DEV_DIR)/xdbsrc/rp
+DK_DIR=$(DEV_DIR)/src/dk
+MM_DIR=$(DEV_DIR)/xdbsrc/mm
+UL_DIR=$(DEV_DIR)/xdbsrc/ul
+UT_DIR=$(DEV_DIR)/ut
+TOOL_DIR=$(DEV_DIR)/tool
+
+ALTIBASE_PRODUCT=xdb
+PRODUCT_PREFIX=xdb
+
+##################################################################
+#  Each Port Home Directory
+##################################################################
+
+ALTIDEV_PORTPKG_PATH := $(PD_DIR)/port/windows/
+
+##################################################################
+#  Binary Path
+##################################################################
+GREP=/bin/grep
+GAWK=/bin/gawk
+FLEX="$(ALTIDEV_PORTPKG_PATH)/bin/flex.exe"
+BISON_ENV_NEEDED=yes
+BISON_SIMPLE_PATH=$(ALTIDEV_PORTPKG_PATH)/bin/bison.simple
+BISON_HAIRY_PATH =$(ALTIDEV_PORTPKG_PATH)/bin/bison.hairy
+BISON="$(ALTIDEV_PORTPKG_PATH)/bin/bison.exe"
+
+FLEX_REPLACE_BEFORE="class istream;"
+FLEX_REPLACE_AFTER="\#include <iostream>\n\r using std::istream;\n\r using std::ostream;\n\r using std::cin;\n\r using std::cout;\n\r using std::cerr;\n\r"
+APRE_FLEX_SED_FILE="sedforFlex.win"
+
+# caused by command shell bug : only 8k buffer, so use file instead.
+NEED_INDIRECTION_BUILD = yes
+NEED_SHARED_LIBRARY=yes
+NEED_BUILD_LIBEDIT=no
+NEED_BUILD_JDBC=yes
+##JAVA_HOME=@JAVA_HOME@
+
+
+##added_optimizer_flag=@ADDED_OPTIMIZER_FLAG@
+#only for solaris CC 5.0 above..
+##compat5=@COMPAT5@
+
+# 컴파일러 종류
+COMPILER_NAME=cl
+
+# LINK MODE
+LINK_MODE=normal
+
+ALTIBASE_MEMORY_CHECK=no
+
+ALTIBASE_USE_VALGRIND=no
+
+ALTIBASE_RECOVERY_CHECK=no
+
+# 운영체제 버전 번호
+OS_TARGET=INTEL_WINDOWS
+##OS_MAJORVER=@OS_MAJORVER@
+##OS_MINORVER=@OS_MINORVER@
+
+
+
+ALTI_CFG_CPU=X86
+ALTI_CFG_OS=WINDOWS
+ALTI_CFG_OS_MAJOR=5
+ALTI_CFG_OS_MINOR=0
+ALTI_CFG_EDITION=STANDARD
+
+CC=cl.exe /nologo /TC
+CXX=cl.exe /nologo /TP
+LD=link.exe /nologo
+AR=lib.exe /nologo
+SED="$(ALTIDEV_PORTPKG_PATH)/bin/sed.exe"
+DEFOPT = /D
+IDROPT = /I
+LDROPT = /LIBPATH:
+LIBOPT =
+LIBAFT = .lib
+AROUT  = /OUT:
+LDOUT  = /OUT:
+SOOUT  = /OUT:
+CCOUT  = /Fo
+CC_OUTPUT_FLAG = $(CCOUT)
+SO_OUTPUT_FLAG = $(SOOUT)
+
+#############################
+# TASK-6469 SET MD5
+#############################
+
+CHECKSUM_MD5 = md5sum

@@ -1,0 +1,93 @@
+<project name="Altibase.jdbc.driver" default="jdbc" basedir="."> 
+
+ <target name="init">
+      <property name="srcdir"   	value="." />
+      <property name="builddir" 	value="classes" />
+      <property name="package"  	value="Altibase/jdbc"/>
+      <property name="debug"    	value="off"/>
+      <property name="optimize" 	value="on"/>  
+	  <property name="lib"      	value="lib"/>
+	  <property name="deprecation"  value="off"/> 
+	  <property name="classpath"    value="${classpath}:./lib/junit.jar"/>
+	  <condition property="jdbc2ext">
+       <or>
+       	<equals arg1="${ant.java.version}" arg2="1.3"/>
+       	<equals arg1="${ant.java.version}" arg2="1.4"/>
+       </or>
+	  </condition> 
+      <available property="NoStubSavepoin" 			classname="java.sql.Savepoint"  />
+	  <available property="NoStubParameterMetaData" classname="java.sql.ParameterMetaData" />
+	  <available property="datasource"     			classname="javax.sql.DataSource"/>
+	  <available property="junit" 					classname="junit.framework.Test" />
+</target>
+
+ <target name="clean" depends="init">
+      <delete dir="${builddir}" />
+ </target>
+
+  <target name="prepare" depends="clean">
+      <mkdir dir="${builddir}" />
+   </target>
+
+  <target name="compile" depends="prepare"  >
+	  <javac  classpath="${classpath}" 
+		      srcdir="${srcdir}"
+			  destdir="${builddir}" 
+			  debug="${debug}" 
+			  optimize="${optimize}" >
+      <include name="${package}/**/*" />
+      <exclude name="${package}/test/**"/>
+	  <exclude name="${package}/jdbccts/**"/>
+	  <exclude name="${package}/jdbc2ext/DataSource.java" unless="datasource" />
+	  <exclude name="${package}/interfaces4/Savepoint.java" if="NoStubSavepoin"/>
+	  <exclude name="${package}/interfaces4/ParameterMetaData.java" if="NoStubParameterMetaData"/>
+   </javac>
+  </target>
+
+  <target name="compile-test" depends="prepare"  >
+	  <javac 
+		  classpath="${classpath}"
+		  srcdir="${srcdir}" 
+		  destdir="${builddir}" 
+		  debug="${debug}" 
+		  optimize="${optimize}" >
+      <include name="${package}/test/*"/>
+      <exclude name="${package}/jdbccts/**"/>
+    </javac>
+    <jar jarfile="${lib}/JDBC2tests.jar" whenempty="fail">
+      <fileset dir="${builddir}">
+        <include name="${package}/test/*.class" />
+      </fileset>
+    </jar>
+  </target>
+
+
+
+   <target name="jdbc" depends="compile">
+    <jar jarfile="${lib}/Altibase.jar" whenempty="fail">
+      <fileset dir="${builddir}">
+        <include name="${package}/**/*.class" />
+        <exclude name="${package}/test/**" />
+      </fileset>
+    </jar>
+   </target>
+
+   <target name="test" depends="compile-test">
+ 	 <junit>
+      <sysproperty key="database" value="${database}" />
+	  <test value="Altibase.jdbc.test.AllTests"/>
+      <classpath>
+        <pathelement location="${builddir}" />
+        <pathelement path="${java.class.path}" />
+      </classpath>
+    </junit>
+  </target>	 
+
+  <target name="install" depends="jdbc" >
+    <copy todir="${env.ALTIBASE_HOME}/lib" overwrite="true">
+      <fileset dir="${lib}" includes="Altibase.jar" />
+    </copy>
+  </target>
+
+  
+</project>

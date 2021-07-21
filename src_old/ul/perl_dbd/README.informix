@@ -1,0 +1,30 @@
+README for Informix CLI on Unix
+===============================
+
+To get DBD::ODBC 1.01 to work on Solaris 7, there were a number of
+changes.
+
+To build DBD::ODBC 1.01 with the changes in place, the compilation
+sequence was:
+
+perl Makefile.PL -o $INFORMIXDIR
+
+This locates the CLI (ODBC) libraries in $INFORMIXDIR/lib/cli and the
+header files in $INFORMIXDIR/incl/cli.
+
+When testing, ensure that your database is a logged database; DBD::ODBC
+does not seem to be happy with unlogged databases with no transactional
+support.  If you need to access such databases, you probably need to use
+DBD::Informix, which is acquainted with the peculiarities of Informix's
+different database logging modes.  Non-Informix drivers such as
+DBD::ODBC probably can't be expected to oblige with the detailed changes
+necessary to handle them.
+
+Jonathan Leffler <jleffler@us.ibm.com>
+Date: 2002-12-16
+
+Platform: Sun Sparc Ultra 10, Solaris 7.
+Perl: 5.8.0
+GCC: 3.2.1
+DBI: 1.32 hacked to mimic 1.33
+ODBC: IBM Informix ClientSDK 2.80.UC1, CLI 3.81.0000.

@@ -1,0 +1,76 @@
+#if !defined(_O_ACP_CONFIG_PLATFORM_H_)
+#define _O_ACP_CONFIG_PLATFORM_H_
+
+
+/* CPU Information */
+
+#undef ALTI_CFG_CPU
+#undef ALTI_CFG_CPU_ALPHA
+#undef ALTI_CFG_CPU_IA64
+#undef ALTI_CFG_CPU_PARISC
+#undef ALTI_CFG_CPU_POWERPC
+#undef ALTI_CFG_CPU_SPARC
+#undef ALTI_CFG_CPU_X86
+
+/* COMPILE BIT */
+
+#undef ALTI_CFG_BITTYPE
+#undef ALTI_CFG_BITTYPE_32
+#undef ALTI_CFG_BITTYPE_64
+
+/* OS Information */
+
+#undef ALTI_CFG_OS
+#undef ALTI_CFG_OS_AIX
+#undef ALTI_CFG_OS_CYGWIN
+#undef ALTI_CFG_OS_HPUX
+#undef ALTI_CFG_OS_ITRON
+#undef ALTI_CFG_OS_LINUX
+#undef ALTI_CFG_OS_QNX
+#undef ALTI_CFG_OS_SOLARIS
+#undef ALTI_CFG_OS_TRU64
+#undef ALTI_CFG_OS_WINDOWS
+#undef ALTI_CFG_OS_FREEBSD
+#undef ALTI_CFG_OS_DARWIN
+
+/* OS Version */
+
+#undef ALTI_CFG_OS_MAJOR
+#undef ALTI_CFG_OS_MINOR
+
+/* Byte Order */
+
+#undef ACP_CFG_BIG_ENDIAN
+#undef ACP_CFG_LITTLE_ENDIAN
+
+/* Library Extension Set */
+
+#undef ACP_DL_MOD_FULL_FORMAT
+#undef ACP_DL_MOD_NAME_FORMAT
+#undef ACP_DL_LIB_FULL_FORMAT
+#undef ACP_DL_LIB_NAME_FORMAT
+#undef ACP_DL_LIB_EXT
+
+/* Binary Extension Set */
+
+#undef ACP_PROC_EXE_NAME_FORMAT
+#undef ACP_PROC_EXE_EXT
+
+#undef ACP_CFG_AIX_USEPOLL
+
+/* C Library Support */
+
+#undef HAVE_ECVT_R
+#undef HAVE_ECVT_S
+#undef HAVE_ECVT
+#undef HAVE_FCVT_R
+#undef HAVE_FCVT_S
+#undef HAVE_FCVT
+#undef HAVE_GCVT_S
+#undef HAVE_GCVT
+
+/* Access Environment Variables */
+
+#undef ALTIBASE_ENV_PREFIX
+
+#endif

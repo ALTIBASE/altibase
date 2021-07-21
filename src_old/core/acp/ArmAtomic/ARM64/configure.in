@@ -1,0 +1,2143 @@
+dnl $Id: configure.in 80615 2017-07-27 01:20:29Z hjjun $
+
+dnl ispeener 컴파일을 위한 자동 시스템 설정 스크립트 리소스
+dnl Used by autoconf
+
+dnl ============ config하기전 반드시 존재하는 화일 및 초기화 =================
+
+AC_INIT(./configure)
+
+dnl ============ autoconf 요구버젼 =================
+AC_PREREQ(2.13)
+
+dnl ============  configure 수행시 부가화일 위치  =================
+
+AC_CONFIG_AUX_DIR(./autoconfig)
+
+dnl ============ config.h를 생성 from config.h.in : 다수가능 =================
+
+AC_CONFIG_HEADERS([./src/core/include/acpConfigPlatform.h
+                   ./src/pd/makeinclude/config-altibase.h
+                   ./src/id/idConfig.h
+                   ])
+
+
+dnl =========== 885. 시스템 체크 ===============
+AC_CANONICAL_HOST()
+
+dnl 정규표현식에서 [과 ]를 쓰기 위해서는 changequote(, )를
+dnl 수행해야 함.!
+
+OS_TARGET=NOT_SUPPORTED
+OS_MAJORVER=0
+OS_MINORVER=0
+CONFIG_LACKS_IOSTREAM="n"
+CONFIG_QP_COMPRESS_SCANNER_TABLES="n"
+CROSS_COMPILE=
+
+dnl ALTI_CFG_CPU=NOT_DETERMINED : ok
+dnl ALTI_CFG_OS=NOT_DETERMINED : ok
+dnl ALTI_CFG_OS_MAJOR=NOT_DETERMINED : ok
+dnl ALTI_CFG_OS_MINOR=NOT_DETERMINED : ok
+
+dnl ALTI_CFG_EDITION=STANDARD :
+dnl ALTI_CFG_BITTYPE=NOT_DETERMINED : ok
+dnl ALTI_CFG_COMPTYPE="*" : package time
+
+changequote(, )dnl
+
+OS_TARGET="X86_64_LINUX"
+OS_MAJORVER=0
+OS_MINORVER=0
+ALTI_CFG_CPU=X86
+ALTI_CFG_OS=LINUX
+ALTI_CFG_OS_MAJOR=0
+ALTI_CFG_OS_MINOR=0
+
+case "${host}" in
+    i[3456]86-*-linux-gnu* )
+        if test "$target" = itron-toppers; then
+            OS_TARGET="ITRON"
+            OS_MAJORVER=0
+            OS_MINORVER=0
+            ALTI_CFG_CPU=X86
+            ALTI_CFG_OS=ITRON
+            ALTI_CFG_OS_MAJOR=0
+            ALTI_CFG_OS_MINOR=0
+        else
+            OS_TARGET="INTEL_LINUX"
+            OS_MAJORVER=0
+            OS_MINORVER=0
+            ALTI_CFG_CPU=X86
+            ALTI_CFG_OS=LINUX
+            ALTI_CFG_OS_MAJOR=0
+            ALTI_CFG_OS_MINOR=0
+        fi
+
+        if test "$target" = powerpc-linux; then
+            OS_TARGET="POWERPC_LINUX"
+            OS_MAJORVER=0
+            OS_MINORVER=0
+            ALTI_CFG_CPU=POWERPC
+            ALTI_CFG_OS=LINUX
+            ALTI_CFG_OS_MAJOR=0
+            ALTI_CFG_OS_MINOR=0
+        fi
+
+        if test "$target" = arm-linux; then
+            OS_TARGET="ARM_LINUX"
+            OS_MAJORVER=0
+            OS_MINORVER=0
+            ALTI_CFG_CPU=ARM
+            ALTI_CFG_OS=LINUX
+            ALTI_CFG_OS_MAJOR=0
+            ALTI_CFG_OS_MINOR=0
+        fi
+
+        if test "$target" = mips64-linux; then
+            OS_TARGET="MIPS64_LINUX"
+            OS_MAJORVER=0
+            OS_MINORVER=0
+            ALTI_CFG_CPU=${CROSS_COMPILE}
+            ALTI_CFG_OS=MIPS64_LINUX
+            ALTI_CFG_OS_MAJOR=0
+            ALTI_CFG_OS_MINOR=0
+        fi
+
+        if test "$target" = eldk-linux; then
+            OS_TARGET="ELDK_LINUX"
+            OS_MAJORVER=0
+            OS_MINORVER=0
+            ALTI_CFG_CPU=${CROSS_COMPILE}
+            ALTI_CFG_OS=ELDK_LINUX
+            ALTI_CFG_OS_MAJOR=0
+            ALTI_CFG_OS_MINOR=0
+        fi
+
+        if test "$target" = android-x86; then
+            OS_TARGET="ANDROID_X86"
+            OS_MAJORVER=0
+            OS_MINORVER=0
+            ALTI_CFG_CPU=X86
+            ALTI_CFG_OS=LINUX
+            ALTI_CFG_OS_MAJOR=0
+            ALTI_CFG_OS_MINOR=0
+            CONFIG_LACKS_IOSTREAM="y"
+            CONFIG_QP_COMPRESS_SCANNER_TABLES="y"
+        fi
+
+        if test "$target" = android-arm; then
+            OS_TARGET="ANDROID_ARM"
+            OS_MAJORVER=0
+            OS_MINORVER=0
+            ALTI_CFG_CPU=ARM
+            ALTI_CFG_OS=LINUX
+            ALTI_CFG_OS_MAJOR=0
+            ALTI_CFG_OS_MINOR=0
+            CONFIG_LACKS_IOSTREAM="y"
+            CONFIG_QP_COMPRESS_SCANNER_TABLES="y"
+        fi
+        ;;
+    x86-pc-nto-qnx )
+        OS_TARGET="NTO_QNX"
+        OS_MAJORVER=6
+        OS_MINORVER=0
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=QNX
+        ALTI_CFG_OS_MAJOR=6
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    ia64-suse-linux* )
+        OS_TARGET="IA64_SUSE_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=IA64
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    ia64-*-linux* )
+        OS_TARGET="IA64_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=IA64
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    amd32-*-linux-gnu )
+        OS_TARGET="AMD32_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=AMD64
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    amd64-*-linux-gnu )
+        OS_TARGET="AMD64_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=AMD64
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    xeon-*-linux-gnu )
+        OS_TARGET="XEON_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    x86_64-unknown-linux-gnu )
+        OS_TARGET="X86_64_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+   x86_64-*-linux-gnu )
+        OS_TARGET="X86_64_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    alphaev6-*-linux-gnu* )
+        OS_TARGET="ALPHA_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=ALPHA
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    alpha-*-linux-gnu* )
+        OS_TARGET="ALPHA_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=ALPHA
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    i[3456]86-*-cygwin* )
+        OS_TARGET="PC_CYGWIN"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=CYGWIN
+        ALTI_CFG_OS_MAJOR=0
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    ia64-hp-hpux11.22 )
+        OS_TARGET="IA64_HP_HPUX"
+        OS_MAJORVER=11
+        OS_MINORVER=22
+        ALTI_CFG_CPU=IA64
+        ALTI_CFG_OS=HPUX
+        ALTI_CFG_OS_MAJOR=11
+        ALTI_CFG_OS_MINOR=22
+        ;;
+    ia64-hp-hpux11.23 )
+        OS_TARGET="IA64_HP_HPUX"
+        OS_MAJORVER=11
+        OS_MINORVER=23
+        ALTI_CFG_CPU=IA64
+        ALTI_CFG_OS=HPUX
+        ALTI_CFG_OS_MAJOR=11
+        ALTI_CFG_OS_MINOR=23
+        ;;
+    ia64-hp-hpux11.31 )
+        OS_TARGET="IA64_HP_HPUX"
+        OS_MAJORVER=11
+        OS_MINORVER=31
+        ALTI_CFG_CPU=IA64
+        ALTI_CFG_OS=HPUX
+        ALTI_CFG_OS_MAJOR=11
+        ALTI_CFG_OS_MINOR=31
+        ;;
+    hppa2.0[a-zA-Z]-hp-hpux11.31 )
+        OS_TARGET="HP_HPUX"
+        OS_MAJORVER=11
+        OS_MINORVER=31
+        ALTI_CFG_CPU=PARISC
+        ALTI_CFG_OS=HPUX
+        ALTI_CFG_OS_MAJOR=11
+        ALTI_CFG_OS_MINOR=31
+        ;;
+    hppa2.0[a-zA-Z]-hp-hpux11.23 )
+        OS_TARGET="HP_HPUX"
+        OS_MAJORVER=11
+        OS_MINORVER=23
+        ALTI_CFG_CPU=PARISC
+        ALTI_CFG_OS=HPUX
+        ALTI_CFG_OS_MAJOR=11
+        ALTI_CFG_OS_MINOR=23
+        ;;
+    hppa2.0[a-zA-Z]-hp-hpux11.11 )
+        OS_TARGET="HP_HPUX"
+        OS_MAJORVER=11
+        OS_MINORVER=11
+        ALTI_CFG_CPU=PARISC
+        ALTI_CFG_OS=HPUX
+        ALTI_CFG_OS_MAJOR=11
+        ALTI_CFG_OS_MINOR=11
+        ;;
+    hppa2.0[a-zA-Z]-hp-hpux11.00 )
+        OS_TARGET="HP_HPUX"
+        OS_MAJORVER=11
+        OS_MINORVER=0
+        ALTI_CFG_CPU=PARISC
+        ALTI_CFG_OS=HPUX
+        ALTI_CFG_OS_MAJOR=11
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    hppa2.0[a-zA-Z]-hp-hpux10.00 )
+        OS_TARGET="HP_HPUX"
+        OS_MAJORVER=10
+        OS_MINORVER=0
+        ALTI_CFG_CPU=PARISC
+        ALTI_CFG_OS=HPUX
+        ALTI_CFG_OS_MAJOR=10
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    sparc-sun-solaris2[.]0 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=0
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    sparc-sun-solaris2[.]1 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=1
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=1
+        ;;
+    sparc-sun-solaris2[.]2 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=2
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=2
+        ;;
+    sparc-sun-solaris2[.]3 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=3
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=3
+        ;;
+    sparc-sun-solaris2[.]4 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=4
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=4
+        ;;
+    sparc-sun-solaris2[.]5[.]* )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=5
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=5
+        ;;
+    sparc-sun-solaris2[.]6 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=6
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=6
+        ;;
+    sparc-sun-solaris2[.]7 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=7
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=7
+        ;;
+    sparc-sun-solaris2[.]8 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=8
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=8
+        ;;
+    sparc-sun-solaris2[.]9 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=9
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=9
+        ;;
+    sparc-sun-solaris2[.]10 )
+        OS_TARGET="SPARC_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=10
+        ALTI_CFG_CPU=SPARC
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=10
+        ;;
+    i386-pc-solaris2.9 )
+        OS_TARGET="X86_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=9
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=9
+        ;;
+    i386-pc-solaris2.10 )
+        OS_TARGET="X86_SOLARIS"
+        OS_MAJORVER=2
+        OS_MINORVER=10
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=SOLARIS
+        ALTI_CFG_OS_MAJOR=2
+        ALTI_CFG_OS_MINOR=10
+        ;;
+    alpha*-dec-osf4.0f )
+        OS_TARGET="DEC_TRU64"
+        OS_MAJORVER=4
+        OS_MINORVER=0
+        ALTI_CFG_CPU=ALPHA
+        ALTI_CFG_OS=TRU64
+        ALTI_CFG_OS_MAJOR=4
+        ALTI_CFG_OS_MINOR=0
+        ;;
+    alpha*-dec-osf5.1* )
+        OS_TARGET="DEC_TRU64"
+        OS_MAJORVER=5
+        OS_MINORVER=1
+        ALTI_CFG_CPU=ALPHA
+        ALTI_CFG_OS=TRU64
+        ALTI_CFG_OS_MAJOR=5
+        ALTI_CFG_OS_MINOR=1
+        ;;
+    powerpc64-*-linux-gnu )
+        OS_TARGET="POWERPC64_LINUX"
+        OS_MAJORVER=6
+        OS_MINORVER=5
+        ALTI_CFG_CPU=POWERPC
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=6
+        ALTI_CFG_OS_MINOR=5
+	POWERPC64LE=0
+#       Alticore library settings
+#       ALTI_CFG_OS_MAJOR=6
+#       ALTI_CFG_OS_MINOR=4
+        ;;
+    powerpc64le-*-linux-gnu)
+        OS_TARGET="POWERPC64LE_LINUX"
+        OS_MAJORVER=6
+        OS_MINORVER=5
+        ALTI_CFG_CPU=POWERPC
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=6
+        ALTI_CFG_OS_MINOR=5
+	POWERPC64LE=1
+        ;;
+    powerpc-ibm-aix4.3.* )
+        OS_TARGET="IBM_AIX"
+        OS_MAJORVER=4
+        OS_MINORVER=3
+        ALTI_CFG_CPU=POWERPC
+        ALTI_CFG_OS=AIX
+        ALTI_CFG_OS_MAJOR=4
+        ALTI_CFG_OS_MINOR=3
+        ;;
+    powerpc-ibm-aix5.1.0.0 )
+        OS_TARGET="IBM_AIX"
+        OS_MAJORVER=5
+        OS_MINORVER=1
+        ALTI_CFG_CPU=POWERPC
+        ALTI_CFG_OS=AIX
+        ALTI_CFG_OS_MAJOR=5
+        ALTI_CFG_OS_MINOR=1
+        ;;
+    powerpc-ibm-aix5.2.0.0 )
+        OS_TARGET="IBM_AIX"
+        OS_MAJORVER=5
+        OS_MINORVER=2
+        ALTI_CFG_CPU=POWERPC
+        ALTI_CFG_OS=AIX
+        ALTI_CFG_OS_MAJOR=5
+        ALTI_CFG_OS_MINOR=2
+        ;;
+    powerpc-ibm-aix5.3.0.0 )
+        OS_TARGET="IBM_AIX"
+        OS_MAJORVER=5
+        OS_MINORVER=3
+        ALTI_CFG_CPU=POWERPC
+        ALTI_CFG_OS=AIX
+        ALTI_CFG_OS_MAJOR=5
+        ALTI_CFG_OS_MINOR=3
+        ;;
+    powerpc-ibm-aix6.1.* )
+        OS_TARGET="IBM_AIX"
+        OS_MAJORVER=6
+        OS_MINORVER=1
+        ALTI_CFG_CPU=POWERPC
+        ALTI_CFG_OS=AIX
+        ALTI_CFG_OS_MAJOR=6
+        ALTI_CFG_OS_MINOR=1
+        ;;
+
+    rs6000-ibm-aix )
+        OS_TARGET="IBM_AIX"
+        OS_MAJORVER=6
+        OS_MINORVER=1
+        ALTI_CFG_CPU=POWERPC
+        ALTI_CFG_OS=AIX
+        ALTI_CFG_OS_MAJOR=6
+        ALTI_CFG_OS_MINOR=1
+        ;;
+
+    x86_64-booyo-linux-gnu )
+        OS_TARGET="X86_64_LINUX"
+        OS_MAJORVER=0
+        OS_MINORVER=0
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=LINUX
+        ALTI_CFG_OS_MAJOR=4
+        ALTI_CFG_OS_MINOR=4
+        ;;
+
+    i386-unknown-freebsd7.1 )
+        ALTI_CFG_CPU=X86
+#       ACP_CFG_CPU_BIT=32
+        ALTI_CFG_OS=FREEBSD
+        ALTI_CFG_OS_MAJOR=7
+        ALTI_CFG_OS_MINOR=1
+        ;;
+
+    i[36]86-apple-darwin* )
+        OS_TARGET="X86_64_DARWIN"
+        OS_MAJORVER=`uname -r | gawk -F . '{print $2}'`
+        OS_MINORVER=`uname -r | gawk -F . '{print $3}'`
+        ALTI_CFG_CPU=X86
+        ALTI_CFG_OS=DARWIN
+        ALTI_CFG_OS_MAJOR=`uname -r | gawk -F . '{print $2}'`
+        ALTI_CFG_OS_MINOR=`uname -r | gawk -F . '{print $3}'`
+        ;;
+
+esac
+
+if test "$target" = x86_64-wrs-linux; then
+    OS_TARGET="X86_64_WRS_LINUX"
+    OS_MAJORVER=0
+    OS_MINORVER=0
+    ALTI_CFG_CPU=X86
+    ALTI_CFG_OS=LINUX
+    ALTI_CFG_OS_MAJOR=0
+    ALTI_CFG_OS_MINOR=0
+    CROSS_COMPILE=i586-wrs-linux-gnu-x86_64-glibc_cgl-
+
+fi 
+
+if test "$target" = mips64-wrs-linux; then
+    OS_TARGET="MIPS64_WRS_LINUX"
+    OS_MAJORVER=0
+    OS_MINORVER=0
+    ALTI_CFG_CPU=
+    ALTI_CFG_OS=MIPS64_WRS_LINUX
+    ALTI_CFG_OS_MAJOR=0
+    ALTI_CFG_OS_MINOR=0
+    CROSS_COMPILE=mips-wrs-linux-gnu-mips64_octeon-glibc_cgl-
+fi 
+
+if test "$target" = mips64_n32-wrs-linux; then
+    OS_TARGET="MIPS64_N32_WRS_LINUX"
+    OS_MAJORVER=0
+    OS_MINORVER=0
+    ALTI_CFG_CPU=
+    ALTI_CFG_OS=MIPS64_WRS_LINUX
+    ALTI_CFG_OS_MAJOR=0
+    ALTI_CFG_OS_MINOR=0
+    CROSS_COMPILE=mips-wrs-linux-gnu-mips64_n32_octeon-glibc_cgl-
+fi
+
+changequote([, ])dnl
+
+
+dnl ============ BIGENDIAN이면 WORDS_BIGENDIAN 가 정의됨
+
+if test "${target}" = "powerpc-linux"; then
+    AC_DEFINE(ENDIAN_IS_BIG_ENDIAN)
+else
+    AC_C_BIGENDIAN()
+    if test "$ac_cv_c_bigendian" = yes; then
+	AC_DEFINE(ENDIAN_IS_BIG_ENDIAN)
+	AC_DEFINE(ACP_CFG_BIG_ENDIAN)
+    else 
+	if test "${ALTI_CFG_CPU}" = "ppc_6xx-"; then
+	    AC_DEFINE(ENDIAN_IS_BIG_ENDIAN)
+	    AC_DEFINE(ACP_CFG_BIG_ENDIAN)
+	else
+	    AC_DEFINE(ACP_CFG_LITTLE_ENDIAN)
+	fi
+    fi
+fi
+
+
+dnl ============ 각종 유틸리티 설치 검사
+
+# 1. GREP 검사
+
+AC_PATH_PROG(GREP,
+grep,
+AC_MSG_ERROR(can\'t find grep utility. check your path))
+
+AC_SUBST(GREP)
+
+# 2. GNU Make 검사
+AC_PATH_PROG(GMAKE,
+make,
+AC_MSG_ERROR(can\'t find make utility. check your path))
+
+AC_SUBST(GMAKE)
+
+AC_MSG_CHECKING(checking if your make is GNU or not)
+
+${GMAKE} --version >myversion
+
+result=`$GREP GNU myversion`; rm myversion
+
+if test -z "$result"; then
+    AC_MSG_ERROR(Sorry. You don\'t have a GNU make utility. Install it.)
+else
+    AC_MSG_RESULT(Ok. You have a GNU make utility)
+fi
+
+
+# 3. GNU awk (gawk 검사)
+AC_PATH_PROG(GAWK,
+gawk,
+AC_MSG_ERROR(can\'t find GNU awk\(gawk\) utility. Install it))
+
+AC_SUBST(GAWK)
+
+
+# 4. flex
+AC_PATH_PROG(FLEX,
+flex,
+AC_MSG_ERROR(can\'t find flex utility. Install it))
+AC_SUBST(FLEX)
+
+# 5. bison
+AC_PATH_PROG(BISON,
+bison,
+AC_MSG_ERROR(can\'t find bison utility. Install it))
+AC_SUBST(BISON)
+
+# 5.1 check bison output header name
+echo "Checking Bison header postfix.";
+(cd autoconfig; rm -rf *.cpp *.h; ${BISON} -d -y ./test.y -o test.cpp)
+if test -f ./autoconfig/test.cpp.h; then
+    echo "   BISON POSTFIX ==> .cpp.h"
+    AC_DEFINE(BISON_POSTFIX_CPP_H)
+else
+    if test -f ./autoconfig/test.hpp; then
+        echo "   BISON POSTFIX ==> .hpp"
+        AC_DEFINE(BISON_POSTFIX_HPP)
+    else
+        echo "ERROR : Unknown header postfix. check altidev/autoconfig/test file"
+        exit;
+    fi
+fi
+
+
+# 6. javac
+# Set JAVA_HOME as precious variable, making sure it is checked for
+# the consistency of the build and displaying it in the help screen.
+AC_ARG_VAR([JAVA_HOME], [location of JDK (required)])
+
+# Check Java version
+AC_MSG_CHECKING([Java version])
+JAVA_VERSION=[`$JAVA_HOME/bin/java -version 2>&1 | head -n1 | sed 's%java version "\(.*\)"%\1%'`]
+JAVA_VERSION_MAJOR=[`echo $JAVA_VERSION | cut -f1 -d'.'`]
+JAVA_VERSION_MINOR=[`echo $JAVA_VERSION | cut -f2 -d'.'`]
+AC_MSG_RESULT([$JAVA_VERSION])
+
+if test "$POWERPC64LE" = "1"; then
+    AC_MSG_WARN("WARNING!!!!! Passing Java version check in PowerPC64 Little Endian Linux!!")
+else
+  if test \( "$JAVA_VERSION_MAJOR" -eq "1" -a "$JAVA_VERSION_MINOR" -lt "4" \) \
+    -o "$JAVA_VERSION_MINOR" -gt "9"; then
+    AC_MSG_ERROR([the version of Java in $JAVA_HOME is unsupported])
+  fi
+fi
+
+# Look for javac in $JAVA_HOME/bin
+AC_PATH_PROG(JAVAC,
+    [javac],
+    [],
+    [$JAVA_HOME/bin])
+if test -z $JAVAC; then
+    AC_MSG_ERROR([make sure JAVA_HOME points to the correct location of JDK])
+fi
+AC_SUBST(JAVA_HOME)
+
+
+dnl = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+dnl     7 to 10:  For Alticore library.
+dnl = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+
+# 7. gperf (gperf is optional)
+
+AC_PATH_PROG(GPERF, gperf)
+
+AC_SUBST(GPERF)
+
+# 8. ld
+
+AC_PATH_PROG([LD], [ld])
+
+if test -z "$LD"; then
+    AC_MSG_ERROR([cannot find ld, check your path])
+fi
+
+AC_SUBST(LD)
+
+# AIX OS uses only UNIX ld
+if test "$ALTI_CFG_OS" = AIX ; then
+    AC_MSG_CHECKING([ld is UNIX ld])
+
+    result=`$LD -V 2> /dev/null | $GREP GNU`
+
+    if test -z "$result" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_ERROR([AIX needs UNIX ld, check your path])
+    fi
+fi
+
+# 9. ar
+
+AC_PATH_PROG([AR], [ar])
+
+if test -z "$AR"; then
+    AC_MSG_ERROR([cannot find ar, check your path])
+fi
+
+AC_SUBST(AR)
+
+# AIX OS uses only UNIX ar
+if test "$ALTI_CFG_OS" = AIX ; then
+    AC_MSG_CHECKING([ar is UNIX ar])
+
+    result=`$AR -V 2> /dev/null | $GREP GNU `
+
+    if test -z "$result" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_ERROR([AIX needs UNIX ar, check your path])
+    fi
+fi
+
+# 10. as
+
+AC_PATH_PROG([AS], [as])
+
+if test -z "$AS"; then
+    AC_MSG_ERROR([cannot find as, check your path])
+fi
+
+AC_SUBST(AS)
+
+# AIX OS uses only UNIX as
+if test "$ALTI_CFG_OS" = AIX ; then
+    AC_MSG_CHECKING([as is UNIX as])
+
+    result=`$AS --version 2> /dev/null | $GREP GNU`
+
+    if test -z "$result" ; then
+        AC_MSG_RESULT([yes])
+    else
+        AC_MSG_ERROR([AIX needs UNIX as, check your path])
+    fi
+fi
+
+# 11. re2c
+
+AC_PATH_PROG([RE2C], [re2c])
+
+if test -z "$RE2C"; then
+    AC_MSG_ERROR([cannot find re2c, check your path])
+fi
+
+AC_SUBST([RE2C])
+
+# 12. PSET
+
+case "$OS_TARGET" in
+    *LINUX* )
+        AC_CHECK_FUNC([sched_setaffinity],
+                      [break],
+                      [AC_MSG_ERROR([require sched_setaffinity for pset..])])
+        AC_CHECK_LIB([pthread],
+                     [pthread_setaffinity_np],
+                     [break],
+                     [AC_MSG_ERROR([require pthread_setaffinity_np for pset])])
+        ;;
+
+    *AIX* )
+        AC_CHECK_FUNC([bindprocessor],
+                      [break],
+                      [AC_MSG_ERROR([require bindprocessor for pset])])
+        ;;
+
+    *HP_HPUX* )
+        AC_CHECK_FUNC([mpctl],
+                      [break],
+                      [AC_MSG_ERROR([require mpctl for pset])])
+        AC_CHECK_LIB([pthread],
+                     [pthread_processor_bind_np],
+                     [break],
+                     [AC_MSG_ERROR([require pthread_processor_bind_np for pset])])
+        ;;
+
+    *SOLARIS* )
+        AC_CHECK_FUNC([processor_bind],
+                      [break],
+                      [AC_MSG_ERROR([require processor_bind for pset])])
+        ;;
+
+    *TRU64* )
+        AC_CHECK_FUNC([bind_to-cpu],
+                      [break],
+                      [AC_MSG_ERROR([require bind_to_cpu for pset])])
+        AC_CHECK_LIB([pthread],
+                     [pthread_rad_bind],
+                     [break],
+                     [AC_MSG_ERROR([require pthread_rad_bind for pset])])
+        ;;
+
+    * )
+        AC_MSG_ERROR([require platform support for pset functionality])
+        ;;
+esac
+
+# 13. ecvt, fcvt and gcvt.
+
+AC_CHECK_FUNCS( ecvt_r _ecvt_s ecvt, break )
+AC_CHECK_FUNCS( fcvt_r _fcvt_s fcvt, break )
+AC_CHECK_FUNCS( _gcvt_s gcvt, break )
+
+
+AC_CACHE_SAVE
+
+# ========= Choose Product (either HDB or XDB) =========
+ALTIBASE_PRODUCT=
+PRODUCT_PREFIX=
+ALTIBASE_ENV_PREFIX=
+AC_ARG_ENABLE([product],
+              [AS_HELP_STRING([--enable-product=],
+                              [select the product to build (hdb,xdb)])],
+              [ALTIBASE_PRODUCT=$enableval])
+
+if test "x$ALTIBASE_PRODUCT" = xhdb; then
+    ALTIBASE_ENV_PREFIX=ALTIBASE_
+    AC_MSG_NOTICE([Configuring for %%% Altibase HDB %%%...])
+    AC_DEFINE([ALTIBASE_PRODUCT_HDB])
+elif test "x$ALTIBASE_PRODUCT" = xxdb; then
+    PRODUCT_PREFIX=xdb
+    ALTIBASE_ENV_PREFIX=ALTIBASE_XDB_
+    AC_MSG_NOTICE([Configuring for %%% Altibase XDB %%%...])
+    AC_DEFINE([ALTIBASE_PRODUCT_XDB])
+else
+    ALTIBASE_PRODUCT=hdb
+    ALTIBASE_ENV_PREFIX=ALTIBASE_
+    AC_MSG_NOTICE([Configuring for %%% Altibase HDB %%%...])
+    AC_DEFINE([ALTIBASE_PRODUCT_HDB])
+fi
+
+AC_DEFINE_UNQUOTED([ALTIBASE_PRODUCT],
+                   ["$ALTIBASE_PRODUCT"])
+AC_DEFINE_UNQUOTED([ALTIBASE_ENV_PREFIX],
+                   ["$ALTIBASE_ENV_PREFIX"])
+AC_DEFINE_UNQUOTED([PRODUCT_PREFIX],
+                   ["$PRODUCT_PREFIX"])
+AC_SUBST([ALTIBASE_PRODUCT])
+AC_SUBST([PRODUCT_PREFIX])
+
+BUILD_MODE=debug
+dnl ============ 0. --build_mode 옵션 ==================
+dnl config.h에 #undef COMPILE_64BIT 가 #define COMPILE_64BIT 1 로 치환됨
+
+
+AC_ARG_WITH(build_mode,
+            [  --with-build_mode=      [debug(default),prerelease,release] ],
+            [ with_build_mode=$withval ],
+            [ with_build_mode=no ])
+
+case "$with_build_mode" in
+    no )
+        AC_MSG_WARN("BUILD_MODE is %%% debug %%%")
+        BUILD_MODE=debug
+	    AC_DEFINE(BUILD_MODE_DEBUG)
+        ;;
+    debug )
+        AC_MSG_WARN("BUILD_MODE is %%% debug %%%")
+        BUILD_MODE=debug
+	    AC_DEFINE(BUILD_MODE_DEBUG)
+        ;;
+    prerelease )
+        AC_MSG_WARN("BUILD_MODE is %%% prerelease %%%")
+        BUILD_MODE=prerelease
+	    AC_DEFINE(BUILD_MODE_PRERELEASE)
+        ;;
+    release )
+        AC_MSG_WARN("BUILD_MODE is %%% release %%%")
+        BUILD_MODE=release
+	    AC_DEFINE(BUILD_MODE_RELEASE)
+        ;;
+    * )
+        AC_MSG_ERROR("BUILD_MODE %% $with_build_mode %% is Unknown")
+        ;;
+esac
+AC_SUBST(BUILD_MODE)
+
+
+LINK_MODE=normal
+dnl ============ 0.1 --LINK_mode 옵션 ==================
+dnl config.h에 #undef COMPILE_64BIT 가 #define COMPILE_64BIT 1 로 치환됨
+
+AC_ARG_WITH(link_mode,
+            [  --with-link_mode=       [normal(default),purify,quantify,purecov,purifycov] ],
+            [ with_link_mode=$withval ],
+            [ with_link_mode=no ])
+
+case "$with_link_mode" in
+    no )
+        AC_MSG_WARN("LINK_MODE is %%% normal %%%")
+        LINK_MODE=normal
+        ;;
+    purify )
+        AC_MSG_WARN("LINK_MODE is %%% purify %%%")
+        LINK_MODE=purify
+        ;;
+    quantify )
+        AC_MSG_WARN("LINK_MODE is %%% quantify %%%")
+        LINK_MODE=quantify
+        ;;
+    purecov )
+        AC_MSG_WARN("LINK_MODE is %%% purecov %%%")
+        LINK_MODE=purecov
+        ;;
+    purifycov )
+        AC_MSG_WARN("LINK_MODE is %%% purifycov %%%")
+        LINK_MODE=purifycov
+        ;;
+    * )
+        AC_MSG_ERROR("LINK_MODE %% $with_link_mode %% is Unknown")
+        ;;
+esac
+AC_SUBST(LINK_MODE)
+
+
+OPTIMIZER_FLAG=debug
+dnl ============ 0. --optimizer_flag 옵션 ==================
+dnl config.h에 #undef COMPILE_64BIT 가 #define COMPILE_64BIT 1 로 치환됨
+
+AC_ARG_WITH(optimizer_flag,
+            [  --with-optimizer_flag=  [debug(default),prerelease,release] ],
+            [ ADDED_OPTIMIZER_FLAG=$withval ])
+
+AC_SUBST(ADDED_OPTIMIZER_FLAG)
+
+
+DBAI=0
+dnl ============ 0. DBADMIN INET 사용 옵션 =======================
+dnl == --enable-dbainet : gcc 사용
+dnl makefile 링크를 바꿈
+
+if test "$OS_TARGET" = "NTO_QNX"; then
+    AC_DEFINE(USE_ADMIN_INET)
+else # NTO_QNX
+    DBAIIS=no
+    AC_ARG_ENABLE(dbainet, [  --enable-dbainet        use dbadmin inet channel], DBAIIS=yes)
+    if test "$DBAIIS" = "yes"; then
+        AC_DEFINE(USE_ADMIN_INET)
+    fi
+fi # NTO_QNX
+
+dnl ============  Memory Check Enable : purify를 이용한 메모리 테스트 enable  =======================
+ALTIBASE_MEMORY_CHECK=
+AC_ARG_ENABLE(memcheck, [  --enable-memcheck       compile with memory check], MEMCHECK=yes)
+if test "$MEMCHECK" = "yes"; then
+    ALTIBASE_MEMORY_CHECK=yes
+    AC_DEFINE(ALTIBASE_MEMORY_CHECK)
+else
+    ALTIBASE_MEMORY_CHECK=no
+fi
+AC_SUBST(ALTIBASE_MEMORY_CHECK)
+
+dnl ============  SM Module TEST  ==================================
+ALTIBASE_SM_MODULE_TEST=
+AC_ARG_ENABLE(sm_module_test, [  --enable-sm_module_test compile with SM Module Test ], SM_MODULE_TEST=yes)
+if test "$SM_MODULE_TEST" = "yes"; then
+    ALTIBASE_SM_MODULE_TEST=yes
+    AC_DEFINE(ALTIBASE_SM_MODULE_TEST)
+else
+    ALTIBASE_SM_MODULE_TEST=no
+fi
+AC_SUBST(ALTIBASE_SM_MODULE_TEST)
+
+dnl ============  check enable-usevalgrind ==================================
+AC_ARG_ENABLE(usevalgrind, [  --enable-usevalgrind    compile with valgrind], USEVAL=yes)
+
+if test "$USEVAL" = "yes"; then
+    ALTIBASE_USE_VALGRIND=yes
+    AC_DEFINE(ALTIBASE_USE_VALGRIND)
+    AC_SUBST(ALTIBASE_USE_VALGRIND)
+
+    AC_PATH_PROG(VALGRIND_PATH, valgrind, notfound_valgrind)
+
+    if test "$VALGRIND_PATH" = "notfound_valgrind"; then
+        AC_MSG_ERROR(can't find [valgrind] utility. check your path)
+    else
+        AC_DEFINE_UNQUOTED(ALTIBASE_VALGRIND_PATH, "$VALGRIND_PATH")
+    fi
+else
+    ALTIBASE_USE_VALGRIND=no
+fi
+
+dnl '
+
+dnl ============  Limit Check Enable : Limit 테스트   =======================
+ALTIBASE_LIMIT_CHECK=
+AC_ARG_ENABLE(limitcheck, [  --enable-limitcheck     compile with limit check], LIMITCHECK=yes)
+if test "$LIMITCHECK" = "yes"; then
+    ALTIBASE_LIMIT_CHECK=yes
+    AC_DEFINE(ALTIBASE_LIMIT_CHECK)
+else
+    ALTIBASE_LIMIT_CHECK=no
+fi
+AC_SUBST(ALTIBASE_LIMIT_CHECK)
+
+# PROJ-2323 FIT Test 
+ALTIBASE_FIT_CHECK=
+AC_ARG_ENABLE(fitcheck,
+              [AS_HELP_STRING([--enable-fitcheck], [compile with fit test])
+AS_HELP_STRING([--disable-fitcheck], [compile without fit test])],
+              [FITCHECK=$enableval])
+
+if test "$FITCHECK" = "yes"; then
+    ALTIBASE_FIT_CHECK=yes
+    AC_MSG_RESULT(configure: Enable FIT mode)
+    AC_DEFINE(ALTIBASE_FIT_CHECK)
+    AC_SUBST(ALTIBASE_FIT_CHECK)
+elif test "$FITCHECK" = "no"; then
+    ALTIBASE_FIT_CHECK=no
+else
+    if test "$BUILD_MODE" = "debug"; then
+
+        if test "$OS_TARGET" = "X86_64_LINUX"; then
+            ALTIBASE_FIT_CHECK=yes
+            AC_MSG_RESULT(configure: Enable FIT mode)
+            AC_DEFINE(ALTIBASE_FIT_CHECK)
+            AC_SUBST(ALTIBASE_FIT_CHECK)
+        else 
+            ALTIBASE_FIT_CHECK=no
+        fi
+
+    else # prerelase / release
+        ALTIBASE_FIT_CHECK=no
+    fi
+fi
+
+# Task-1994 초고속 Coverage측정방법 고안
+dnl ============  Limit Check Enable : Limit 테스트   =======================
+ALTIBASE_ENABLE_GCOV=
+AC_ARG_ENABLE(gcov, [  --enable-gcov           gcc coverage check], ENABLE_GCOV=yes)
+if test "$ENABLE_GCOV" = "yes"; then
+    ALTIBASE_ENABLE_GCOV=yes
+    AC_DEFINE(ALTIBASE_ENABLE_GCOV)
+else
+    ALTIBASE_ENABLE_GCOV=no
+fi
+AC_SUBST(ALTIBASE_ENABLE_GCOV)
+
+GCC=0
+dnl ============ 1. GNU gcc 사용 옵션 =======================
+dnl == --enable-gcc : gcc 사용
+dnl makefile 링크를 바꿈
+
+AC_ARG_ENABLE(gcc, [  --enable-gcc            compile with GNU compiler], GCCIS=yes)
+
+GCC=0
+dnl ============ 2. Intel icc 사용 옵션 =======================
+dnl == --enable-icc : gcc 사용
+dnl makefile 링크를 바꿈
+
+ICCIS=0
+AC_ARG_ENABLE(icc, [  --enable-icc            compile with INTEL C/C++ compiler], ICCIS=yes)
+
+dnl ============ 2. --enable-bit32 옵션 ==================
+dnl 64비트에서 이 옵션을 주지 않으면 config.h에 #undef COMPILE_64BIT 가 #define COMPILE_64BIT 1 로 치환됨
+
+XLCIS=0
+AC_ARG_ENABLE(xlc, [  --enable-xlc            compile with POWER C/C++ compiler], XLCIS=yes)
+
+IS64=yes
+COMPAT5=1
+AC_ARG_ENABLE(bit32, [  --enable-bit32         enabling compile with 32bit mode and compat5 (32bit-compat5 compile) on 64bit machine], IS64=no)
+
+if test "$IS64" = "yes"; then
+ALTI_CFG_BITTYPE=64
+else
+ALTI_CFG_BITTYPE=32
+fi
+
+case "$OS_TARGET" in
+    SPARC_SOLARIS )
+        if test "$IS64" = "yes"; then
+            case "$OS_MAJORVER.$OS_MINORVER" in
+                2.7 | 2.8 | 2.9 | 2.10 )
+                    AC_MSG_WARN(" %%%% SPARC_SOLARIS 64BIT COMPILE PROCEEDING %%%%")
+                    COMPAT5=1
+                    AC_SUBST(COMPAT5)
+                    BIT64FLAG=1
+                    AC_SUBST(BIT64FLAG)
+                    AC_DEFINE(COMPILE_64BIT)
+                    ;;
+                2.* )
+                    AC_MSG_WARN(" %%%% CAN\'T 64BIT COMPILE UNDER 32bit OS  %%%%")
+                    AC_MSG_WARN(" %%%% SPARC_SOLARIS 32BIT COMPILE PROCEEDING %%%%")
+                    ;;
+                * )
+                    AC_MSG_ERROR(" %%%% CAN\'T COMPILE UNDER Unknown OS version.%%%%")
+                    ;;
+            esac
+        fi
+        ;;
+    X86_SOLARIS )
+        if test "$IS64" = "yes"; then
+            case "$OS_MAJORVER.$OS_MINORVER" in
+                2.10 )
+                    AC_MSG_WARN(" %%%% X86_SOLARIS 64BIT COMPILE PROCEEDING %%%%")
+                    BIT64FLAG=1
+                    AC_SUBST(BIT64FLAG)
+                    AC_DEFINE(COMPILE_64BIT)
+                    ;;
+                2.9 )
+                    AC_MSG_WARN(" %%%% CAN\'T 64BIT COMPILE UNDER 32bit OS  %%%%")
+                    AC_MSG_WARN(" %%%% X86_SOLARIS 32BIT COMPILE PROCEEDING %%%%")
+                    ;;
+            esac
+        else
+            AC_MSG_WARN(" %%%% X86_SOLARIS 32BIT COMPILE PROCEEDING %%%%")
+        fi
+        ;;
+    HP_HPUX | IA64_HP_HPUX )
+        if test "$IS64" = "yes"; then
+            AC_MSG_WARN(" %%%% HPUX 64BIT COMPILE PROCEEDING %%%%")
+            BIT64FLAG=1
+            AC_SUBST(BIT64FLAG)
+            AC_DEFINE(COMPILE_64BIT)
+        else
+            AC_MSG_WARN(" %%%% HPUX 32BIT COMPILE PROCEEDING %%%%")
+        fi
+        ;;
+    DEC_TRU64 )
+        if test "$IS64" = "yes"; then
+            AC_MSG_WARN(" %%%% DEC-TRU64 64BIT COMPILE PROCEEDING %%%%")
+            BIT64FLAG=1
+            AC_SUBST(BIT64FLAG)
+            AC_DEFINE(COMPILE_64BIT)
+        else
+            AC_MSG_WARN(" %%%% CAN\'T 32BIT COMPILE UNDER DEC_TRU64.  %%%%")
+            AC_MSG_WARN(" %%%% DEC-TRU64 64BIT COMPILE PROCEEDING %%%%")
+            BIT64FLAG=1
+            AC_SUBST(BIT64FLAG)
+            AC_DEFINE(COMPILE_64BIT)
+        fi
+        ;;
+    IBM_AIX )
+        if test "$IS64" = "yes"; then
+            AC_MSG_WARN(" %%%% IBM_AIX 64BIT COMPILE PROCEEDING %%%%")
+            BIT64FLAG=1
+            AC_SUBST(BIT64FLAG)
+            AC_DEFINE(COMPILE_64BIT)
+        else
+            AC_MSG_WARN(" %%%% IBM_AIX 32BIT COMPILE PROCEEDING %%%%")
+        fi
+        ;;
+   ITRON )
+        AC_MSG_WARN(" %%%% LINUX 32BIT COMPILE PROCEEDING %%%%")
+        ;;
+   ARM_LINUX | ELDK_LINUX | MIPS64_LINUX | MIPS64_N32_WRS_LINUX )
+        AC_MSG_WARN(" %%%% LINUX 32BIT COMPILE PROCEEDING %%%%")
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+   MIPS64_WRS_LINUX )
+        AC_MSG_WARN(" %%%% MIPS64_WRS_LINUX 64BIT COMPILE PROCEEDING %%%%")
+        BIT64FLAG=1
+        AC_SUBST(BIT64FLAG)
+        AC_DEFINE(COMPILE_64BIT)
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    INTEL_LINUX | POWERPC_LINUX )
+        AC_MSG_WARN(" %%%% LINUX 32BIT COMPILE PROCEEDING %%%%")
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    POWERPC64_LINUX )
+        AC_MSG_WARN(" %%%% POWERPC64 LINUX 64BIT COMPILE PROCEEDING %%%%")
+        BIT64FLAG=1
+        AC_SUBST(BIT64FLAG)
+        AC_DEFINE(COMPILE_64BIT)
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    POWERPC64LE_LINUX )
+        AC_MSG_WARN(" %%%% POWERPC64LE LINUX 64BIT COMPILE PROCEEDING %%%%")
+        BIT64FLAG=1
+        AC_SUBST(BIT64FLAG)
+        AC_DEFINE(COMPILE_64BIT)
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    ANDROID_X86 | ANDROID_ARM )
+        AC_MSG_WARN(" %%%% LINUX 32BIT COMPILE PROCEEDING %%%%")
+        AC_DEFINE(OS_LINUX_KERNEL)
+        AC_DEFINE(CM_DISABLE_IPC)
+        ;;
+    ALPHA_LINUX )
+        AC_MSG_WARN(" %%%% ALPHA_LINUX 64BIT COMPILE PROCEEDING %%%%")
+        BIT64FLAG=1
+        AC_SUBST(BIT64FLAG)
+        AC_DEFINE(COMPILE_64BIT)
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    IA64_SUSE_LINUX )
+        AC_MSG_WARN(" %%%% IA64 SUSE LINUX 64BIT COMPILE PROCEEDING %%%%")
+        BIT64FLAG=1
+        AC_SUBST(BIT64FLAG)
+        NCURSESFLAG=1
+        AC_SUBST(NCURSESFLAG)
+        AC_DEFINE(COMPILE_64BIT)
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    IA64_LINUX )
+        AC_MSG_WARN(" %%%% IA64 LINUX 64BIT COMPILE PROCEEDING %%%%")
+        BIT64FLAG=1
+        AC_SUBST(BIT64FLAG)
+        AC_DEFINE(COMPILE_64BIT)
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    AMD64_LINUX )
+        if test "$IS64" = "yes"; then
+            AC_MSG_WARN(" %%%% AMD64 LINUX 64BIT COMPILE PROCEEDING %%%%")
+            BIT64FLAG=1
+            AC_DEFINE(COMPILE_64BIT)
+            AC_SUBST(BIT64FLAG)
+        else
+            AC_MSG_WARN(" %%%% AMD64 LINUX 32BIT COMPILE PROCEEDING %%%%")
+            OS_TARGET="INTEL_LINUX"
+        fi
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    XEON_LINUX )
+        if test "$IS64" = "yes"; then
+            AC_MSG_WARN(" %%%% XEON LINUX 64BIT COMPILE PROCEEDING %%%%")
+            BIT64FLAG=1
+            AC_SUBST(BIT64FLAG)
+            AC_DEFINE(COMPILE_64BIT)
+        else
+            AC_MSG_WARN(" %%%% XEON LINUX 32BIT COMPILE PROCEEDING %%%%")
+            OS_TARGET="INTEL_LINUX"
+        fi
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    X86_64_LINUX )
+        if test "$IS64" = "yes"; then
+            AC_MSG_WARN(" %%%% X86_64 LINUX 64BIT COMPILE PROCEEDING %%%%")
+            BIT64FLAG=1
+            AC_SUBST(BIT64FLAG)
+            AC_DEFINE(COMPILE_64BIT)
+        else
+            AC_MSG_WARN(" %%%% X86_64 LINUX 32BIT COMPILE PROCEEDING %%%%")
+            OS_TARGET="INTEL_LINUX"
+        fi
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    X86_64_WRS_LINUX )
+        if test "$IS64" = "yes"; then
+            AC_MSG_WARN(" %%%% X86_64 LINUX 64BIT COMPILE PROCEEDING %%%%")
+            BIT64FLAG=1
+            AC_SUBST(BIT64FLAG)
+            AC_DEFINE(COMPILE_64BIT)
+        else
+            AC_MSG_WARN(" %%%% X86_64 LINUX 32BIT COMPILE PROCEEDING %%%%")
+            OS_TARGET="INTEL_LINUX"
+        fi
+        AC_DEFINE(OS_LINUX_KERNEL)
+        ;;
+    PC_CYGWIN )
+        AC_MSG_WARN(" %%%% PC-CYGWIN 32BIT COMPILE PROCEEDING %%%%")
+        ;;
+    NTO_QNX )
+        AC_MSG_WARN(" %%%% NTO_QNX 32BIT COMPILE PROCEEDING %%%%")
+        ;;
+    X86_64_DARWIN )
+        BIT64FLAG=1
+        AC_SUBST(BIT64FLAG)
+        AC_DEFINE(COMPILE_64BIT)
+        AC_MSG_WARN(" %%%% X86_64 DARWIN(MAC OS) COMPILE PROCEEDING %%%%")
+        ;;
+    * )
+        AC_MSG_ERROR(" %%%% CAN\'T COMPILE UNDER Unknown OS .%%%%")
+        ;;
+esac
+
+case "$OS_TARGET" in
+    *_LINUX )
+        AC_MSG_WARN(" %%%% X86_64 LINUX 64BIT COMPILE PROCEEDING %%%%")
+        OS_LINUX_KERNEL=1
+        AC_SUBST(OS_LINUX_KERNEL)
+        ;;
+    * )
+        AC_SUBST(OS_LINUX_KERNEL)
+        ;;
+esac
+
+dnl ============ 3. --enable-compat4 옵션 =======================
+dnl == --enable-compat5 를 --enable-compat4로 수정 : 2000.2.21
+dnl smEnv.mk 에 compat5=0로 변경
+
+AC_ARG_ENABLE(compat4, [  --enable-compat4        compile with compat4 (only for sparc CC 5.0)], COMPATIS5=no)
+
+if test "$COMPATIS5" = "no"; then
+    COMPAT5=0
+    AC_SUBST(COMPAT5)
+fi
+
+if test "$OS_TARGET" = "SPARC_SOLARIS"; then
+    if test "$COMPAT5" = 0; then
+        AC_MSG_WARN(" %%%% COMPAT4 %%%% COMPILE PROCEEDING....")
+        AC_DEFINE(OS_COMPAT_MODE, "4")
+    else
+        AC_DEFINE(OS_COMPAT_MODE, "5")
+    fi
+else
+    AC_DEFINE(OS_COMPAT_MODE, "0")
+fi
+
+SB=0
+
+dnl ============ 6-3. --enable-smp 옵션 =======================
+
+AV_COMPILE_FOR_SMP=no
+
+AC_ARG_ENABLE(nosmp, [  --enable-nosmp          compile altibase for Non-SMP Machine],AV_COMPILE_FOR_NO_SMP=yes)
+if test "$AV_COMPILE_FOR_NO_SMP" = "yes"; then
+    AC_DEFINE(COMPILE_FOR_NO_SMP)
+fi
+
+dnl ============ 6-4. --enable-page64 옵션 =======================
+
+AV_COMPILE_FOR_PAGE64=no
+
+AC_ARG_ENABLE(page64, [  --enable-page64         compile altibase for 64K-Data Page ],AV_COMPILE_FOR_PAGE64=yes)
+if test "$AV_COMPILE_FOR_PAGE64" = "yes"; then
+    AC_DEFINE(COMPILE_FOR_PAGE64)
+fi
+
+SELECT_ID_KIND=id
+SELECT_CM_KIND=cm
+SELECT_SM_KIND=sm
+SELECT_QP_KIND=qp
+SELECT_SD_KIND=sd
+SELECT_RP_KIND=rp
+SELECT_ST_KIND=st
+SELECT_MT_KIND=mt
+SELECT_MM_KIND=mm
+SELECT_DK_KIND=dk
+
+AC_DEFINE(ALTIBASE_4)
+
+
+dnl ============ 6-6. --enable-rp2 =======================
+dnl == --enable-altibase4 :
+AC_ARG_ENABLE(rp2, [  --enable-rp2            compile with new-replication],  CONF_FOR_RP2=yes)
+
+if test "$CONF_FOR_RP2" = "yes"; then
+	AC_DEFINE(COMPILE_FOR_RP2)
+    SELECT_RP_KIND=rp2
+fi
+
+dnl ============ 6-6. --enable-largefile =======================
+dnl == --enable-altibase4 :
+AC_ARG_ENABLE(largefile, [  --enable-largefile      compile with largefile],  CONF_FOR_LF=yes)
+
+dnl ============ 6-3. --enable-block-sigterm-linux 옵션 =======================
+
+AV_BLOCK_SIGTERM_IN_LINUX=no
+
+AC_ARG_ENABLE(blocksigterm, [  --enable-blocksigterm   block SIGTERM in linux],AV_BLOCK_SIGTERM_IN_LINUX=yes)
+if  test "$AV_BLOCK_SIGTERM_IN_LINUX" = "yes" ||
+    test "`grep Linux /etc/issue`" = "Red Hat Enterprise Linux ES release 3 (Taroon)";
+then
+    AC_DEFINE(BLOCK_SIGTERM_IN_LINUX)
+fi
+
+ALTI_CFG_EDITION=STANDARD
+dnl ============ 0. --edition_mode 옵션 ==================
+dnl config.h에 #undef COMPILE_64BIT 가 #define COMPILE_64BIT 1 로 치환됨
+
+
+AC_ARG_WITH(edition_mode,
+            [  --with-edition_mode=      [standard(default),enterprise,mini,mobile,disk,open] ],
+            [ with_edition_mode=$withval ],
+            [ with_edition_mode=no ])
+
+case "$with_edition_mode" in
+    no )
+        AC_MSG_WARN("EDITION is STANDARD ")
+        ALTI_CFG_EDITION=STANDARD
+        ;;
+    standard )
+        AC_MSG_WARN("EDITION is STANDARD ")
+        ALTI_CFG_EDITION=STANDARD
+        ;;
+    enterprise )
+        AC_MSG_WARN("EDITION is ENTERPRISE ")
+        ALTI_CFG_EDITION=ENTERPRISE
+        ;;
+    mini )
+        AC_MSG_WARN("EDITION is MINI ")
+        ALTI_CFG_EDITION=MINI
+        ;;
+    mobile )
+        AC_MSG_WARN("EDITION is MOBILE ")
+        ALTI_CFG_EDITION=MOBILE
+        ;;
+    disk )
+        AC_MSG_WARN("EDITION is DISK ")
+        ALTI_CFG_EDITION=DISK
+        ;;
+    open )
+        AC_MSG_WARN("EDITION is OPEN ")
+        ALTI_CFG_EDITION=OPEN
+        ;;
+    * )
+        AC_MSG_ERROR("EDITION %% $with_edition_mode %% is Unknown")
+        ;;
+esac
+AC_SUBST(ALTI_CFG_EDITION)
+
+
+# === 7. CORE setup platform specific options ===
+
+# Check linux kernel release
+
+if test "$ALTI_CFG_OS" = LINUX; then
+    result=`uname -r`
+    ALTI_CFG_OS_MAJOR=`echo $result | $GAWK -F . '{print $1}'`
+    ALTI_CFG_OS_MINOR=`echo $result | $GAWK -F . '{print $2}'`
+fi
+
+# Check the OS and decide which library and binary extension to use.
+
+if test "$ALTI_CFG_OS" = HPUX; then
+    ACP_DL_MOD_FULL_FORMAT=%s/%s
+    ACP_DL_MOD_NAME_FORMAT=%s
+    ACP_DL_LIB_FULL_FORMAT=%s/lib%s.sl
+    ACP_DL_LIB_NAME_FORMAT=lib%s.sl
+    ACP_DL_LIB_EXT=sl
+
+    ACP_PROC_EXE_NAME_FORMAT=%s.exe
+    ACP_PROC_EXE_EXT=exe
+elif test "$ALTI_CFG_OS" = DARWIN; then
+    ACP_DL_MOD_FULL_FORMAT=%s/%s
+    ACP_DL_MOD_NAME_FORMAT=%s
+    ACP_DL_LIB_FULL_FORMAT=%s/lib%s.dylib
+    ACP_DL_LIB_NAME_FORMAT=lib%s.dylib
+    ACP_DL_LIB_EXT=dylib
+
+    ACP_PROC_EXE_NAME_FORMAT=%s
+    ACP_PROC_EXE_EXT=
+else
+    ACP_DL_MOD_FULL_FORMAT=%s/%s
+    ACP_DL_MOD_NAME_FORMAT=%s
+    ACP_DL_LIB_FULL_FORMAT=%s/lib%s.so
+    ACP_DL_LIB_NAME_FORMAT=lib%s.so
+    ACP_DL_LIB_EXT=so
+
+    ACP_PROC_EXE_NAME_FORMAT=%s
+    ACP_PROC_EXE_EXT=
+fi
+
+# check AIX 5.3 has pollset
+
+if test "$ALTI_CFG_OS" = AIX ; then
+    printf "checking for sys/pollset.h... "
+    echo "#include <sys/pollset.h>" > testpoll.c
+    echo "int main(void){pollset_create(1); return 0;}" >> testpoll.c
+    gcc testpoll.c -o testpoll > /dev/null 2>&1
+    ACP_CFG_AIX_USEPOLL=$?
+    if test ACP_CFG_AIX_USEPOLL = 0 ; then
+        echo yes
+    else
+        echo no
+    fi
+    rm -Rf testpoll.c testpoll
+fi
+
+# HPUX-PARISC platform uses cl library to trace callstack
+
+if test "$ALTI_CFG_OS" = HPUX ; then
+    if test "$ALTI_CFG_CPU" = PARISC ; then
+        AC_MSG_CHECKING([32bit libcl.a at /usr/lib])
+        if test -e "/usr/lib/libcl.a" ; then
+            AC_MSG_RESULT([yes])
+        else
+            AC_MSG_ERROR([There is not 32bit libcl.a at /usr/lib])
+        fi
+        AC_MSG_CHECKING([64bit libcl.a at /usr/lib/pa20_64])
+        if test -e "/usr/lib/pa20_64/libcl.a" ; then
+            AC_MSG_RESULT([yes])
+        else
+            AC_MSG_ERROR([There is not 64bit libcl.a at /usr/lib/pa20_64])
+        fi
+    fi
+fi
+
+# copy platform dependent Makefile
+
+if test -z "$platform_makefile"; then
+    if test "$GCCIS" = yes; then
+        if test "$ALTI_CFG_CPU" = POWERPC ; then
+            platform_makefile="platform_linux_powerpc.mk"
+        else
+            platform_makefile="platform_gcc.mk"
+        fi
+    else
+        if test "$ALTI_CFG_OS" = SOLARIS ; then
+            if test "$ALTI_CFG_CPU" = SPARC ; then
+                platform_makefile="platform_sunos_sparc.mk"
+            elif test "$ALTI_CFG_CPU" = X86 ; then
+                platform_makefile="platform_sunos_x86.mk"
+            else
+                platform_makefile="platform_gcc.mk"
+            fi
+        elif test "$ALTI_CFG_OS" = HPUX ; then
+            if test "$ALTI_CFG_CPU" = IA64 ; then
+                platform_makefile="platform_hpux_ia64.mk"
+            elif test "$ALTI_CFG_CPU" = PARISC ; then
+                platform_makefile="platform_hpux_parisc.mk"
+            else
+                platform_makefile="platform_gcc.mk"
+            fi
+        elif test "$ALTI_CFG_OS" = AIX ; then
+            platform_makefile="platform_aix.mk"
+        elif test "$ALTI_CFG_OS" = LINUX -a \
+                  "$ALTI_CFG_CPU" = POWERPC ; then
+            platform_makefile="platform_linux_powerpc.mk"
+        else
+            platform_makefile="platform_gcc.mk"
+        fi
+    fi
+fi
+echo configure: creating platform.mk from $platform_makefile
+(cd ./makefiles; cp ${platform_makefile} platform.mk;)
+
+#### end setup platform specific options ####
+
+
+
+# ============ 8. 디렉토리 저장  ==================
+dnl #configure 보다 한칸 위
+DEV_DIR="`pwd -P`"
+ALTI_HOME="${DEV_DIR}/${PRODUCT_PREFIX}altibase_home"
+CORE_DIR="${DEV_DIR}/src/core"
+PD_DIR="${DEV_DIR}/src/pd"
+ID_DIR="${DEV_DIR}/src/${SELECT_ID_KIND}"
+CM_DIR="${DEV_DIR}/${PRODUCT_PREFIX}src/${SELECT_CM_KIND}"
+SM_DIR="${DEV_DIR}/${PRODUCT_PREFIX}src/${SELECT_SM_KIND}"
+ST_DIR="${DEV_DIR}/src/${SELECT_ST_KIND}"
+MT_DIR="${DEV_DIR}/src/${SELECT_MT_KIND}"
+QP_DIR="${DEV_DIR}/src/${SELECT_QP_KIND}"
+SD_DIR="${DEV_DIR}/src/${SELECT_SD_KIND}"
+RP_DIR="${DEV_DIR}/${PRODUCT_PREFIX}src/${SELECT_RP_KIND}"
+MM_DIR="${DEV_DIR}/${PRODUCT_PREFIX}src/${SELECT_MM_KIND}"
+DK_DIR="${DEV_DIR}/src/${SELECT_DK_KIND}"
+UL_DIR="${DEV_DIR}/${PRODUCT_PREFIX}src/ul"
+UT_DIR="${DEV_DIR}/ut"
+TOOL_DIR="${DEV_DIR}/tool"
+AC_SUBST(DEV_DIR)
+AC_SUBST(ALTI_HOME)
+AC_SUBST(CORE_DIR)
+AC_SUBST(PD_DIR)
+AC_SUBST(ID_DIR)
+AC_SUBST(CM_DIR)
+AC_SUBST(SM_DIR)
+AC_SUBST(ST_DIR)
+AC_SUBST(MT_DIR)
+AC_SUBST(QP_DIR)
+AC_SUBST(SD_DIR)
+AC_SUBST(RP_DIR)
+AC_SUBST(MM_DIR)
+AC_SUBST(DK_DIR)
+AC_SUBST(UL_DIR)
+AC_SUBST(UT_DIR)
+AC_SUBST(TOOL_DIR)
+AC_SUBST(OS_TARGET)
+AC_SUBST(OS_MAJORVER)
+AC_SUBST(OS_MINORVER)
+AC_SUBST(BUILD_MODE)
+AC_SUBST(OPTIMIZER_FLAG)
+AC_SUBST(CONFIG_LACKS_IOSTREAM)
+AC_SUBST(CONFIG_QP_COMPRESS_SCANNER_TABLES)
+
+
+dnl =========   999.   PD RELINK 수행 요망          ==========
+dnl =================  LINKAGE CLEAN ===============================
+rm -rf ${PD_DIR}/makeinclude/config-linkage.h
+rm -rf ${PD_DIR}/makefiles/platform_macros.GNU
+rm -rf ${PD_DIR}/makefiles2/platform.mk
+
+dnl =================  LINKAGE SETTING ===============================
+
+case "$OS_TARGET" in
+    SPARC_SOLARIS )
+        AC_DEFINE(SPARC_SOLARIS, 1)
+        if test "$GCCIS" = "yes"; then
+            platform_mkfile="sparc_solaris_gcc.mk"
+            platform_macro_file="platform_sunos5_g++.GNU"
+        else
+            platform_mkfile="sparc_solaris_cc.mk"
+            platform_macro_file="platform_sunos5_sunc++.GNU"
+        fi
+        case "$OS_MAJORVER.$OS_MINORVER" in
+            2.5 )
+                config_linkage_file="config-sunos5.5.h"
+                ;;
+            2.6 )
+                config_linkage_file="config-sunos5.6.h"
+                ;;
+            2.7 )
+                config_linkage_file="config-sunos5.7.h"
+                ;;
+            2.8 )
+                config_linkage_file="config-sunos5.8.h"
+                ;;
+            2.9 )
+                config_linkage_file="config-sunos5.9.h"
+                ;;
+            2.10 )
+                config_linkage_file="config-sunos5.10.h"
+                ;;
+        esac
+        ;;
+    X86_SOLARIS )
+        AC_DEFINE(X86_SOLARIS, 1)
+        if test "$GCCIS" = "yes"; then
+            platform_mkfile="x86_solaris_gcc.mk"
+            platform_macro_file="platform_x86_g++.GNU"
+        else
+            platform_mkfile="x86_solaris_cc.mk"
+            platform_macro_file="platform_x86_sunc++.GNU"
+        fi
+        case "$OS_MAJORVER.$OS_MINORVER" in
+            2.5 )
+                config_linkage_file="config-sunos5.5.h"
+                ;;
+            2.6 )
+                config_linkage_file="config-sunos5.6.h"
+                ;;
+            2.7 )
+                config_linkage_file="config-sunos5.7.h"
+                ;;
+            2.8 )
+                config_linkage_file="config-sunos5.8.h"
+                ;;
+            2.9 | 2.10 )
+                config_linkage_file="config-sunos5.9.h"
+                ;;
+        esac
+        ;;
+    HP_HPUX )
+        AC_DEFINE(HP_HPUX, 1)
+        if test "$GCCIS" = "yes"; then
+            platform_mkfile="hp_hpux_gcc.mk"
+            platform_macro_file="platform_hpux_gcc.GNU"
+        else
+            platform_mkfile="hp_hpux_cc.mk"
+            if test "$OS_MAJORVER" = "11"; then
+                platform_macro_file="platform_hpux_aCC.GNU"
+            else
+                platform_macro_file="platform_hpux.GNU"
+            fi
+        fi
+        if test "$OS_MAJORVER" = "11"; then
+            config_linkage_file="config-hpux-11.00.h"
+        else
+            config_linkage_file="config-hpux-10.x.h"
+        fi
+        ;;
+    IA64_HP_HPUX )
+        AC_DEFINE(IA64_HP_HPUX, 1)
+        if test "$GCCIS" = "yes"; then
+            platform_mkfile="hp_hpux_gcc.mk"
+            platform_macro_file="platform_hpux_gcc.GNU"
+        else
+            platform_mkfile="hp_hpux_cc.mk"
+            if test "$OS_MAJORVER" = "11"; then
+                platform_macro_file="platform_hpux_aCC.GNU"
+            else
+                platform_macro_file="platform_hpux.GNU"
+            fi
+        fi
+        if test "$OS_MAJORVER" = "11"; then
+            config_linkage_file="config-hpux-11.00.h"
+        else
+            config_linkage_file="config-hpux-10.x.h"
+        fi
+        ;;
+    DEC_TRU64 )
+        AC_DEFINE(DEC_TRU64, 1)
+        platform_mkfile="dec_tru64_cxx.mk"
+        platform_macro_file="platform_tru64_cxx.GNU"
+        config_linkage_file="config-tru64.h"
+        ;;
+    IBM_AIX )
+        AC_DEFINE(IBM_AIX, 1)
+        if test "$GCCIS" = "yes"; then
+            platform_mkfile="ibm_aix_gcc.mk"
+            platform_macro_file="platform_aix4_g++.GNU"
+        else
+            platform_mkfile="ibm_aix_vac.mk"
+            platform_macro_file="platform_aix.GNU"
+        fi
+        case "$OS_MAJORVER.$OS_MINORVER" in
+            4.1 )
+                config_linkage_file="config-aix-4.1.x.h"
+                ;;
+            4.2 )
+                config_linkage_file="config-aix-4.2.x.h"
+                ;;
+            4.3 )
+                config_linkage_file="config-aix-4.3.x.h"
+                ;;
+            5.1 )
+                config_linkage_file="config-aix5.1.h"
+                ;;
+            5.2 | 5.3 )
+                config_linkage_file="config-aix5.1.h"
+                if test "$GCCIS" = "yes"; then
+                    platform_mkfile="ibm_aix_gcc52.mk"
+                else
+                    platform_mkfile="ibm_aix_vac52.mk"
+                fi
+                ;;
+            6.1 )
+                config_linkage_file="config-aix6.1.h"
+                platform_macro_file="platform_aix6_cset++.GNU"
+                if test "$GCCIS" = "yes"; then
+                    platform_mkfile="ibm_aix_gcc52.mk"
+                else
+                    platform_mkfile="ibm_aix_vac52.mk"
+                fi
+                ;;
+        esac
+        ;;
+    INTEL_LINUX | AMD32_LINUX )
+        AC_DEFINE(INTEL_LINUX, 1)
+
+        if test "$ICCIS" = "yes"; then
+            if test "$CONF_FOR_LF" = "yes"; then
+                platform_mkfile="intel_linux_largefile_icc.mk"
+            else
+                platform_mkfile="intel_linux_icc.mk"
+            fi
+            platform_macro_file="platform_linux_icc.GNU"
+        else
+            if test "$CONF_FOR_LF" = "yes"; then
+                platform_mkfile="intel_linux_largefile_gcc.mk"
+            else
+                platform_mkfile="intel_linux_gcc.mk"
+            fi
+            platform_macro_file="platform_linux_lxpthread.GNU"
+        fi
+        config_linkage_file="config-linux-lxpthreads.h"
+        ;;
+    ANDROID_X86 )
+        AC_DEFINE(INTEL_LINUX, 1)
+        platform_mkfile="android_x86_gcc.mk"
+        platform_macro_file="platform_android_x86.GNU"
+        config_linkage_file="config-android-x86.h"
+        ;;
+    ANDROID_ARM )
+        AC_DEFINE(ARM_LINUX, 1)
+        platform_mkfile="android_arm_gcc.mk"
+        platform_macro_file="platform_android_arm.GNU"
+        config_linkage_file="config-android-arm.h"
+        ;;
+    POWERPC64_LINUX )
+        AC_DEFINE(POWERPC64_LINUX, 1)
+        if test "$XLCIS" = "yes"; then
+            platform_mkfile="powerpc64_linux_xlc.mk"
+            platform_macro_file="platform_linux_xlc.GNU"
+        else
+            platform_mkfile="powerpc64_linux_gcc.mk"
+            platform_macro_file="platform_linux_ppc64.GNU"
+        fi
+        config_linkage_file="config-linux-lxpthreads.h"
+        ;;
+    POWERPC64LE_LINUX )
+        AC_DEFINE(POWERPC64LE_LINUX, 1)
+        if test "$XLCIS" = "yes"; then
+            platform_mkfile="powerpc64le_linux_xlc.mk"
+	    platform_macro_file="platform_linux_xlc.GNU"
+        else
+            platform_mkfile="powerpc64le_linux_gcc.mk"
+            platform_macro_file="platform_linux_ppc64.GNU"
+        fi
+        config_linkage_file="config-linux-lxpthreads.h"
+        ;;
+    POWERPC_LINUX )
+        AC_DEFINE(POWERPC_LINUX, 1)
+        platform_mkfile="powerpc_linux_gcc.mk"
+        platform_macro_file="platform_linux_ppc.GNU"
+        config_linkage_file="config-linux-lxpthreads.h"
+        ;;
+    ITRON )
+        AC_DEFINE(ITRON, 1)
+        platform_mkfile="toppers_gcc.mk"
+        platform_macro_file="platform_toppers.GNU"
+        config_linkage_file="config-toppers.h"
+        ;;
+    ARM_LINUX )
+        AC_DEFINE(ARM_LINUX, 1)
+        platform_mkfile="arm_linux_gcc.mk"
+        platform_macro_file="platform_linux_arm.GNU"
+        config_linkage_file="config-arm-linux-lxpthreads.h"
+        ;;
+    MIPS64_LINUX )
+        AC_DEFINE(MIPS64_LINUX, 1)
+        platform_mkfile="mips64_linux_gcc.mk"
+        platform_macro_file="platform_linux_mips64.GNU"
+        config_linkage_file="config-mips64-linux-lxpthreads.h"
+        ;;
+    X86_64_WRS_LINUX )
+        AC_DEFINE(X86_64_LINUX, 1)
+        platform_mkfile="cross_wrs_linux_gcc.mk"
+        platform_macro_file="platform_cross_wrs_linux_lxpthread.GNU"
+        config_linkage_file="config-amd64-linux-lxpthreads.h"
+        ;;
+    MIPS64_WRS_LINUX | MIPS64_N32_WRS_LINUX )
+        AC_DEFINE(MIPS64_WRS_LINUX, 1)
+        platform_mkfile="cross_wrs_linux_gcc.mk"
+        platform_macro_file="platform_cross_wrs_linux_lxpthread.GNU"
+        config_linkage_file="config-mips64-linux-lxpthreads.h"
+        ;;
+    ELDK_LINUX )
+        AC_DEFINE(ELDK_LINUX, 1)
+        platform_mkfile="eldk_linux_gcc.mk"
+        platform_macro_file="platform_linux_eldk.GNU"
+        config_linkage_file="config-eldk-linux-lxpthreads.h"
+        ;;
+    ALPHA_LINUX )
+        AC_DEFINE(ALPHA_LINUX, 1)
+        platform_mkfile="alpha_linux_gcc.mk"
+        platform_macro_file="platform_alpha_linux_lxpthread.GNU"
+        config_linkage_file="config-alpha-linux-lxpthreads.h"
+        ;;
+    IA64_SUSE_LINUX )
+        AC_DEFINE(IA64_SUSE_LINUX, 1)
+        platform_mkfile="ia64_linux_gcc.mk"
+        platform_macro_file="platform_ia64_linux_lxpthread.GNU"
+        config_linkage_file="config-ia64-linux-lxpthreads.h"
+        ;;
+    IA64_LINUX )
+        AC_DEFINE(IA64_LINUX, 1)
+        platform_mkfile="ia64_linux_gcc.mk"
+        platform_macro_file="platform_ia64_linux_lxpthread.GNU"
+        config_linkage_file="config-ia64-linux-lxpthreads.h"
+        ;;
+    AMD64_LINUX )
+        AC_DEFINE(AMD64_LINUX, 1)
+        platform_mkfile="amd64_linux_gcc.mk"
+        platform_macro_file="platform_amd64_linux_lxpthread.GNU"
+        config_linkage_file="config-amd64-linux-lxpthreads.h"
+        ;;
+    XEON_LINUX )
+        AC_DEFINE(XEON_LINUX, 1)
+        if test "$ICCIS" = "yes"; then
+            if test "$CONF_FOR_LF" = "yes"; then
+                platform_mkfile="xeon_linux_largefile_icc.mk"
+            else
+                platform_mkfile="xeon_linux_icc.mk"
+            fi
+            platform_macro_file="platform_linux_icc.GNU"
+	    config_linkage_file="config-linux-lxpthreads.h"
+        else
+	    platform_mkfile="amd64_linux_gcc.mk"
+	    platform_macro_file="platform_amd64_linux_lxpthread.GNU"
+	    config_linkage_file="config-amd64-linux-lxpthreads.h"
+        fi
+        ;;
+    X86_64_LINUX )
+        AC_DEFINE(X86_64_LINUX, 1)
+        platform_mkfile="amd64_linux_gcc.mk"
+        platform_macro_file="platform_amd64_linux_lxpthread.GNU"
+        config_linkage_file="config-amd64-linux-lxpthreads.h"
+        ;;
+    PC_CYGWIN )
+        AC_DEFINE(PC_CYGWIN, 1)
+        platform_mkfile="pc_cygwin_gcc.mk"
+        platform_macro_file="platform_cygwin.GNU"
+        config_linkage_file="config-cygwin32.h"
+        ;;
+    NTO_QNX )
+        AC_DEFINE(NTO_QNX, 1)
+        platform_mkfile="nto_qnx_gcc.mk"
+        platform_macro_file="platform_qnx_neutrino.GNU"
+        config_linkage_file="config-qnx-neutrino.h"
+        ;;
+    X86_64_DARWIN )
+        AC_DEFINE(X86_64_DARWIN, 1)
+        platform_mkfile="x86_macosx_gcc.mk"
+        platform_macro_file="platform_macosx.GNU"
+#"platform_amd64_linux_lxpthread.GNU"
+        config_linkage_file="config-macosx.h"
+#"config-amd64-linux-lxpthreads.h"
+        ;;
+esac
+
+(cd src/pd/makeinclude; ln -s ${config_linkage_file} config-linkage.h;)
+(cd src/pd/makefiles; ln -s ${platform_macro_file} platform_macros.GNU;)
+(cd src/pd/makefiles2; ln -s ${platform_mkfile} platform.mk;)
+AC_LINK_FILES(./src/${SELECT_ID_KIND}/idConfig.h, ./src/${SELECT_ID_KIND}/include/idConfig.h)
+
+dnl ============ 5. Check Compiler Name and Version ==================
+TEMP_FULLPATH_COMP_NAME=`make -s -f Makefile.gcc_version compiler_name`
+TEMP_COMP_NAME=`basename $TEMP_FULLPATH_COMP_NAME`
+COMPILER_NAME=
+if test "$TEMP_COMP_NAME" = "g++"; then
+    COMPILER_NAME=GCC
+else
+    COMPILER_NAME=$TEMP_COMP_NAME
+fi
+
+if test -z "$COMPILER_NAME"; then
+    AC_MSG_ERROR("COMPILER_NAME is not defined")
+else
+    AC_MSG_WARN("COMPILER_NAME is %%% $COMPILER_NAME %%% ")
+fi
+
+if test "$COMPILER_NAME" = "GCC"; then
+   $GAWK -f check_gcc_version.awk
+   GCC_VERSION=`cat gcc_version`
+   GCC_VERSION_MAJOR=`sed 's%\..*%%' < gcc_version`
+   GCC_LD_OPTIONS=`cat gcc_ld_options`
+else
+   GCC_VERSION=
+   GCC_LD_OPTIONS=
+fi
+AC_SUBST(COMPILER_NAME)
+AC_SUBST(GCC_VERSION)
+AC_SUBST(GCC_VERSION_MAJOR)
+AC_SUBST(GCC_LD_OPTIONS)
+
+dnl ============ 5. Check Core Library ====================
+
+dnl ============ 5.1 Check --enable-unittest =============
+DO_UNITTEST=no
+UNITTEST_USE_STATIC_LIB=no
+AC_ARG_ENABLE(unittest, [  --enable-unittest      enabling unittest], DO_UNITTEST=yes)
+AC_SUBST(DO_UNITTEST)
+AC_SUBST(UNITTEST_USE_STATIC_LIB)
+
+# TASK-6198 Samsung Smart SSD
+dnl ============ --enable-smartssd =======================
+ALTIBASE_ENABLE_SMARTSSD=
+AC_ARG_ENABLE(smartssd, [  --enable-smartssd           Smart SSD GC control], ENABLE_SMARTSSD=yes)
+if test "$ENABLE_SMARTSSD" = "yes"; then
+    ALTIBASE_ENABLE_SMARTSSD=yes
+    AC_DEFINE(ALTIBASE_ENABLE_SMARTSSD)
+else
+    ALTIBASE_ENABLE_SMARTSSD=no
+fi
+AC_SUBST(ALTIBASE_ENABLE_SMARTSSD)
+
+dnl ============ 5. Check Platform ==================
+
+OS_LINUX_PACKAGE="";
+OS_LINUX_VERSION="";
+OS_KERNEL_RELEASE=`uname -r`;
+OS_KERNEL_PROCESS_TYPE_THREAD="";
+
+if  test "$OS_TARGET" = "INTEL_LINUX" ||
+    test "$OS_TARGET" = "ALPHA_LINUX" ||
+    test "$OS_TARGET" = "IA64_SUSE_LINUX" ||
+    test "$OS_TARGET" = "IA64_LINUX" ||
+    test "$OS_TARGET" = "POWERPC64_LINUX" ||
+    test "$OS_TARGET" = "POWERPC64LE_LINUX" ||
+    test "$OS_TARGET" = "POWERPC_LINUX" ||
+    test "$OS_TARGET" = "ITRON" ||
+    test "$OS_TARGET" = "AMD32_LINUX" ||
+    test "$OS_TARGET" = "AMD64_LINUX" ||
+    test "$OS_TARGET" = "XEON_LINUX" ||
+    test "$OS_TARGET" = "X86_64_LINUX" ||
+    test "$OS_TARGET" = "X86_64_WRS_LINUX" ||
+    test "$OS_TARGET" = "ARM_LINUX" ||
+    test "$OS_TARGET" = "ELDK_LINUX"||
+    test "$OS_TARGET" = "X86_64_DARWIN";
+then
+    if test -f "/etc/issue"; then
+        echo ""
+        echo "*** Checking LINUX PACKAGE INFORMATION ***";
+        $GAWK -f check_linux_version.awk "/etc/issue"
+        OS_LINUX_PACKAGE=`cat linux_package`;
+        OS_LINUX_VERSION=`cat linux_version`;
+
+        if test "$OS_LINUX_PACKAGE" = "Unknown"; then
+            $GAWK -f check_linux_version.awk "/etc/redhat-release"
+            OS_LINUX_PACKAGE=`cat linux_package`;
+            OS_LINUX_VERSION=`cat linux_version`;
+        fi
+
+        if test "$OS_LINUX_PACKAGE" = "Unknown"; then
+            echo "*** Check Failed. ***"; echo ""
+            echo "No information in /etc/issue and /etc/redhat-release. So, Can't Determine Linux Package";
+            echo "";
+	else
+            echo "Package Name : << $OS_LINUX_PACKAGE >> Package Version : << $OS_LINUX_VERSION >>"; echo ""
+            echo "*** Check Success. ***"; echo ""
+	fi
+
+    else
+        echo "*** Check Failed. ***"; echo ""
+        echo "Not Exist File /etc/issue. So, Can't Determine Linux Package";
+        echo "";
+        OS_LINUX_PACKAGE="Unknown";
+        OS_LINUX_VERSION="Unknown";
+    fi
+
+    OS_KERNEL_RELEASE_MAJOR=`uname -r | cut -d . -f 1`;
+    OS_KERNEL_RELEASE_MINOR=`uname -r | cut -d . -f 2`;
+
+    echo "OS_KERNEL_RELEASE_MAJOR = $OS_KERNEL_RELEASE_MAJOR";
+    echo "OS_KERNEL_RELEASE_MINOR = $OS_KERNEL_RELEASE_MINOR";
+
+    if test "$OS_KERNEL_RELEASE_MAJOR" -lt "2"
+    then
+        OS_KERNEL_PROCESS_TYPE_THREAD="1";
+    else
+        if test "$OS_KERNEL_RELEASE_MAJOR" = "2" &&
+           test "$OS_KERNEL_RELEASE_MINOR" -le "4"
+        then
+            OS_KERNEL_PROCESS_TYPE_THREAD="1";
+        fi
+    fi
+else
+    if test "$OS_TARGET" = "ANDROID_X86" || 
+       test "$OS_TARGET" = "ANDROID_ARM";
+    then
+        OS_LINUX_PACKAGE="cupcake";
+        OS_LINUX_VERSION="1.0";
+    fi
+fi
+
+AC_SUBST(OS_LINUX_PACKAGE)
+AC_SUBST(OS_LINUX_VERSION)
+AC_SUBST(OS_KERNEL_PROCESS_TYPE_THREAD)
+
+AC_DEFINE_UNQUOTED(OS_LINUX_PACKAGE, "$OS_LINUX_PACKAGE")
+AC_DEFINE_UNQUOTED(OS_LINUX_VERSION, "$OS_LINUX_VERSION")
+
+AC_DEFINE_UNQUOTED(OS_SYSTEM_TYPE, "${host}")
+AC_DEFINE_UNQUOTED(OS_TARGET, "$OS_TARGET")
+AC_DEFINE_UNQUOTED(OS_MAJORVER, $OS_MAJORVER)
+AC_DEFINE_UNQUOTED(OS_MINORVER, $OS_MINORVER)
+AC_DEFINE_UNQUOTED(BUILD_MODE, "$BUILD_MODE")
+
+AC_DEFINE_UNQUOTED(COMPILER_NAME, "$COMPILER_NAME")
+AC_DEFINE_UNQUOTED(GCC_VERSION, "$GCC_VERSION")
+AC_DEFINE_UNQUOTED(GCC_LD_OPTIONS, "$GCC_LD_OPTIONS")
+
+dnl new config info
+AC_DEFINE_UNQUOTED(ALTI_CFG_CPU_$ALTI_CFG_CPU, 1)
+AC_DEFINE_UNQUOTED(ALTI_CFG_OS_$ALTI_CFG_OS, 1)
+AC_DEFINE_UNQUOTED(ALTI_CFG_OS_MAJOR, $ALTI_CFG_OS_MAJOR)
+AC_DEFINE_UNQUOTED(ALTI_CFG_OS_MINOR, $ALTI_CFG_OS_MINOR)
+AC_DEFINE_UNQUOTED(ALTI_CFG_EDITION_$ALTI_CFG_EDITION, 1)
+
+AC_DEFINE_UNQUOTED(ALTI_CFG_CPU, "$ALTI_CFG_CPU")
+AC_DEFINE_UNQUOTED(ALTI_CFG_OS, "$ALTI_CFG_OS")
+
+AC_DEFINE_UNQUOTED(ALTI_CFG_BITTYPE, "$ALTI_CFG_BITTYPE")
+AC_DEFINE_UNQUOTED(ALTI_CFG_BITTYPE_$ALTI_CFG_BITTYPE, 1)
+
+AC_SUBST(ALTI_CFG_CPU)
+AC_SUBST(ALTI_CFG_OS)
+AC_SUBST(ALTI_CFG_OS_MAJOR)
+AC_SUBST(ALTI_CFG_OS_MINOR)
+AC_SUBST(ALTI_CFG_EDITION)
+AC_SUBST(ALTI_CFG_BITTYPE)
+
+AC_SUBST(CROSS_COMPILE)
+
+
+# Export Alticore macros.
+
+AC_DEFINE_UNQUOTED(ACP_DL_MOD_FULL_FORMAT, "$ACP_DL_MOD_FULL_FORMAT")
+AC_DEFINE_UNQUOTED(ACP_DL_MOD_NAME_FORMAT, "$ACP_DL_MOD_NAME_FORMAT")
+AC_DEFINE_UNQUOTED(ACP_DL_LIB_FULL_FORMAT, "$ACP_DL_LIB_FULL_FORMAT")
+AC_DEFINE_UNQUOTED(ACP_DL_LIB_NAME_FORMAT, "$ACP_DL_LIB_NAME_FORMAT")
+AC_DEFINE_UNQUOTED(ACP_DL_LIB_EXT, "$ACP_DL_LIB_EXT")
+AC_DEFINE_UNQUOTED(ACP_PROC_EXE_NAME_FORMAT, "$ACP_PROC_EXE_NAME_FORMAT")
+AC_DEFINE_UNQUOTED(ACP_PROC_EXE_EXT, "$ACP_PROC_EXE_EXT")
+if test "$ALTI_CFG_OS" = AIX ; then
+    AC_DEFINE_UNQUOTED(ACP_CFG_AIX_USEPOLL, $ACP_CFG_AIX_USEPOLL)
+fi
+
+if test "$OS_TARGET" = NOT_SUPPORTED; then
+    AC_MSG_WARN("WARNING!!!!! NOT SUPPORTED OS..please check it!!")
+else
+    echo ""
+    echo "--- TARGET OS is [$OS_TARGET] ---"
+    echo "--- MAJOR VER is [$OS_MAJORVER] ---"
+    echo "--- MINOR VER is [$OS_MINORVER] ---"
+fi
+
+dnl ============ 5. 최종 생성화일 명시 ==================
+dnl 각 화일의 .in을 참조해서 목적화일을 생성 Makefile.in => Makefile
+dnl 없으면 만들지 않음
+AC_OUTPUT([env.mk
+           vars.mk
+           ./makefiles/config.mk
+           ])
+
+rm -f config.log config.status

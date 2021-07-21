@@ -1,0 +1,44 @@
+Common (core, fundamental) module
+    include/ : header files
+    msg/ : error code and message    
+    qcb/ : Binding 
+    qcc/ : Cloning
+    qcd/ : Dynamic sql
+    qci/ : Interface
+    qcg/ : global environment
+    qcm/ : Meta management
+    qcp/ : Parser
+    qcu/ : Utility
+    qcs/ : Security
+    lib/ : library
+mathematics (expression)
+    qtc/ : query mathematics common
+DDL module
+    qdb/ : DDL taBle statement validation/optimzation/execution.
+    qdc/ : other DDL statement execution
+    qdd/ : DDL Drop statement validation/optimzation/execution.
+    qdm/ : DDL Materialized View statement validation/optimizaion/execution.
+    qdn/ : DDL coNstraint statement validation/optimzation/execution.
+    qdp/ : DDL Privilege statement validation/optimzation/execution.
+    qdr/ : DDL useR statement validation/optimzation/execution.
+    qds/ : DDL Sequence statement validation/optimzation/execution.
+    qdt/ : DDL Tablespace statement validation/optimization/execution.
+    qdx/ : DDL indeX statement validation/optimzation/execution.
+    qdv/ : DDL View statement validation/optimizaion/execution.
+    qdsd/ : SHARD DDL statement validation/optimzation/execution.
+DML module
+    qmc/ : DML statement Common
+    qmg/ : DML statement Graph (logical operator)
+    qmn/ : DML statement execution plan Node (physical operator)
+    qmo/ : DML statement Optimization
+    qmv/ : DML statement Validation
+    qmx/ : DML statement eXecution
+Stored Procedure module
+    qso/ : Stored procedure statement Optimization
+    qsv/ : Stored procedure statement Validation
+    qsx/ : Stored procedure statement eXecution
+    qsf/ : Stored procedure extended Functions
+    qss/ : Stored procedure Security ( altiwrap )
+    qsc/ : Stored procedure Concurrent execute package
+Replication module
+    qrc/ : Replication statement validation/execution

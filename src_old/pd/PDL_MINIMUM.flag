@@ -1,0 +1,114 @@
+
+== 최경량 ACE_OS를 컴파일 하기 위한 방법 (solaris 2.7 기준)
+  
+                                  작성 : 김성진 (2000.2.24)
+
+1. /ace/config.h 만들기
+/home/sjkim/Work2/ACE_wrappers/ace$ ln -s config-sunos5.7.h config.h
+
+2. /makeinclude/platform_macros.GNU 만들기
+ln -s platform_sunos5_sunc++.GNU platform_macros.GNU
+
+3. ACE_ROOT 환경변수 설치
+export ACE_ROOT=/home/sjkim/Work2/ACE_wrappers
+
+4. /makeinclude/platform_macros.GNU 수정
+   => compat5 이상에서 inline 옵션을 강제로 없앴기 때문에
+      (초기 CC 5.0의 버그를 피하기 위한 듯)
+      inline이 가능하도록 수정
+
+        ........ 생략 ..........
+
+        ifeq (Compilers 5,$(findstring Compilers 5,$(CC_VERSION)))
+          #### CC 5.0 or later
+          #### Inlining appears to cause link problems with early releases of
+          #### CC 5.0.
+
+        #  by sjkim : erase this line for inline enable
+        #  inline = 0      <=== 주석 표시를 붙인다!!! 
+
+        ........ 생략 ..........
+
+5. 모든 라이브러리 만들기 위한 컴파일 (일부만 만들 경우 5번으로)
+
+cd ace
+make
+
+5. COMPONENT 중 OS 만 만들 경우
+
+  가. config.h 앞에 config-minimal.h를 include
+	  => include config-minimal.h to config.h
+
+  나. config-minimal.h에 아래의 매크로 삽입
+      (라이브러리간의 interdependency 제거)
+         #define ACE_THREADS_DONT_INHERIT_LOG_MSG
+         #define ACE_NLOGGING
+	참고) 이미 정의된 매크로들
+		=> already exist  in config-minimal.h
+		  ACE_HAS_MINIMAL_ACE_OS
+		  ACE_HAS_THREAD_SPECIFIC_STORAGE
+		  ACE_USE_THREAD_MANAGER_ADAPTER
+
+    => ADD CODE to ACE.cpp
+      #define LM_ERROR  020
+      #define ACE_ERROR_RETURN(X, Y) return (Y)
+
+   다. 컴파일 방법 (compat5)
+	   1) make ACE_COMPONENTS=OS static_libs=1 shared_libs=0 inline=1
+
+       2) 컴파일 예)
+          CC -mt -g -library=iostream,no%Cstd -instances=explicit -noex  
+             -D__ACE_INLINE__ -DACE_LACKS_ACE_TOKEN -DACE_LACKS_ACE_OTHER  
+             -I/home/sjkim/Work2/ACE_Small  -c  -o .obj/Basic_Types.o 
+              Basic_Types.cpp
+
+   라. 컴파일 방법 (compat4)
+	   1) make ACE_COMPONENTS=OS static_libs=1 shared_libs=0 compat4=1 inline=1
+
+       2) 컴파일 예)
+          CC -compat=4 -mt -g -DACE_LACKS_RTTI -instances=explicit -noex  
+             -D__ACE_INLINE__ -DACE_LACKS_ACE_TOKEN -DACE_LACKS_ACE_OTHER  
+             -I/home/sjkim/Work2/ACE_Small  -c  -o .obj/Basic_Types.o 
+             Basic_Types.cpp
+
+
+    마. 컴파일 방법 (64비트)
+
+       1) /makeinclude/platform_macros.GNU 수정 요망
+          ifeq (,$(compat4))
+            compat4 = 0
+          endif
+          ifeq (,$(debug))
+            debug = 1
+          endif
+          ifeq (,$(distrib))
+            distrib = 0
+          endif
+          ifeq (,$(threads))
+            threads = 1
+          endif
+
+          ifeq (,$(compile64))   <=== 추가(1)
+            compile64 = 0        <=== 추가
+          endif                  <=== 추가
+
+         .... 생략 ........
+
+          ifeq (Compilers 5,$(findstring Compilers 5,$(CC_VERSION)))
+            #### CC 5.0 or later
+            #### Inlining appears to cause link problems with early releases of
+            #### CC 5.0.
+            inline = 0
+
+            ifeq ($(compile64),1)      <=== 추가(2)
+              CCFLAGS += -xarch=v9     <=== 추가
+            endif                      <=== 추가
+
+	   2) make ACE_COMPONENTS=OS static_libs=1 shared_libs=0 compile64=1 inline=1
+       3) 컴파일 예
+          CC -xarch=v9 -mt -g -library=iostream,no%Cstd -instances=explicit 
+             -noex  -D__ACE_INLINE__ -DACE_LACKS_ACE_TOKEN 
+             -DACE_LACKS_ACE_OTHER  -I/home/sjkim/Work2/ACE_Small  
+             -c  -o .obj/Basic_Types.o Basic_Types.cpp
+
+

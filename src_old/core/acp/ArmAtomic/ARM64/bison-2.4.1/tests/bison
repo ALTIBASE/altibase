@@ -1,0 +1,8 @@
+#! /bin/bash
+# tests/bison.  Generated from bison.in by configure.
+# Wrapper around a non installed bison to make it work as an installed one.
+
+# Use the shipped files, not those installed.
+BISON_PKGDATADIR='/home/picocluster/ARM64/bison-2.4.1/data'
+export BISON_PKGDATADIR
+exec $PREBISON '/home/picocluster/ARM64/bison-2.4.1/src/bison' ${1+"$@"}

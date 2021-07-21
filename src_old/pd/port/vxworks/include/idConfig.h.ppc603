@@ -1,0 +1,222 @@
+/* ./id/src/idConfig.h.  Generated automatically by configure.  */
+
+/***********************************************************************
+ * $Id: idConfig.h.Win32 24675 2007-12-28 01:55:34Z ksjall $
+ * $Log$
+ * Revision 1.2  2006/05/16 00:23:44  sjkim
+ * TASK-1786
+ *
+ * Revision 1.1.2.1  2006/04/12 05:05:22  sjkim
+ * TASK-1786
+ *
+ * Revision 1.6  2005/09/11 03:59:11  hjohn
+ * fix for Windows
+ *
+ * Revision 1.5  2005/07/06 09:44:21  hjohn
+ * to reorganize
+ *
+ * Revision 1.4  2005/06/02 08:13:00  hjohn
+ * (BUG-11883) to remove RLIMIT_CORE
+ *
+ * Revision 1.3  2004/08/18 07:03:35  hjohn
+ * to avoid constants value of GCC_VERSION with NULL
+ *
+ * Revision 1.2  2004/05/25 08:18:34  hjohn
+ * (WIN32/WIN64) to remove redefinition warning
+ *
+ * Revision 1.1  2004/02/24 07:43:30  hjohn
+ * (WIN64) to rearrange with new filename extension
+ *
+ **********************************************************************/
+
+/***********************************************************************
+ *
+ * NAME
+ *   idConfig.h   (auto creation from config.h.in by configure script )
+ * 
+ * DESCRIPTION
+ * Configure 스크립트에 의해 자동적으로 생성되는 시스템 config 화일
+ *
+ **********************************************************************/
+
+#ifndef _O_ID_CONFIG_H_
+#define _O_ID_CONFIG_H_ 1
+
+/*
+ * 현재 검사되는 운영체제 리스트 (아래의 #undef 참조요망)
+ 
+ * 변수명 : 1. OS_TARGET (CPU 및 운영체제)
+               SPARC_SOLARIS : 스팍용 솔라리스
+               INTEL_LINUX   : 인텔용 리눅스
+                
+            2. OS_MAJORVER (0 ~ n) : 메이저 운영체제 넘버
+            3. OS_MINORVER (0 ~ n) : 마이너 운영체제 넘버
+
+   예1) 솔라리스 7의 경우 
+        얻어지는 값) sparc-sun-solaris2.7
+
+        OS_TARGET : SPARC_SOLARIS
+        OS_MAJORVER : 2
+        OS_MINORVER : 7
+   
+   예2) 인텔 리눅스의 경우 (운영체제버젼보다, 라이브러리 버젼이 더 중요)
+        얻어지는 값) i686-pc-linux-gnu
+
+        OS_TARGET : INTEL_LINUX
+        OS_MAJORVER : 0 (리눅스의 경우 라이브러리 버젼을 넣어야 할 것임)
+        OS_MINORVER : 0
+ */
+
+#define ALTIBASE_4 1
+
+/* 해당 시스템이 BIG ENDIAN이면 아래의 매크로가 정의됨 */
+#define ENDIAN_IS_BIG_ENDIAN 1
+
+/* OS 종류 및 버젼정보 */
+#define WRS_VXWORKS 1
+
+/* #undef OS_TARGET */
+#define OS_MAJORVER 5
+#define OS_MINORVER 5 
+
+#define OS_TARGET "WRS_VXWORKS"
+#define OS_COMPAT_MODE "VXWORKS"
+#define OS_SYSTEM_TYPE "WRS_VXWORKS"
+
+/* cpu types */
+#undef ALTI_CFG_CPU
+#undef ALTI_CFG_CPU_SPARC
+#undef ALTI_CFG_CPU_X86
+#undef ALTI_CFG_CPU_AMD64
+#undef ALTI_CFG_CPU_XEON
+#undef ALTI_CFG_CPU_POWERPC
+#undef ALTI_CFG_CPU_IA64
+#undef ALTI_CFG_CPU_PARISC
+#undef ALTI_CFG_CPU_ALPHA
+
+/* os types */
+#undef ALTI_CFG_OS
+#undef ALTI_CFG_OS_SOLARIS
+#undef ALTI_CFG_OS_LINUX
+#undef ALTI_CFG_OS_AIX
+#undef ALTI_CFG_OS_HPUX
+#undef ALTI_CFG_OS_TRU64
+#undef ALTI_CFG_OS_ITRON
+#undef ALTI_CFG_OS_QNX
+#undef ALTI_CFG_OS_WINDOWS
+
+/* os versions */
+#undef ALTI_CFG_OS_MAJOR
+#undef ALTI_CFG_OS_MINOR
+
+/* edition types */
+#undef ALTI_CFG_EDITION_ENTERPRISE
+#undef ALTI_CFG_EDITION_STANDARD
+#undef ALTI_CFG_EDITION_MINI
+#undef ALTI_CFG_EDITION_MOBILE
+#undef ALTI_CFG_EDITION_DISK
+
+/* ------------------------------------------------
+ *  Windows Defines for package
+ * ----------------------------------------------*/
+
+#define ALTI_CFG_CPU_X86     1
+#define ALTI_CFG_OS_WINDOWS  1
+#define ALTI_CFG_OS_MAJOR    5
+#define ALTI_CFG_OS_MINOR    0
+#define ALTI_CFG_EDITION_STANDARD 1
+
+#define ALTI_CFG_CPU "PPC603"
+#define ALTI_CFG_OS  "WRS_VXWORKS"
+
+# if defined (_DEBUG)
+#  define BUILD_MODE "debug"
+# else
+#  define BUILD_MODE "release"
+# endif
+
+/* 몇비트로 컴파일 하는가?  64비트일 경우 COMPILE_64가 1로 정의됨 */
+/*#define COMPILE_64BIT*/
+
+/* dbadmin을 INET을 이용해서 접속, 그렇지 않으면, NIX DOMAIN으로 사용됨 */
+#define USE_ADMIN_INET 1
+
+/* cm network config */
+#define CM_DISABLE_UNIX 1
+#define CM_DISABLE_IPC  1
+
+#define GCC_VERSION ""
+
+/*
+  PDL에서는 WIN32의 경우 아래 PDL_* type을 
+ pthread계열의 type으로부터 typedef하지 않고 직접 정의한다.
+ 그러나 소스에서는 pthread_* type을 사용하기도 하므로 이렇게 define해주어야 한다.
+*/
+#define pthread_mutex_t    PDL_mutex_t
+#define pthread_cond_t     PDL_cond_t
+#define pthread_condattr_t PDL_condattr_t
+
+/*         struct termios
+FD_SET
+ idlOS::tcset/getattr 에서 사용하는 구조체로 windows에는 없음
+ termios.h에서 가져옴
+*/
+/* some defines required by POSIX */
+#define NCCS    19
+
+/*
+ * types defined by POSIX. These are better off in types.h, but
+ * the standard says that they have to be in termios.h.
+ */
+typedef unsigned int tcflag_t;
+typedef unsigned char cc_t;
+
+/*
+ * Ioctl control packet
+ */
+struct termios {
+        tcflag_t        c_iflag;        /* input modes */
+        tcflag_t        c_oflag;        /* output modes */
+        tcflag_t        c_cflag;        /* control modes */
+        tcflag_t        c_lflag;        /* line discipline modes */
+        cc_t            c_cc[NCCS];     /* control chars */
+};
+/******************************
+definition for PDL_LACKS_***
+(needs to be emulated)
+*/
+/* shm_***/
+#if !defined (USE_WIN32IPC_DAEMON)
+#define SHM_RND 1
+#endif
+/* setrlimit, getrlimit*/
+#if !defined (RLIMIT_CORE)
+#define RLIMIT_CORE 1
+#endif
+/* sigaction
+/* modified value is referenced from cygwin */
+#define SIGBUS  10 // <--1005001
+#define SIGTRAP 5  // <--1005002
+
+#ifdef VOID
+#    undef VOID
+#    define VOID void
+#endif
+
+#   include <math.h>
+#   include <float.h>
+#   define finite(x) ( _fpclass( (x) ) &     \
+                           (                 \
+                        	  _FPCLASS_NN |  \
+                        	  _FPCLASS_ND |  \
+                        	  _FPCLASS_NZ |  \
+                        	  _FPCLASS_PZ |  \
+                        	  _FPCLASS_PD |  \
+                        	  _FPCLASS_PN    \
+                           )                 \
+                     ) 
+
+#define COMPILER_NAME "Tornado2.2"
+
+#endif
+

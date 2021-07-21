@@ -1,0 +1,10 @@
+LIBRARY "qp_so"
+
+EXPORTS
+?dependencySet@qtc@@SAXGPEAUqcDepInfo@@@Z
+?dependencySetWithDep@qtc@@SAXPEAUqcDepInfo@@0@Z
+?dependencyAnd@qtc@@SAXPEAUqcDepInfo@@00@Z
+?dependencyOr@qtc@@SA?AW4IDE_RC@@PEAUqcDepInfo@@00@Z
+?dependencyClear@qtc@@SAXPEAUqcDepInfo@@@Z
+?makeTrimmedName@qcmFixedTable@@SA?AW4IDE_RC@@PEAD0@Z
+?validateTableName@qcmFixedTable@@SA?AW4IDE_RC@@PEAUqcStatement@@UqcNamePosition@@@Z

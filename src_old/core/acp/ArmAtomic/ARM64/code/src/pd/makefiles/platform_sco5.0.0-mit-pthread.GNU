@@ -1,0 +1,36 @@
+# platform_sco5.0.0-mit-pthread.GNU,v 4.13 1998/08/02 01:31:55 schmidt Exp
+
+# Requires MIT pthreads and gcc 2.7.2 installed in /usr/progressive
+# to produce libPDL.so correctly changed the specs file for gcc 2.7.2
+# for not link -lc and -lgcc and other not shared libraries
+
+debug = 1
+optimize = 1
+
+CC              = gcc
+# for threads
+# for no threads
+#CXX		= gcc -fno-implicit-templates -w -fno-strict-prototypes
+# LDFLAGS	+= -L $(PD_DIR)/pdl -L ./ ${MIT_PTHREADS_DIR}/init/init.o # -z muldefs
+# LDLIBS	+= -L $(PD_DIR)/pdl -L ./ ${MIT_PTHREADS_DIR}/init/init.o -lPDL # -z muldefs
+LDLIBS	+= -L $(PD_DIR)/pdl -L ./ -lPDL # -z muldefs
+CXX		= g++
+CFLAGS		+= -melf -w
+CCFLAGS		+= -melf -fPIC -Xpg4plus -fno-implicit-templates -I ${MIT_PTHREADS_DIR}/include -I /usr/progressive/lib/g++-include
+DCFLAGS		+= -gstabs
+DCCFLAGS	+= $(DCFLAGS)
+CDLD            = $(CC)
+DLD             = $(CXX)
+LD              = $(CXX)
+LIBS            = -L${MIT_PTHREADS_DIR} -lnsl -lpthread
+OCFLAGS		+= -O2
+OCCFLAGS        += $(OCFLAGS) $(added_optimizer_flag)
+PIC             = -fPIC
+AR              = ar
+ARFLAGS         = ruv
+RANLIB          = /bin/true
+
+SOFLAGS = $(CPPFLAGS) -melf -fPIC -G 
+SOBUILD = $(COMPILE.cc) $(PIC) -o $(VSHDIR)$*.so $<
+# SOLINK	= $(SOLINK.cc) -o $@ $(LDFLAGS) $<
+PRELIB  = @true
