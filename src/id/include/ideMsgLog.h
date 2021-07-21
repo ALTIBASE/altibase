@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: ideMsgLog.h 81764 2017-11-29 09:42:26Z minku.kang $
+ * $Id: ideMsgLog.h 91286 2021-07-21 02:21:41Z kclee $
  **********************************************************************/
 
 /***********************************************************************
@@ -63,7 +63,11 @@ public:
 private:
     idBool          checkExist(void);
     IDE_RC          rotate(void);
-    inline void     unrotate(void) { mRotating = 0; }
+    inline void     unrotate(void) 
+    { 
+        IDL_MEM_BARRIER; //BUG-49155
+        acpAtomicSet32(&mRotating ,0);
+    }
 
     /*
      * 파일 만들고 헤더 삽입.  성공 시 메모리맵 리스트 aMmapIndex
@@ -84,7 +88,7 @@ private:
     UInt                mMaxNumber;         /* Loop file number */
     UInt                mCurNumber;         /* Replace될 화일번호 */
     ideLogModule        mSelf;              /* What log this object writes */
-    SInt                mRotating;          /* A lock */
+    volatile SInt       mRotating;          /* A lock */
     idBool              mEnabled;           /* Enabled */
     idBool              mDebug;
 
