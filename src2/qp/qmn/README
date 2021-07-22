@@ -1,0 +1,36 @@
+This module includes Plan Nodes below.
+
+--- L-node ---
+who has only left child
+
+[SCAN node] - Scan node
+[GCNT node] - Get Count node
+[VIEW node] - View node ( Scattered tuple -> physical one tuple-row )
+
+--- B-node ---
+who has left child and any expression
+
+[PROJ node] - Projection node
+[FILT node] - Filter node
+[QSRT node] - Quick Sort node
+[HASH node] - Hash node
+[GRAG node] - Group Aggregation node
+[GRBY node] - Group By node
+[AGGR node] - Aggregation node
+
+--- R-node ---
+who has left child and right child
+
+[JOIN node] - Join node
+[SUNI node] - Set Union node
+[BUNI node] - Bag Union node
+[SITS node] - Set Intersect node
+[SMIN node] - Set Minus(Difference) node
+[CONC node] - Concatenation node
+
+--- T-node ---
+who has left child and right child and any expression
+
+[LOJN node] - Left Outer Join node
+[FOJN node] - Full Outer Join node
+[AOJN node] - Anti Left Outer Join node

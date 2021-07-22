@@ -1,0 +1,20 @@
+
+VERSION=$(shell cat ${ALTIBASE_DEV}/MSC_VERSION)
+
+ifeq (15.,$(findstring 15.,$(VERSION)))
+MSC_VER=15
+else
+  ifeq (14.,$(findstring 14.,$(VERSION)))
+  MSC_VER=14
+  else
+    ifeq (13.,$(findstring 13.,$(VERSION)))
+    MSC_VER=13
+    else
+      ifeq (12.,$(findstring 12.,$(VERSION)))
+      MSC_VER=12
+      else
+      error : not support compiler!!
+      endif
+    endif
+  endif
+endif

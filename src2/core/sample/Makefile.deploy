@@ -1,0 +1,22 @@
+# Copyright 1999-2010, ALTIBASE Corporation or its subsidiaries.
+# All rights reserved.
+
+# $Id:
+#
+
+.PHONY:
+
+include $(ALTICORE_HOME)/env/env64_debug.mk
+
+ALTICORE_DEFINES            += -DACP_CFG_DL_STATIC
+
+build:
+	$(CC) $(ALTICORE_DEFINES) sampleAcpOptGet.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)optget$(EXEC_SUF)
+	$(CC) $(ALTICORE_DEFINES) sampleActGenerateCore.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)gencore$(EXEC_SUF)
+	$(CC) $(ALTICORE_DEFINES) sampleAcpVersion.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)version$(EXEC_SUF)
+	$(CC) $(ALTICORE_DEFINES) sampleAcpFile.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)corefile$(EXEC_SUF)
+	$(CC) $(ALTICORE_DEFINES) sampleAcpFileList.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)corels$(EXEC_SUF)
+	$(CC) $(ALTICORE_DEFINES) sampleAcpFileInfo.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)corestat$(EXEC_SUF)
+	$(CC) $(ALTICORE_DEFINES) sampleAcpInet.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)coreinet$(EXEC_SUF)
+	$(CC) $(ALTICORE_DEFINES) sampleAcpProcDaemonize.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)coredaemon$(EXEC_SUF)
+	$(CC) $(ALTICORE_DEFINES) sampleAclReadLine.c $(ALTICORE_LDFLAGS) $(ALTICORE_INCLUDES) $(OUT)coregets$(EXEC_SUF)

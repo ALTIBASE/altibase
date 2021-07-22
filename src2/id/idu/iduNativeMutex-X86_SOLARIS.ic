@@ -1,0 +1,43 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-X86_SOLARIS.ic 50933 2012-01-16 07:13:10Z elcarim $
+ **********************************************************************/
+
+/* ------------------------------------------------
+ *
+ * SPARC CPU : Solaris Native Latch Implementation
+ *
+ * ----------------------------------------------*/
+
+# include <time.h>
+# include <unistd.h>
+# include <stdlib.h>
+
+/* BUG-33352 [id] No more need the iduCas32 function in solaris10-x86 ( be
+ * replaced by acpAtomicCas32 ) */
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) (acpAtomicCas32(obj, 0, 0) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return (acpAtomicCas32(aObj, 1, 0) == 0 ? 1 : 0);
+}
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_CASSERT(*aObj != 0);
+
+    /* BUG-33220 [id] The releaseNativeMutex function releases the lock 
+     * twice in so10-x86  */
+    acpAtomicSet32( aObj, 0 );
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    acpAtomicSet32( aObj, 0 );
+}

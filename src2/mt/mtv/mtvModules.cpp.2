@@ -1,0 +1,1391 @@
+/***********************************************************************
+ * Copyright 1999-2001, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: mtvModules.cpp 52749 2012-04-13 00:37:55Z hykim $
+ **********************************************************************/
+
+#include <mte.h>
+#include <mtd.h>
+#include <mtl.h>
+#include <mtv.h>
+
+extern mtvModule stvGeometry2Binary;
+extern mtvModule stvBinary2Geometry;
+extern mtvModule stvNull2Geometry;
+extern mtvModule mtvBigint2Double;
+extern mtvModule mtvBigint2Real;
+extern mtvModule mtvBigint2Integer;
+extern mtvModule mtvBigint2Smallint;
+extern mtvModule mtvBigint2Numeric;
+extern mtvModule mtvBigint2Float;
+extern mtvModule mtvBigint2Varchar; // PROJ-1361
+extern mtvModule mtvBigint2Char;
+extern mtvModule mtvChar2Varchar;   // PROJ-1361
+extern mtvModule mtvChar2Bigint;
+extern mtvModule mtvChar2Double;
+extern mtvModule mtvChar2Integer;
+extern mtvModule mtvChar2Nvarchar;
+extern mtvModule mtvChar2Numeric;
+extern mtvModule mtvChar2Date;
+extern mtvModule mtvChar2Float;
+extern mtvModule mtvChar2Real;
+extern mtvModule mtvChar2Smallint;
+extern mtvModule mtvDate2Varchar;   // PROJ-1361
+extern mtvModule mtvDate2Char;
+extern mtvModule mtvDouble2Bigint;
+extern mtvModule mtvDouble2Float;
+extern mtvModule mtvDouble2Interval;
+extern mtvModule mtvDouble2Numeric;
+extern mtvModule mtvDouble2Real;
+extern mtvModule mtvDouble2Char;
+extern mtvModule mtvFloat2Bigint;
+extern mtvModule mtvFloat2Integer;
+extern mtvModule mtvFloat2Smallint;
+extern mtvModule mtvFloat2Double;
+extern mtvModule mtvFloat2Numeric;
+extern mtvModule mtvFloat2Char;
+extern mtvModule mtvFloat2Varchar;  // PROJ-1361 
+extern mtvModule mtvInteger2Real;
+extern mtvModule mtvInteger2Float;
+extern mtvModule mtvInteger2Numeric;
+extern mtvModule mtvInteger2Bigint;
+extern mtvModule mtvInteger2Double;
+extern mtvModule mtvInteger2Smallint;
+extern mtvModule mtvInteger2Char;
+extern mtvModule mtvInteger2Varchar;
+extern mtvModule mtvInterval2Double;
+extern mtvModule mtvNull2Bigint;
+extern mtvModule mtvNull2Blob;
+extern mtvModule mtvNull2Boolean;
+extern mtvModule mtvNull2Char;      // PROJ-1361
+extern mtvModule mtvNull2Clob;      // PROJ-1362
+extern mtvModule mtvNull2Date;
+extern mtvModule mtvNull2Double;
+extern mtvModule mtvNull2Float;
+extern mtvModule mtvNull2Integer;
+extern mtvModule mtvNull2Interval;
+extern mtvModule mtvNull2Numeric;
+extern mtvModule mtvNull2Real;
+extern mtvModule mtvNull2Smallint;
+extern mtvModule mtvNull2Varchar;  // PROJ-1361 
+extern mtvModule mtvNull2Byte;
+extern mtvModule mtvNull2Nibble;
+extern mtvModule mtvNull2Bit;      // PROJ-1571
+extern mtvModule mtvNull2Varbit;   // PROJ-1571
+extern mtvModule mtvNumeric2Bigint;
+extern mtvModule mtvNumeric2Integer;
+extern mtvModule mtvNumeric2Smallint;
+extern mtvModule mtvNumeric2Double;
+extern mtvModule mtvNumeric2Float;
+extern mtvModule mtvNumeric2Char;
+extern mtvModule mtvNumeric2Varchar;
+extern mtvModule mtvReal2Double;
+extern mtvModule mtvReal2Char;
+extern mtvModule mtvReal2Varchar;
+extern mtvModule mtvSmallint2Bigint;
+extern mtvModule mtvSmallint2Integer;
+extern mtvModule mtvSmallint2Numeric;
+extern mtvModule mtvSmallint2Float;
+extern mtvModule mtvSmallint2Double;
+extern mtvModule mtvSmallint2Real;
+extern mtvModule mtvSmallint2Char;
+extern mtvModule mtvSmallint2Varchar;
+extern mtvModule mtvVarchar2Char;  // PROJ-1361
+extern mtvModule mtvVarchar2Date;  // PROJ-1361
+extern mtvModule mtvVarchar2Float; // PROJ-1361
+extern mtvModule mtvVarchar2Byte;  // PROJ-1361
+extern mtvModule mtvVarchar2Bigint;
+extern mtvModule mtvVarchar2Double;
+extern mtvModule mtvVarchar2Integer;
+extern mtvModule mtvVarchar2Numeric;
+extern mtvModule mtvVarchar2Real;
+extern mtvModule mtvVarchar2Smallint;
+extern mtvModule mtvVarchar2Nchar;
+
+// PROJ-1365
+extern mtvModule mtvDouble2Varchar;
+
+// PROJ-1362
+extern mtvModule mtvVarchar2Blob;
+extern mtvModule mtvVarchar2Clob;
+extern mtvModule mtvByte2Blob;
+extern mtvModule mtvBinary2Blob;      // PR-15636
+extern mtvModule mtvBlobLocator2Blob;
+extern mtvModule mtvClobLocator2Clob;
+extern mtvModule mtvBlob2BlobLocator;
+extern mtvModule mtvClob2ClobLocator;
+extern mtvModule mtvNibble2Varchar;
+extern mtvModule mtvVarchar2Nibble;
+extern mtvModule mtvByte2Varchar;
+
+// PROJ-1571
+extern mtvModule mtvVarbit2Varchar;
+extern mtvModule mtvBit2Varbit;
+extern mtvModule mtvVarbit2Bit;
+
+// PROJ-1579
+extern mtvModule mtvNchar2Char;
+extern mtvModule mtvChar2Nchar;
+extern mtvModule mtvNvarchar2Varchar;
+extern mtvModule mtvVarchar2Nvarchar;
+extern mtvModule mtvNchar2Nvarchar;
+extern mtvModule mtvNvarchar2Nchar;
+extern mtvModule mtvNull2Nchar;
+extern mtvModule mtvNull2Nvarchar;
+
+// PROJ-2002 Column Security
+extern mtvModule mtvChar2Echar;       
+extern mtvModule mtvEchar2Char;
+extern mtvModule mtvVarchar2Evarchar;
+extern mtvModule mtvEvarchar2Varchar;
+extern mtvModule mtvNull2Echar;       
+extern mtvModule mtvNull2Evarchar;
+
+// PROJ-2163 Revise binding to improve stability
+extern mtvModule mtvUndef2Bigint;
+extern mtvModule mtvUndef2Bit;
+extern mtvModule mtvUndef2Blob;
+extern mtvModule mtvUndef2Boolean;
+extern mtvModule mtvUndef2Byte;
+extern mtvModule mtvUndef2Char;
+extern mtvModule mtvUndef2Clob;
+extern mtvModule mtvUndef2Date;
+extern mtvModule mtvUndef2Double;
+extern mtvModule mtvUndef2Echar;
+extern mtvModule mtvUndef2Evarchar;
+extern mtvModule mtvUndef2Float;
+extern mtvModule mtvUndef2Integer;
+extern mtvModule mtvUndef2Interval;
+extern mtvModule mtvUndef2Nchar;
+extern mtvModule mtvUndef2Nibble;
+extern mtvModule mtvUndef2Null;
+extern mtvModule mtvUndef2Numeric;
+extern mtvModule mtvUndef2Nvarchar;
+extern mtvModule mtvUndef2Real;
+extern mtvModule mtvUndef2Smallint;
+extern mtvModule mtvUndef2Varbit;
+extern mtvModule mtvUndef2Varchar;
+extern mtvModule mtvUndef2List;
+extern mtvModule mtvUndef2Number;
+extern mtvModule mtvUndef2File;
+extern mtvModule mtvUndef2BlobLocator;
+extern mtvModule mtvUndef2ClobLocator;
+extern mtvModule mtvUndef2Binary;
+extern mtvModule mtvUndef2Geometry;
+
+mtvModule** mtv::mAllModule = NULL;
+const mtvModule* mtv::mInternalModule[] = {
+    &mtvBigint2Double,
+    &mtvBigint2Real,
+    &mtvBigint2Integer,
+    &mtvBigint2Smallint,
+    &mtvBigint2Numeric,
+    &mtvBigint2Float,
+    &mtvBigint2Varchar, // PROJ-1361
+    &mtvBigint2Char,
+    &mtvChar2Varchar,   // PROJ-1361
+    &mtvChar2Bigint,
+    &mtvChar2Double,
+    &mtvChar2Integer,
+    &mtvChar2Nvarchar,
+    &mtvChar2Numeric,
+    &mtvChar2Date,
+    &mtvChar2Float,
+    &mtvChar2Real,
+    &mtvChar2Smallint,
+    &mtvDate2Varchar,   // PROJ-1361
+    &mtvDate2Char,
+    &mtvDouble2Bigint,
+    &mtvDouble2Float,
+    &mtvDouble2Interval,
+    &mtvDouble2Numeric,
+    &mtvDouble2Real,
+    &mtvDouble2Varchar, // PROJ-1365
+    &mtvDouble2Char,
+    &mtvFloat2Bigint,
+    &mtvFloat2Integer,
+    &mtvFloat2Smallint,
+    &mtvFloat2Double,
+    &mtvFloat2Numeric,
+    &mtvFloat2Char,
+    &mtvFloat2Varchar, // PROJ-1361
+    &mtvInteger2Real,
+    &mtvInteger2Float,
+    &mtvInteger2Numeric,
+    &mtvInteger2Bigint,
+    &mtvInteger2Double,
+    &mtvInteger2Smallint,
+    &mtvInteger2Char,
+    &mtvInteger2Varchar,
+    &mtvInterval2Double,
+    &mtvNull2Bigint,
+    &mtvNull2Blob,
+    &mtvNull2Boolean,
+    &mtvNull2Char,     // PROJ-1361
+    &mtvNull2Clob,     // PROJ-1362
+    &mtvNull2Date,
+    &mtvNull2Double,
+    &mtvNull2Float,
+    &mtvNull2Integer,
+    &mtvNull2Interval,
+    &mtvNull2Numeric,
+    &mtvNull2Real,
+    &mtvNull2Smallint,
+    &mtvNull2Varchar,  // PROJ-1361
+    &mtvNull2Byte,
+    &mtvNull2Nibble,
+    &mtvNull2Bit,      // PROJ-1571
+    &mtvNull2Varbit,   // PROJ-1571
+    &mtvNumeric2Bigint,
+    &mtvNumeric2Integer,
+    &mtvNumeric2Smallint,
+    &mtvNumeric2Double,
+    &mtvNumeric2Float,
+    &mtvNumeric2Char,
+    &mtvNumeric2Varchar,
+    &mtvReal2Double,
+    &mtvReal2Char,
+    &mtvReal2Varchar,
+    &mtvSmallint2Bigint,
+    &mtvSmallint2Integer,
+    &mtvSmallint2Numeric,
+    &mtvSmallint2Float,
+    &mtvSmallint2Double,
+    &mtvSmallint2Real,
+    &mtvSmallint2Char,
+    &mtvSmallint2Varchar,
+    &mtvVarchar2Char, // PROJ-1361
+    &mtvVarchar2Date, // PROJ-1361
+    &mtvVarchar2Float,// PROJ-1361
+    &mtvVarchar2Byte, // PROJ-1361
+    &mtvVarchar2Blob, // PROJ-1362
+    &mtvVarchar2Clob, // PROJ-1362
+    &mtvVarchar2Bigint,
+    &mtvVarchar2Double,
+    &mtvVarchar2Integer,
+    &mtvVarchar2Numeric,
+    &mtvVarchar2Real,
+    &mtvVarchar2Smallint,
+    &mtvVarchar2Nchar,
+    &mtvByte2Blob,    // PROJ-1362
+    &mtvBinary2Blob,       // BUG-15636
+    &mtvBlobLocator2Blob,  // PROJ-1362
+    &mtvClobLocator2Clob,  // PROJ-1362
+    &mtvBlob2BlobLocator,  // PROJ-1362
+    &mtvClob2ClobLocator,  // PROJ-1362
+    &mtvNibble2Varchar,    // PROJ-1362
+    &mtvVarchar2Nibble,    // PROJ-1362
+    &mtvByte2Varchar,    // PROJ-1362
+    &mtvVarbit2Varchar,  // PROJ-1571
+    &mtvBit2Varbit,      // PROJ-1571
+    &mtvVarbit2Bit,      // PROJ-1571
+    &mtvNchar2Char,      // PROJ-1579
+    &mtvChar2Nchar,      // PROJ-1579
+    &mtvNvarchar2Varchar,// PROJ-1579
+    &mtvVarchar2Nvarchar,// PROJ-1579
+    &mtvNchar2Nvarchar,  // PROJ-1579
+    &mtvNvarchar2Nchar,  // PROJ-1579
+    &mtvNull2Nchar,      // PROJ-1579
+    &mtvNull2Nvarchar,   // PROJ-1579
+    &mtvChar2Echar,               // PROJ-2002
+    &mtvEchar2Char,               // PROJ-2002
+    &mtvVarchar2Evarchar,         // PROJ-2002
+    &mtvEvarchar2Varchar,         // PROJ-2002
+    &mtvNull2Echar,               // PROJ-2002
+    &mtvNull2Evarchar,            // PROJ-2002
+    &mtvUndef2Bigint,             // PROJ-2163 : Undef2*
+    &mtvUndef2Bit,
+    &mtvUndef2Blob,
+    &mtvUndef2Boolean,
+    &mtvUndef2Byte,
+    &mtvUndef2Char,
+    &mtvUndef2Clob,
+    &mtvUndef2Date,
+    &mtvUndef2Double,
+    &mtvUndef2Echar,
+    &mtvUndef2Evarchar,
+    &mtvUndef2Float,
+    &mtvUndef2Integer,
+    &mtvUndef2Interval,
+    &mtvUndef2Nchar,
+    &mtvUndef2Nibble,
+    &mtvUndef2Null,
+    &mtvUndef2Numeric,
+    &mtvUndef2Nvarchar,
+    &mtvUndef2Real,
+    &mtvUndef2Smallint,
+    &mtvUndef2Varbit,
+    &mtvUndef2Varchar,
+    &mtvUndef2List,
+    &mtvUndef2Number,
+    &mtvUndef2File,
+    &mtvUndef2BlobLocator,
+    &mtvUndef2ClobLocator,
+    &mtvUndef2Binary,
+    &mtvUndef2Geometry,
+    NULL
+};
+/* PROJ-2183 MT 형변환 개선 작업에서 mt팀과 코드 리뷰 후, 항상 형변환테이블이 mtvTableCheck형태로
+ * 만들어지는 것을 검증하기 위해 만들어졌다. debug모드에서 체크하도록한다.
+ * 하지만, 데이터타입이 하나 추가될 때마다 이 테이블을 유지보수해야하는 번거로움이 있으므로
+ * 계속 유지하는 것에 대해서는 차후 담당팀에서 다시한번 생각해 볼 필요가 있다. */
+mtvModule* mtv::mMtvTableCheck[31][31][4] = {
+
+    /* Bigint */
+    {
+        { NULL, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Bigint, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Bigint, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Bigint, NULL, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Bigint, NULL, NULL },
+        { &mtvDouble2Bigint, NULL, NULL, NULL },
+        { &mtvFloat2Bigint, NULL, NULL, NULL },
+        { &mtvInteger2Bigint, NULL, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Bigint, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Bigint, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Bigint, NULL, NULL, NULL },
+        { &mtvReal2Double, &mtvDouble2Bigint, NULL, NULL },
+        { &mtvSmallint2Bigint, NULL, NULL, NULL },
+        { &mtvVarchar2Bigint, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Bigint, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Bigint, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Bigint, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Bigint, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Bigint, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Bigint, NULL, NULL },
+        { &mtvUndef2Bigint, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Bit */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvVarbit2Bit, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Bit, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2Bit, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Varbit */
+    {
+        { NULL, NULL, NULL, NULL },
+        { &mtvBit2Varbit, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Varbit, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2Varbit, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Blob */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Blob, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Blob, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Blob, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvVarchar2Blob, NULL, NULL, NULL },
+        { &mtvByte2Blob, NULL, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvBlobLocator2Blob, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvBinary2Blob, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Varchar, &mtvVarchar2Blob, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Varchar, &mtvVarchar2Blob, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Blob, NULL, NULL },
+        { &mtvUndef2Blob, NULL, NULL, NULL },
+        { &stvGeometry2Binary, &mtvBinary2Blob, NULL, NULL }
+    },
+    /* Boolean */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Boolean, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2Boolean, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Char */
+    {
+        { &mtvBigint2Char, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Char, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Char, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvDate2Char, NULL, NULL, NULL },
+        { &mtvDouble2Char, NULL, NULL, NULL },
+        { &mtvFloat2Char, NULL, NULL, NULL },
+        { &mtvInteger2Char, NULL, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Char, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Char, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Char, NULL, NULL, NULL },
+        { &mtvReal2Char, NULL, NULL, NULL },
+        { &mtvSmallint2Char, NULL, NULL, NULL },
+        { &mtvVarchar2Char, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Char, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Char, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, NULL, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Char, NULL, NULL },
+        { &mtvEchar2Char, NULL, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Char, NULL, NULL },
+        { &mtvUndef2Char, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Date */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Date, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Date, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Date, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Date, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvVarchar2Date, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Date, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Date, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Date, NULL, NULL },
+        { &mtvUndef2Date, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Double */
+    {
+        { &mtvBigint2Double, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Double, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Double, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Double, NULL, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Double, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvFloat2Double, NULL, NULL, NULL },
+        { &mtvInteger2Double, NULL, NULL, NULL },
+        { &mtvInterval2Double, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Double, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Double, NULL, NULL, NULL },
+        { &mtvReal2Double, NULL, NULL, NULL },
+        { &mtvSmallint2Double, NULL, NULL, NULL },
+        { &mtvVarchar2Double, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Double, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Double, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Double, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Double, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Double, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Double, NULL, NULL },
+        { &mtvUndef2Double, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Float */
+    {
+        { &mtvBigint2Float, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Float, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Float, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Float, NULL, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Float, NULL, NULL },
+        { &mtvDouble2Float, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvInteger2Float, NULL, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Float, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Float, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Float, NULL, NULL, NULL },
+        { &mtvReal2Double, &mtvDouble2Float, NULL, NULL },
+        { &mtvSmallint2Float, NULL, NULL, NULL },
+        { &mtvVarchar2Float, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Float, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Float, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Float, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Float, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Float, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Float, NULL, NULL },
+        { &mtvUndef2Float, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Integer */
+    {
+        { &mtvBigint2Integer, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Integer, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Integer, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Integer, NULL, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Integer, NULL, NULL },
+        { &mtvDouble2Bigint, &mtvBigint2Integer, NULL, NULL },
+        { &mtvFloat2Integer, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Bigint, &mtvBigint2Integer, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Integer, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Integer, NULL, NULL, NULL },
+        { &mtvReal2Double, &mtvDouble2Bigint, &mtvBigint2Integer, NULL },
+        { &mtvSmallint2Integer, NULL, NULL, NULL },
+        { &mtvVarchar2Integer, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Integer, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Integer, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Integer, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Integer, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Integer, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Integer, NULL, NULL },
+        { &mtvUndef2Integer, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Interval */
+    {
+        { &mtvBigint2Double, &mtvDouble2Interval, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Double, &mtvDouble2Interval },
+        { &mtvVarbit2Varchar, &mtvVarchar2Double, &mtvDouble2Interval, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Double, &mtvDouble2Interval, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Double, &mtvDouble2Interval, NULL },
+        { &mtvDouble2Interval, NULL, NULL, NULL },
+        { &mtvFloat2Double, &mtvDouble2Interval, NULL, NULL },
+        { &mtvInteger2Double, &mtvDouble2Interval, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Interval, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Double, &mtvDouble2Interval, NULL, NULL },
+        { &mtvReal2Double, &mtvDouble2Interval, NULL, NULL },
+        { &mtvSmallint2Double, &mtvDouble2Interval, NULL, NULL },
+        { &mtvVarchar2Double, &mtvDouble2Interval, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Double, &mtvDouble2Interval, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Double, &mtvDouble2Interval, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Double, &mtvDouble2Interval, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Double, &mtvDouble2Interval, NULL },
+        { &mtvEchar2Char, &mtvChar2Double, &mtvDouble2Interval, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Double, &mtvDouble2Interval, NULL },
+        { &mtvUndef2Interval, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* List */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2List, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Null */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2Null, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Number */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2Number, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Numeric */
+    {
+        { &mtvBigint2Numeric, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Numeric, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Numeric, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Numeric, NULL, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Numeric, NULL, NULL },
+        { &mtvDouble2Numeric, NULL, NULL, NULL },
+        { &mtvFloat2Numeric, NULL, NULL, NULL },
+        { &mtvInteger2Numeric, NULL, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Numeric, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Numeric, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvReal2Double, &mtvDouble2Numeric, NULL, NULL },
+        { &mtvSmallint2Numeric, NULL, NULL, NULL },
+        { &mtvVarchar2Numeric, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Numeric, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Numeric, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Numeric, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Numeric, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Numeric, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Numeric, NULL, NULL },
+        { &mtvUndef2Numeric, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Real */
+    {
+        { &mtvBigint2Real, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Real, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Real, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Real, NULL, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Real, NULL, NULL },
+        { &mtvDouble2Real, NULL, NULL, NULL },
+        { &mtvFloat2Double, &mtvDouble2Real, NULL, NULL },
+        { &mtvInteger2Real, NULL, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Real, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Real, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Double, &mtvDouble2Real, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvSmallint2Real, NULL, NULL, NULL },
+        { &mtvVarchar2Real, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Real, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Real, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Real, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Real, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Real, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Real, NULL, NULL },
+        { &mtvUndef2Real, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Smallint */
+    {
+        { &mtvBigint2Smallint, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Smallint, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Smallint, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Smallint, NULL, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Smallint, NULL, NULL },
+        { &mtvDouble2Bigint, &mtvBigint2Smallint, NULL, NULL },
+        { &mtvFloat2Smallint, NULL, NULL, NULL },
+        { &mtvInteger2Smallint, NULL, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Bigint, &mtvBigint2Smallint, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Smallint, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Smallint, NULL, NULL, NULL },
+        { &mtvReal2Double, &mtvDouble2Bigint, &mtvBigint2Smallint, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvVarchar2Smallint, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Smallint, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Smallint, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Smallint, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Smallint, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Smallint, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Smallint, NULL, NULL },
+        { &mtvUndef2Smallint, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Varchar */
+    {
+        { &mtvBigint2Varchar, NULL, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, NULL, NULL },
+        { &mtvVarbit2Varchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Varchar, NULL, NULL, NULL },
+        { &mtvDate2Varchar, NULL, NULL, NULL },
+        { &mtvDouble2Varchar, NULL, NULL, NULL },
+        { &mtvFloat2Varchar, NULL, NULL, NULL },
+        { &mtvInteger2Varchar, NULL, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Varchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, NULL, NULL, NULL },
+        { &mtvReal2Varchar, NULL, NULL, NULL },
+        { &mtvSmallint2Varchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvByte2Varchar, NULL, NULL, NULL },
+        { &mtvNibble2Varchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Varchar, NULL, NULL },
+        { &mtvNvarchar2Varchar, NULL, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Varchar, NULL, NULL },
+        { &mtvEvarchar2Varchar, NULL, NULL, NULL },
+        { &mtvUndef2Varchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Byte */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Byte, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Byte, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Byte, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvVarchar2Byte, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Varchar, &mtvVarchar2Byte, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Varchar, &mtvVarchar2Byte, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Byte, NULL, NULL },
+        { &mtvUndef2Byte, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Nibble */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Nibble, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Nibble, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Nibble, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvVarchar2Nibble, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Varchar, &mtvVarchar2Nibble, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Varchar, &mtvVarchar2Nibble, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Nibble, NULL, NULL },
+        { &mtvUndef2Nibble, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Clob */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Clob, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Clob, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Clob, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvVarchar2Clob, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvClobLocator2Clob, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Varchar, &mtvVarchar2Clob, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Varchar, &mtvVarchar2Clob, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Clob, NULL, NULL },
+        { &mtvUndef2Clob, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Filetype */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2File, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* BlobLocator */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator },
+        { &mtvVarbit2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvBlob2BlobLocator, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Blob, &mtvBlob2BlobLocator, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL, NULL },
+        { &mtvByte2Blob, &mtvBlob2BlobLocator, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvBinary2Blob, &mtvBlob2BlobLocator, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvEchar2Char, &mtvChar2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Blob, &mtvBlob2BlobLocator, NULL },
+        { &mtvUndef2BlobLocator, NULL, NULL, NULL },
+        { &stvGeometry2Binary, &mtvBinary2Blob, &mtvBlob2BlobLocator, NULL }
+    },
+    /* ClobLocator */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator },
+        { &mtvVarbit2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Clob, &mtvClob2ClobLocator, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvClob2ClobLocator, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvEchar2Char, &mtvChar2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Clob, &mtvClob2ClobLocator, NULL },
+        { &mtvUndef2ClobLocator, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Binary */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &stvNull2Geometry, &stvGeometry2Binary, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2Binary, NULL, NULL, NULL },
+        { &stvGeometry2Binary, NULL, NULL, NULL }
+    },
+    /* Nchar */
+    {
+        { &mtvBigint2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Nchar, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Nchar, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Nchar, NULL, NULL, NULL },
+        { &mtvDate2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvDouble2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvFloat2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvInteger2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Char, &mtvChar2Nchar, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Nchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvReal2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvSmallint2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvVarchar2Nchar, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Nchar, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Nchar, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNvarchar2Nchar, NULL, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Nchar, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Nchar, NULL, NULL },
+        { &mtvUndef2Nchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Nvarchar */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Nvarchar, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Nvarchar, NULL, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Nvarchar, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Nvarchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvVarchar2Nvarchar, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Nvarchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Nvarchar, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Nvarchar, NULL, NULL },
+        { &mtvUndef2Nvarchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Echar */
+    {
+        { &mtvBigint2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Char, &mtvChar2Echar },
+        { &mtvVarbit2Varchar, &mtvVarchar2Char, &mtvChar2Echar, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Echar, NULL, NULL, NULL },
+        { &mtvDate2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvDouble2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvFloat2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvInteger2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Char, &mtvChar2Echar, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Echar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvReal2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvSmallint2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvVarchar2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Char, &mtvChar2Echar, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Char, &mtvChar2Echar, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Echar, NULL, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Char, &mtvChar2Echar, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvEvarchar2Varchar, &mtvVarchar2Char, &mtvChar2Echar, NULL },
+        { &mtvUndef2Echar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Evarchar */
+    {
+        { &mtvBigint2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvBit2Varbit, &mtvVarbit2Varchar, &mtvVarchar2Evarchar, NULL },
+        { &mtvVarbit2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvChar2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvDate2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvDouble2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvFloat2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvInteger2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvInterval2Double, &mtvDouble2Varchar, &mtvVarchar2Evarchar, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNull2Evarchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNumeric2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvReal2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvSmallint2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvVarchar2Evarchar, NULL, NULL, NULL },
+        { &mtvByte2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvNibble2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvNchar2Char, &mtvChar2Varchar, &mtvVarchar2Evarchar, NULL },
+        { &mtvNvarchar2Varchar, &mtvVarchar2Evarchar, NULL, NULL },
+        { &mtvEchar2Char, &mtvChar2Varchar, &mtvVarchar2Evarchar, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2Evarchar, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Undef */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    },
+    /* Geometry */
+    {
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &stvNull2Geometry, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &stvBinary2Geometry, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL },
+        { &mtvUndef2Geometry, NULL, NULL, NULL },
+        { NULL, NULL, NULL, NULL }
+    }
+};

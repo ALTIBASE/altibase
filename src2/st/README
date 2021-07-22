@@ -1,0 +1,6 @@
+MaThematics modules
+    lib/ : library
+    include/ : header files
+    std/ : ST Datatypes
+    stf/ : ST Functions
+

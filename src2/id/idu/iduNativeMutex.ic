@@ -1,0 +1,92 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex.ic 48789 2011-09-27 08:36:15Z djin $
+ **********************************************************************/
+
+#ifndef _O_IDU_NATIVE_MUTEX_IC_
+#define _O_IDU_NATIVE_MUTEX_IC_
+
+#include <iduBridge.h>
+#include <iduMutexRes.h>
+
+/* =============================================================================
+ *
+ *  Native Mutex Implementations
+ *
+ *  => 모든 플랫폼은 아래의 3개의 Define과 3개의 함수를 구현하면,
+ *     자동으로 Latch의 동작이 구현되도록 되어 있다. 
+ *  Wrappers Implementations
+ *
+ *  - Used Symbol
+ *    1. iduNativeMutexObj : Primitive Mutex Values
+ *    2. IDU_NATIVEMUTEX_IS_UNLOCKED(a) : whether the mutex is unlocked.
+ *    3. IDU_NATIVEMUTEX_HOLD_POST_OP(a) : sync op after hold mutex.
+ *    4. initNativeMutex();     init value
+ *    5. tryHoldNativeMutex()   try Hold Native Mutex
+ *    6. releaseNativeMutex();  Release Native Mutex
+ *
+ * =========================================================================== */
+
+/* ------------------------------------------------
+ * SOLARIS (SPARC/X86)
+ * ----------------------------------------------*/
+#if defined(SPARC_SOLARIS)
+
+# include "iduNativeMutex-SPARC_SOLARIS.ic"
+
+#elif defined(X86_SOLARIS)
+
+# include "iduNativeMutex-X86_SOLARIS.ic"
+
+/* ------------------------------------------------
+ * HP
+ * ----------------------------------------------*/
+#elif defined(HP_HPUX) || defined(IA64_HP_HPUX)
+
+# include "iduNativeMutex-HP_HPUX.ic"
+
+/* ------------------------------------------------
+ * AIX
+ * ----------------------------------------------*/
+#elif defined(IBM_AIX)
+
+# include "iduNativeMutex-IBM_AIX.ic"
+/* ------------------------------------------------
+ * LINUX
+ * ----------------------------------------------*/
+#elif defined(OS_LINUX_KERNEL)
+  
+# include "iduNativeMutex-LINUX.ic"
+
+/* ------------------------------------------------
+ * DEC_TRU64
+ * ----------------------------------------------*/
+#elif defined(DEC_TRU64)
+  
+# include "iduNativeMutex-DEC_TRU64.ic"
+
+/* ------------------------------------------------
+ * X86 Windows 
+ * ----------------------------------------------*/
+#elif defined(VC_WIN32) && !defined(VC_WINCE)
+  
+# include "iduNativeMutex-X86-WIN.ic"
+
+#elif defined(X86_64_DARWIN)
+
+# include "iduNativeMutex-MACOSX.ic"
+
+#else
+
+/* ------------------------------------------------
+ * Not Yet Support Plaforms
+ * ----------------------------------------------*/
+# include "iduNativeMutex-DUMMY.ic"
+
+#endif
+
+#endif

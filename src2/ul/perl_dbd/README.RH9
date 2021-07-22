@@ -1,0 +1,13 @@
+2/28/2004
+
+There have been some reports that Red Hat 9 has build problems.  This is manifested by
+build problems and the Makefile generated having lots of issues.
+
+From what I can tell, as I don't have this problem on my RH9 system,
+this is mostly due to people setting the LANG environment variable to something 
+that is utf8 (again, as far as I can tell).  One example is LANG=en_US.utf8.  
+By simply changing that to LANG=en_US, I have reports that the Makefile generated works.
+
+Regards,
+
+Jeff

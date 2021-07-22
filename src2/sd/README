@@ -1,0 +1,7 @@
+Common (core, fundamental) module
+    include/ : header files
+    msg/ : error code and message    
+    sdi/ : SharD Interface
+    sdm/ : SharD Meta
+    sda/ : SharD Analysis
+    sdf/ : SharD Functions

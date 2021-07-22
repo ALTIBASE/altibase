@@ -1,0 +1,383 @@
+/***********************************************************************
+ * Copyright 1999-2000, RTBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduMemory.cpp.umr_check_on 26440 2008-06-10 04:02:48Z jdlee $
+ **********************************************************************/
+
+/***********************************************************************
+ *
+ * NAME
+ *   iduMemory.h
+ *
+ * DESCRIPTION
+ *   Dynamic memory allocator.
+ *
+ * PUBLIC FUNCTION(S)
+ *   iduMemory( ULong BufferSize )
+ *      BufferSize는 메모리 할당을 위한 중간 버퍼의 크기 할당받는
+ *      메모리의 크기는 BufferSize를 초과할 수 없습니다.
+ *
+ *   void* alloc( size_t Size )
+ *      Size만큼의 메모리를 할당해 줍니다.
+ *
+ *   void clear( )
+ *      할당받은 모든 메모리를 해제 합니다.
+ *
+ * NOTES
+ *
+ * MODIFIED    (MM/DD/YYYY)
+ *    assam     01/12/2000 - Created
+ *
+ **********************************************************************/
+
+#include <idl.h>
+#include <idErrorCode.h>
+#include <ideErrorMgr.h>
+#include <ideMsgLog.h>
+#include <iduMemory.h>
+
+#define IDUM_DEFAULT_BUFFER_SIZE  (65536)
+
+iduMemory::iduMemory()
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    init( 0 );
+
+
+    #undef IDE_FN
+}
+
+iduMemory::iduMemory( ULong BufferSize )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    init( BufferSize );
+
+
+    #undef IDE_FN
+}
+
+iduMemory::~iduMemory( )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    freeAll(0);
+    buffer_size_ = 0;
+
+
+    #undef IDE_FN
+}
+
+void iduMemory::init( ULong BufferSize )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    current_ = head_ = NULL;
+    buffer_size_     = BufferSize;
+#ifdef DEBUG_MEM
+    buffer_size_     = 0;
+#endif
+
+
+    #undef IDE_FN
+}
+
+void* iduMemory::header( void )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    if( head_ == NULL ){
+        if( buffer_size_ == 0 ){
+            buffer_size_ = IDUM_DEFAULT_BUFFER_SIZE;
+#ifdef DEBUG_MEM
+	    buffer_size_ = idlOS::align8((UInt)sizeof(iduMemoryHeader));
+#endif
+        }
+        current_ = head_ = (iduMemoryHeader*)idlOS::malloc( buffer_size_ );
+        if( current_ != NULL ){
+            current_->next   = NULL;
+            current_->cursor = idlOS::align8((UInt)sizeof(iduMemoryHeader));
+            current_->length = buffer_size_;
+            current_->buffer = ((char*)current_);
+        }
+    }
+    
+    return current_;
+
+
+    #undef IDE_FN
+}
+
+void* iduMemory::extend( ULong bufferSize )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    if( bufferSize == 0 ){
+	bufferSize = buffer_size_;
+    }
+    if( current_ != NULL ){
+        if( current_->next != NULL ){
+            current_         = current_->next;
+            current_->cursor = idlOS::align8((UInt)sizeof(iduMemoryHeader));
+        }else{
+            current_->next = (iduMemoryHeader*)idlOS::malloc( bufferSize );
+            
+            if( current_->next != NULL ){
+#ifdef DEBUG        
+                idlOS::memset(current_->next, 0x43, bufferSize );
+#endif
+                
+                current_         = current_->next;
+                current_->next   = NULL;
+                current_->cursor = idlOS::align8((UInt)sizeof(iduMemoryHeader));
+                current_->length = bufferSize;
+                current_->buffer = ((char*)current_);
+            }else{
+                return NULL;
+            }
+        }
+    }
+    
+    return current_;
+
+
+    #undef IDE_FN
+}
+
+void iduMemory::release( iduMemoryHeader* Clue )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    iduMemoryHeader* clue;
+    iduMemoryHeader* next;
+    
+    for( clue = Clue; clue != NULL; clue = next ){
+	next = clue->next;
+        idlOS::free( clue );
+    }
+
+
+    #undef IDE_FN
+}
+
+void* iduMemory::calloc( size_t Size )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    void *result;
+    
+    result = alloc(Size);
+    if( result != NULL ){
+	idlOS::memset(result, 0, Size);
+    }
+    
+    return result;
+
+
+    #undef IDE_FN
+}
+
+void* iduMemory::alloc( size_t Size )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    void* result;
+
+    if( header() == NULL ){
+        return NULL;
+    }
+    Size = idlOS::align8((UInt)Size);
+    if( Size == 0 ){
+        return NULL;
+    }else if( Size > buffer_size_-idlOS::align8((UInt)sizeof(iduMemoryHeader)) ){
+	if( extend( Size+idlOS::align8((UInt)sizeof(iduMemoryHeader)) ) == NULL ){
+	    return NULL;
+	}
+    }
+    if( Size > ( current_->length - current_->cursor ) ){
+        if( extend( 0 ) == NULL ){
+            return NULL;
+        }
+    }
+    result = current_->buffer + current_->cursor;
+    current_->cursor += Size;
+
+#ifdef DEBUG        
+    if( result != NULL )
+    {
+        idlOS::memset(result, 0x43, Size );
+    }
+#endif
+    
+    return result;
+
+
+    #undef IDE_FN
+}
+
+SInt  iduMemory::getStatus( iduMemoryStatus* Status )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    if( head_ == NULL && current_ == NULL ){
+	Status->savedCurrent = NULL;
+	Status->savedCursor  = 0;
+    }else{
+	IDE_TEST_RAISE( head_ == NULL || current_ == NULL, ERR_INVALID_STATUS );
+	Status->savedCurrent = current_;
+	Status->savedCursor  = current_->cursor;
+    }
+	
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( ERR_INVALID_STATUS );
+    IDE_SET(ideSetErrorCode(idERR_ABORT_IDU_MEMORY_INVALID_STATUS));
+
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+
+
+    #undef IDE_FN
+}
+
+SInt  iduMemory::setStatus( iduMemoryStatus* Status )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    iduMemoryHeader* cursor;
+    
+    if( head_ == NULL && current_ == NULL ){
+	IDE_TEST_RAISE( Status->savedCurrent != NULL || Status->savedCursor != 0, ERR_INVALID_STATUS );
+    }else{
+	IDE_TEST_RAISE( head_ == NULL || current_ == NULL, ERR_INVALID_STATUS );
+	if( Status->savedCurrent == NULL && Status->savedCursor == 0 ){
+	    current_         = head_;
+	    current_->cursor = idlOS::align8((UInt)sizeof(iduMemoryHeader));
+	}else{
+	    for( cursor = head_; cursor != NULL; cursor=cursor->next ){
+		if( cursor == Status->savedCurrent ){
+		    IDE_TEST_RAISE( Status->savedCursor != idlOS::align8((UInt)Status->savedCursor), ERR_INVALID_STATUS );
+		    IDE_TEST_RAISE( Status->savedCursor < idlOS::align8((UInt)sizeof(iduMemoryHeader)), ERR_INVALID_STATUS );
+		    IDE_TEST_RAISE( Status->savedCursor > cursor->cursor, ERR_INVALID_STATUS );
+		    current_         = Status->savedCurrent;
+		    current_->cursor = Status->savedCursor;
+		    break;
+		}
+		IDE_TEST_RAISE( cursor == current_, ERR_INVALID_STATUS );
+	    }
+	    IDE_TEST_RAISE( cursor == NULL, ERR_INVALID_STATUS );
+	}
+    }
+#ifdef DEBUG_MEM
+    freeUnused();
+#endif
+    
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( ERR_INVALID_STATUS );
+    IDE_SET(ideSetErrorCode(idERR_ABORT_IDU_MEMORY_INVALID_STATUS));
+
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+
+
+    #undef IDE_FN
+}
+
+void iduMemory::clear( void )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    if( head_ != NULL )
+    {
+        current_         = head_;
+        current_->cursor = idlOS::align8((UInt)sizeof(iduMemoryHeader));
+    }
+
+
+    #undef IDE_FN
+}
+
+void iduMemory::freeAll( UInt a_min_chunk_no )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    iduMemoryHeader * cursor;
+    UInt              cursor_no;
+
+    if( head_ != NULL )
+    {
+        if( a_min_chunk_no > 0 )
+        {
+            clear();
+            for( cursor = head_, cursor_no = 1;
+                 (cursor != NULL) && (cursor_no < a_min_chunk_no);
+                 cursor = cursor->next, cursor_no++ )
+            {
+            }
+
+            if( cursor != NULL && cursor_no == a_min_chunk_no )
+            {
+                release( cursor->next );
+                cursor->next = NULL;
+            }
+        }
+        else
+        {
+            release( head_ );
+            current_ = head_ = NULL;
+        }
+    }
+
+
+    #undef IDE_FN
+}
+
+void iduMemory::freeUnused( void )
+{
+
+    #define IDE_FN "FuncName"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+
+    if( current_ != NULL )
+    {
+        release( current_->next );
+        current_->next = NULL;
+    }
+
+
+    #undef IDE_FN
+}
+

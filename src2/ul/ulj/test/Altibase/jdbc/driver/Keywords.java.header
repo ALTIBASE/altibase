@@ -1,0 +1,7 @@
+package Altibase.jdbc.driver;
+
+import java.util.*;
+
+public class Keywords
+{
+    public static List<String> mKeywordsList = Arrays.asList(

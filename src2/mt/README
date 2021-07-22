@@ -1,0 +1,15 @@
+MaThematics modules
+    include/ : header files
+    msg/ : error code and message    
+    lib/ : library
+    mtc/ : MT Client Common
+    mtd/ : MT Datatypes
+    mtf/ : MT Functions
+    mth/ : MT Helper(geometry)
+    mtk/ : MT Keyrange
+    mtl/ : MT Languages
+    mtv/ : MT datatype conVersion
+    mts/ : MT Structured datatypes
+    mtx/ : MT serial eXecute
+    mtz/ : MT Timezone 
+

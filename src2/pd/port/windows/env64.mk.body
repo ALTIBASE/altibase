@@ -1,0 +1,177 @@
+# -*- makefile -*-
+
+##GREP=@GREP@
+##MAKE=@GMAKE@
+##GAWK=@GAWK@
+
+##TF_DIR=@TF_DIR@
+
+include $(ALTIDEV_HOME)/vars.mk
+
+OS_LINUX_PACKAGE=INTEL_WIN64
+
+ifeq "$(BUILD_MODE)" "debug"
+CFLAGS= /favor:blend /MTd /W3 /Z7 /Od /Zm1000 # debug
+SOFLAGS = /FORCE /NODEFAULTLIB:LIBCMT /INCREMENTAL:NO /NOLOGO /DLL /DEBUG /MACHINE:X64  #debug
+DEFINE_LIST=PDL_HAS_DLL=0 WIN32 _WINDOWS _MBCS DEBUG _DEBUG _LIB PDL_NO_INLINE USE_NEW_IOSTREAM _CRT_SECURE_NO_DEPRECATE ACP_CFG_DL_STATIC #debug
+SHDEFINE_LIST=PDL_HAS_DLL=0 WIN32 _WINDOWS _MBCS DEBUG _DEBUG _LIB PDL_NO_INLINE USE_NEW_IOSTREAM _CRT_SECURE_NO_DEPRECATE ACP_CFG_DL_EXPORT #debug
+LFLAGS=/STACK:2097152 /NODEFAULTLIB:LIBCMT /DEBUG /SUBSYSTEM:CONSOLE /MACHINE:X64 /FORCE:MULTIPLE $(foreach i,$(LIB_LIST),/LIBPATH:$(i)) #debug
+LIBS=netapi32.lib advapi32.lib WS2_32.lib LIBCMTD.LIB iphlpapi.lib dbghelp.lib shell32.lib #debug
+else
+CFLAGS=/favor:blend /O2 /FD /EHsc /MT /W3 /Zi /Zm1000 /GS- #release
+DLLFLAGS=
+SOFLAGS =/FORCE /NODEFAULTLIB:LIBCMTD /INCREMENTAL:NO /NOLOGO /DLL /MACHINE:X64 #release
+DEFINE_LIST=PDL_HAS_DLL=0 WIN32 _WINDOWS _MBCS _LIB USE_NEW_IOSTREAM _CRT_SECURE_NO_DEPRECATE ACP_CFG_DL_STATIC #release
+SHDEFINE_LIST=PDL_HAS_DLL=0 WIN32 _WINDOWS _MBCS _LIB USE_NEW_IOSTREAM _CRT_SECURE_NO_DEPRECATE ACP_CFG_DL_EXPORT #release
+LFLAGS=/STACK:2097152 /DEBUG /NODEFAULTLIB:LIBCMTD /SUBSYSTEM:CONSOLE /MACHINE:X64 /FORCE:MULTIPLE $(foreach i,$(LIB_LIST),/LIBPATH:$(i)) #release
+LIBS=netapi32.lib advapi32.lib WS2_32.lib LIBCMT.LIB iphlpapi.lib dbghelp.lib shell32.lib #release
+
+endif
+
+CCFLAGS=$(CFLAGS)
+
+ARFLAGS=
+
+INCLUDE_LIST="$(DEV_DIR)/src/pd/port/windows/include" "$(CORE_DIR)/include" "$(PD_DIR)/makeinclude" "$(PD_DIR)/include" "$(ID_DIR)" "$(ID_DIR)/include"
+LIB_LIST="$(ALTI_HOME)/lib" "$(PD_DIR)/lib" "$(ID_DIR)/lib" "$(SM_DIR)/lib" "$(MT_DIR)/lib" "$(QP_DIR)/lib" "$(RP_DIR)/lib" "$(MM_DIR)/lib"
+
+DEFINES=$(foreach i,$(DEFINE_LIST),/D$(i))
+SHDEFINES=$(foreach i,$(SHDEFINE_LIST),/D$(i))
+INCLUDES=$(foreach i,$(INCLUDE_LIST),/I$(i))
+include $(DEV_DIR)/alticore.mk
+
+COMPILE.cc=$(CXX) $(CCFLAGS) $(DEFINES) /c
+COMPILE.c=$(CC) $(CFLAGS) $(DEFINES) /c
+SHCOMPILE.cc=$(CXX) $(CCFLAGS) $(SHDEFINES) /c
+SHCOMPILE.c=$(CC) $(CFLAGS) $(SHDEFINES) /c
+SOLINK.cc=$(LD) $(SOFLAGS)
+GENERRMSG=$(ALTI_HOME)/bin/genErrMsg$(BINEXT)
+GENERRMSGMANUAL=$(ALTI_HOME)/bin/genErrMsgManual$(BINEXT)
+
+OBJEXT = obj
+SOEXT  = dll
+BINEXT = .exe
+LIBEXT = lib
+LIBPRE =
+COPY   = cp
+RM     = rm -rf
+EFLAGS = /EP /MTd
+VERBOSE_MODE=0
+
+CONFIG_QP_COMPRESS_SCANNER_TABLES=n
+
+ifeq ($(ALTIBASE_LIMIT_CHECK),yes)
+CCFLAGS += /DALTIBASE_LIMIT_CHECK
+endif
+
+ifeq "$(VERBOSE_MODE)" "1"
+  quiet =
+  Q     =
+  S     =
+else
+  quiet = quiet_
+  Q     = @
+  S     = -s
+endif
+########################
+#### common rules
+########################
+quiet_cmd_ar_a_o = AR $@
+      cmd_ar_a_o = $(AR) $(ARFLAGS) $(AROUT)$@ $^
+
+quiet_cmd_so_o = SO $@
+      cmd_so_o = $(SOLINK.cc) $(SOFLAGS) $(LIBS) $(SODEPLIBS) $(SODEFFILE) $(SOOUT)$@ $^
+
+quiet_cmd_cc_o_c = CC $@
+      cmd_cc_o_c = mkdir -p $(dir $@); $(COMPILE.cc) $(INCLUDES) $(CCOUT)$@ $<
+
+define LIB_IT
+  $(Q) $(if $(quiet),echo  $($(quiet)cmd_ar_a_o))
+  $(Q) $(cmd_ar_a_o)
+endef
+
+define SHLIB_IT
+  $(Q) $(if $(quiet),echo  $($(quiet)cmd_so_o))
+  $(Q) $(cmd_so_o)
+endef
+
+define COMPILE_IT
+  $(Q) $(if $(quiet),echo  $($(quiet)cmd_cc_o_c))
+  $(Q) $(cmd_cc_o_c)
+endef
+
+%.$(LIBEXT):
+	$(RM) -rf $@
+	$(LIB_IT)
+
+%.$(SOEXT):
+	$(SHLIB_IT)
+
+$(TARGET_DIR)/%.$(OBJEXT): $(DEV_DIR)/%.cpp
+	$(COMPILE_IT)
+
+%.p: %.cpp
+	$(CXX) $(EFLAGS) $(DEFINES) $(INCLUDES) $< > $@
+
+%.s: %.cpp
+	$(CXX) $(SFLAGS) $(DEFINES) $(INCLUDES) $< > $@
+
+$(TARGET_DIR)/%.$(OBJEXT): $(DEV_DIR)/%.c
+	$(COMPILE.c) $(INCLUDES) $(CCOUT)$@ $<
+
+$(TARGET_DIR)/%.$(OBJEXT): $(DEV_DIR)/%.s
+	$(COMPILE.c) $(INCLUDES) $(CCOUT)$@ $<
+
+#######################################################
+# controlled by
+# LIB
+# SHLIB
+# SHLIBA
+# SRCS
+# VAR
+# SOLINK
+#######################################################
+
+VLIB    = $(LIB:%.$(LIBEXT)=%$(VAR).$(LIBEXT))
+VSHLIB  = $(SHLIB:%.$(SOEXT)=%$(VAR).$(SOEXT))
+VSHLIBA = $(SHLIBA:%.$(LIBEXT)=%$(VAR).$(LIBEXT))
+
+VSHOBJS = $(SRCS:$(DEV_DIR)/%.cpp=$(TARGET_DIR)/%_shobj.$(OBJEXT))
+
+# C++ related targets
+
+
+# doesn't work in windows..why?
+#VDIR=.obj/
+#VSHDIR=.shobj/
+#VODBCDIR=.odbcobj/
+
+#$(VDIR)%.$(OBJEXT): %.cpp
+#	test -d $(VDIR) || mkdir $(VDIR); $(COMPILE.cc) $(INCLUDES) $(CCOUT)$@ $<
+
+#$(VSHDIR)%.$(OBJEXT): %.cpp
+#	test -d $(VSHDIR) || mkdir $(VSHDIR); $(COMPILE.cc) $(INCLUDES) $(PIC) $(CCOUT)$@ $<
+
+#$(VODBCDIR)%.$(OBJEXT): %.cpp
+#	test -d $(VODBCDIR) || mkdir $(VODBCDIR); $(COMPILE.cc) $(INCLUDES) $(PIC) $(CCOUT)$@ $<
+
+#$(VDIR)%.$(OBJEXT): %.c
+#	test -d $(VDIR) || mkdir $(VDIR); $(COMPILE.c) $(INCLUDES) $(CCOUT)$@ $<
+
+#$(VSHDIR)%.$(OBJEXT): %.c
+#	test -d $(VSHDIR) || mkdir $(VSHDIR); $(COMPILE.c) $(INCLUDES) $(PIC) $(CCOUT)$@ $<
+
+#$(VODBCDIR)%.$(OBJEXT): %.c
+#	test -d $(VODBCDIR) || mkdir $(VODBCDIR); $(COMPILE.c) $(INCLUDES) $(PIC) $(CCOUT)$@ $<
+
+#$(VSHDIR)%.o: %.cpp
+$(TARGET_DIR)/%_shobj.$(OBJEXT): $(DEV_DIR)/%.cpp
+	$(Q) echo " CC $@"
+	$(Q) mkdir -p $(dir $@)
+	$(Q) $(SHCOMPILE.cc) $(INCLUDES) $(PIC) $(VERDEFINES) $(CC_OUTPUT_FLAG)$@ $<
+
+#$(VSHDIR)%.o: %.c
+$(TARGET_DIR)/%_shobj.$(OBJEXT): $(DEV_DIR)/%.c
+	$(Q) echo " CC $@"
+	$(Q) mkdir -p $(dir $@)
+	$(Q) $(SHCOMPILE.c) $(INCLUDES) $(PIC) $(VERDEFINES) $(CC_OUTPUT_FLAG)$@ $<

@@ -1,0 +1,14 @@
+\bRCS\b
+^MANIFEST\.
+^Makefile$
+~$
+\.html$
+\.old$
+^blib/
+^DBD-\d
+^tags$
+\.rej$
+\.orig$
+\.exists
+\.obj$
+dbdodbc.h

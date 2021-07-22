@@ -1,0 +1,7 @@
+/* -*- c -*- */
+
+#define ALTIBASE_PRODUCT "xdb"
+#define ALTIBASE_PRODUCT_XDB 1
+
+#define ALTIBASE_ENV_PREFIX "ALTIBASE_XDB_"
+#define PRODUCT_PREFIX "xdb"

@@ -1,0 +1,1102 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head profile="http://gmpg.org/xfn/11">
+<meta name="robots" content="noarchive">
+<meta name="googlebot" content="noarchive">
+<meta name="googlebot-image" content="noarchive">
+<meta name="daumoa" content="noarchive">
+<meta name="NaverBot" content="noarchive">
+<meta name="Yeti" content="noarchive">
+<meta name="Slurp" content="noarchive">
+<meta name="yahoo-MMCrawler" content="noarchive">
+<meta name="empas" content="noarchive">
+<meta name="MSNBot" content="noarchive"><meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="alternate" type="application/rss+xml" title="reznoa의 동굴폐인 놀이터" href="/blog/rss" />
+<link rel="stylesheet" media="screen" type="text/css" href="http://reznoa.wo.tc/blog/skin/blog/iNove/style.css" />
+<link rel="shortcut icon" href="/blog/favicon.ico" />
+<title>잘 만든 만화 앱북, 유리가면 -reznoa의 동굴폐인 놀이터-</title>
+	<script type="text/javascript" src="/blog/resources/script/jquery/jquery-1.6.4.min.js"></script>
+	<script type="text/javascript">jQuery.noConflict();</script>
+	<script type="text/javascript" src="/blog/resources/script/EAF4.js"></script>
+	<script type="text/javascript" src="/blog/resources/script/common2.js"></script>
+	<script type="text/javascript" src="/blog/resources/script/gallery.js" ></script>
+	<script type="text/javascript" src="/blog/resources/script/flash.js" ></script>
+	<link rel="stylesheet" href="http://reznoa.wo.tc/blog/resources/style/system.css" type="text/css" media="screen" />
+	<link rel="alternate" type="application/rss+xml" title="Responses (RSS) : 잘 만든 만화 앱북, 유리가면 - reznoa의 동굴폐인 놀이터" href="http://reznoa.wo.tc/blog/rss/response/1677" />
+	<link rel="alternate" type="application/atom+xml" title="Responses (ATOM) : 잘 만든 만화 앱북, 유리가면 - reznoa의 동굴폐인 놀이터" href="http://reznoa.wo.tc/blog/atom/response/1677" />
+<link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/aaReplacer/style.css" />
+<link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/DracoCounter/index.css" />
+<style type='text/css'>	
+		#draco_counter {
+			font-size: 9px !important;
+			color : #cccccc !important;
+			width: 270px !important;
+		}		
+			
+		#draco_counter_right{
+			width: 240px !important;
+			float:right !important;
+			display: inline !important;
+		}
+				
+		#tooltip_date{
+			font-size: 12px !important;
+			color : #000060 !important;
+			font-weight: bold !important; 
+			background : url(/blog/plugins/DracoCounter/date-plain.png) no-repeat 0px 50% !important;
+			border-bottom-width: 1px !important;
+			border-top-style: none !important;
+			border-right-style: none !important;
+			border-bottom-style: solid !important;
+			border-left-style: none !important;
+			border-bottom-color: #EEE !important;
+		}				
+		
+		#tooltip_post{
+			background : url(/blog/plugins/DracoCounter/doc-option-edit.png) no-repeat 0px 50% !important;
+			border : none  !important; 
+		}
+		
+		#tooltip_guest{
+			background : url(/blog/plugins/DracoCounter/user-plain-blue_mod.png) no-repeat 0px 50% !important;
+			border : none  !important; 
+		}
+			
+		#highlight_line {
+			width : 1px !important;
+			height:100px !important;
+			left:0px;
+			position:absolute !important;
+			top:0px !important;
+			z-index:10 !important;
+			background-color: #FF0000 !important;
+			visibility: hidden;	
+		}			
+	</style>
+	
+<link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/footnote/style.css" />
+<script language="javascript" type="text/javascript" src="/blog/plugins/footnote/footnote.js"></script>
+<script type="text/javascript">
+	FootnoteTooltip.position = "top";
+	FootnoteTooltip.width = "400";
+</script><link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/aaReplacer/style.css" />
+<link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/DracoCounter/index.css" />
+<style type='text/css'>	
+		#draco_counter {
+			font-size: 9px !important;
+			color : #cccccc !important;
+			width: 270px !important;
+		}		
+			
+		#draco_counter_right{
+			width: 240px !important;
+			float:right !important;
+			display: inline !important;
+		}
+				
+		#tooltip_date{
+			font-size: 12px !important;
+			color : #000060 !important;
+			font-weight: bold !important; 
+			background : url(/blog/plugins/DracoCounter/date-plain.png) no-repeat 0px 50% !important;
+			border-bottom-width: 1px !important;
+			border-top-style: none !important;
+			border-right-style: none !important;
+			border-bottom-style: solid !important;
+			border-left-style: none !important;
+			border-bottom-color: #EEE !important;
+		}				
+		
+		#tooltip_post{
+			background : url(/blog/plugins/DracoCounter/doc-option-edit.png) no-repeat 0px 50% !important;
+			border : none  !important; 
+		}
+		
+		#tooltip_guest{
+			background : url(/blog/plugins/DracoCounter/user-plain-blue_mod.png) no-repeat 0px 50% !important;
+			border : none  !important; 
+		}
+			
+		#highlight_line {
+			width : 1px !important;
+			height:100px !important;
+			left:0px;
+			position:absolute !important;
+			top:0px !important;
+			z-index:10 !important;
+			background-color: #FF0000 !important;
+			visibility: hidden;	
+		}			
+	</style>
+	
+<link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/footnote/style.css" />
+<script language="javascript" type="text/javascript" src="/blog/plugins/footnote/footnote.js"></script>
+<script type="text/javascript">
+	FootnoteTooltip.position = "top";
+	FootnoteTooltip.width = "400";
+</script><link rel="stylesheet" type="text/css" href="/blog/plugins/GoogleMap/styles/common.css" />
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+<script type="text/javascript" src="/blog/plugins/GoogleMap/scripts/common.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+	var GMapOnLoadCallbacks = [];
+//]]>
+</script><link rel="stylesheet" type="text/css" href="/blog/thumbnail/1/JP_Thumb/jp_thumb_style.css" />
+<!-- 
+	J.Parker Thumbnail List/Sidebar/Cover View Plugin v1.9.0312 for Textcube v1.6.3 ~ v1.8.* - http://create74.com
+	DQ'Thumb Engine ver 2.0 R5.0306 for developer - http://www.dqstyle.com
+-->	
+<link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/MT_Meta_RecentPS_Default/style.css" />
+<style>
+.coverpost .img_preview img
+{
+	border-radius:         30px;
+	-moz-border-radius:    30px;
+	-webkit-border-radius: 30px;
+}
+</style><link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/relposts/style.css" /><script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/swfobject/2.2/swfobject.js"></script>
+<script type="text/javascript" src="/blog/plugins/rezslide/highslide/highslide-full.packed.js"></script>
+<script type="text/javascript" src="/blog/plugins/rezslide/highslide.lang.ko.js"></script>
+<script type="text/javascript" src="/blog/plugins/rezslide/rezslide.js"></script>
+<link rel="stylesheet" type="text/css" href="/blog/plugins/rezslide/highslide/highslide.css" />
+<!--[if lt IE 7]>
+<link rel="stylesheet" type="text/css" href="/blog/plugins/rezslide/highslide/highslide-ie6.css" />
+<![endif]-->
+<link rel="stylesheet" type="text/css" href="/blog/plugins/rezslide/rezslide.css" />
+
+<script type="text/javascript">
+	// config
+	hs.graphicsDir = '/blog/plugins/rezslide/highslide/graphics/';
+	hs.align = 'center';
+	hs.transitions = ['expand', 'crossfade'];
+	hs.fadeInOut = true;
+	hs.dimmingOpacity = 0.8;
+	hs.outlineType = 'rounded-white';
+	hs.captionEval = 'escapeHtml(this.thumb.alt)';
+	hs.marginBottom = 105 // make room for the thumbstrip and the controls
+	hs.numberPosition = 'caption';
+
+	// remove the registerOverlay call to disable the controlbar
+	hs.registerOverlay(
+		{
+			thumbnailId: null,
+			overlayId: 'controlbar',
+			position: 'top right',
+			hideOnMouseOut: true
+		}
+	);
+
+	// remove credits
+	hs.creditsText = '';
+	hs.creditsHref = '';
+	hs.creditsTitle = '';
+</script><script type="text/javascript">
+	// Add the slideshow providing the controlbar and the thumbstrip
+	hs.addSlideshow({
+		slideshowGroup: 'rezslide-images',
+		interval: 5000,
+		repeat: false,
+		useControls: true,
+		overlayOptions: {
+			className: 'text-controls',
+			position: 'bottom center',
+			relativeTo: 'viewport',
+			offsetY: -60
+		},
+		thumbstrip: {
+			position: 'bottom center',
+			mode: 'horizontal',
+			relativeTo: 'viewport'
+		}
+	});
+</script><link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/rmcmts/style.css" /><link rel="stylesheet" media="screen" type="text/css" href="/blog/plugins/SNSConnect/style.css" /><script type="text/javascript" src="http://apis.google.com/js/plusone.js">{lang: 'ko'}</script><script type="text/javascript">
+/* <![CDATA[ */
+    (function() {
+        var s = document.createElement('script'), t = document.getElementsByTagName('script')[0];
+        s.type = 'text/javascript';
+        s.async = true;
+        s.src = 'http://api.flattr.com/js/0.6/load.js?mode=auto';
+        t.parentNode.insertBefore(s, t);
+    })();
+/* ]]> */
+</script><link rel="stylesheet" media="all" type="text/css" href="/blog/plugins/SyntaxHighlighter/prettify.css" /><script type="text/javascript" src="/blog/plugins/SyntaxHighlighter/prettify.js"></script>
+<script type="text/javascript">
+//<![CDATA[
+
+		window.onload = function(){
+		var type = navigator.appName
+		var lang;
+		var msg;
+		var myurl = location.href;
+		var config = "1";
+	
+		if (type=="Netscape")
+			lang = navigator.language
+		else
+			lang = navigator.userLanguage
+		
+		// 국가코드에서 앞 2글자만 자름
+		var lang = lang.substr(0,2)
+		// 한글인 경우
+		if (lang == "ko")
+			msg = " 원래 주소인 "+myurl+" 로 접속해주세요.";
+		// 다른 언어인 경우
+		else
+			msg =  "please, visit directly via "+myurl;
+		try {
+			if ((top != self) && (top.indexOf("http://reznoa.wo.tc/blog") == -1))
+			{
+				if (config == "1") {
+					window.open(myurl,"_top");
+				}else{
+				if (confirm(msg)) window.open(myurl,"_top");
+				}
+			}
+		} catch (e) {
+		}	
+		}
+//]]>
+</script>
+
+</head>
+<body>
+	<!--
+		Textcube 1.9.0 : Beta 6
+
+		Homepage: http://www.textcube.org/
+		Copyright &copy; 2004-2012. Needlworks / Tatter Network Foundation. All rights reserved. Licensed under the GPL.
+	-->
+	<script type="text/javascript">
+	//<![CDATA[
+		var servicePath = "/blog";
+		var serviceURL  = "http://reznoa.wo.tc/blog";
+		var blogURL = "/blog";
+		var prevURL = "/blog/1678";
+		var nextURL = "/blog/1676";
+		var commentKey = "36db495119da0bdec7b7fc21a94bf90b";
+		var doesHaveOwnership = true;
+		var isReaderEnabled = false;
+		var messages = {
+			"trackbackUrlCopied": "엮인글 주소가 복사되었습니다.",
+			"operationFailed": "실패했습니다.",
+			"confirmTrackbackDelete": "선택된 글걸기를 삭제합니다. 계속 하시겠습니까?",
+			"confirmEntryDelete": "이 글 및 이미지 파일을 완전히 삭제합니다. 계속 하시겠습니까?",
+			"onSaving": "저장하고 있습니다"
+		}
+	//]]>
+	</script>
+	<script type="text/javascript" src="/blog/resources/script/owner.js" ></script>
+	<script type="text/javascript">
+		//<![CDATA[
+			document.onkeydown = processShortcut;
+		//]]>
+	</script>
+<div style="position:absolute;top:0;left:0; background-color:transparent;background-image:none">
+<script type="text/javascript">
+//<![CDATA[
+	AC_FL_RunContent(
+		'codebase','http://fpdownload.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=8,0,0,0',
+		'width','1',
+		'height','1',
+		'id','clipboardPoter',
+		'src','/blog/resources/script/clipboardPoter/clipboardPoter',
+		'wmode','transparent',
+		'name','clipboardPoter',
+		'allowscriptaccess','sameDomain',
+		'pluginspage','http://www.macromedia.com/go/getflashplayer',
+		'movie','/blog/resources/script/clipboardPoter/clipboardPoter',
+		'flashvars', 'callback=onClipBoard'
+	);
+	window.clipboardPoter = document.getElementById("clipboardPoter");
+//]]>
+</script>
+</div>
+
+<div id="dhtmltooltip"></div>
+<script type="text/javascript" src="/blog/plugins/DracoCounter/index.js" charset="UTF-8"></script>
+	<div id="wrap">
+		<div id="container">
+
+			<div id="header">
+				<div id="caption">
+					<h1 id="title"><a href="/blog/">reznoa의 동굴폐인 놀이터</a></h1>
+					<div id="tagline"></div>
+				</div>
+				<div id="navigation">
+					<ul id="menus">
+						<li><a href="/blog/" title="Home" class="home">Home</a></li>
+						<li><a href="/blog/notice" title="Notice">Notice</a></li>
+						<li><a href="/blog/tag" title="Tags">Tags</a></li>
+						<li><a href="/blog/location" title="LocationLog">Location Log</a></li>
+						<li><a href="/blog/guestbook" title="Guestbook">Guest Book</a></li>
+						<li><a href="/blog/rss" title="RSS">RSS</a></li>
+					</ul>
+					<ul id="adminmenu">
+						
+						<li><a href="/blog/owner/entry/post" title="Write a Post">Write a Post</a></li>
+						
+						<li><a href="/blog/owner" title="Admin">Admin</a></li>
+					</ul>
+				</div>
+				<div class="fixed"></div>
+			</div><!--header fin-->
+
+			<div id="content">
+				<div id="main">
+					
+					
+
+					
+
+					
+
+					
+
+					
+
+					<div class="hfeed"><a id="entry_1677"></a>
+<div class="hentry">
+
+						<div class="post">
+							<h2 class="entry-title">잘 만든 만화 앱북, 유리가면</h2>
+							<div class="info">
+								<span class="date">2013/08/13 16:16</span>
+								<div class="act">
+									<span class="author"><a href="/blog/author/레즈">레즈</a></span>
+									<span class="categories"><a href="/blog/category/놀기/만화%26애니%20이야기">놀기/만화&amp;애니 이야기</a></span>
+									<span class="comments"><a href="/blog/1677#commentlist" rel="bookmark" title="잘 만든 만화 앱북, 유리가면">Leave a Comment</a></span>
+								</div>
+								
+									<div class="act clear">
+										<span>발행→<a href="#" onclick="changeVisibility(1677, 0); return false;">비공개로 변경합니다</a></span>
+										<span class="edtrackback"><a href="#" onclick="sendTrackback(1677); return false;">Trackback</a></span>
+										<span class="editpost"><a href="/blog/owner/entry/edit/1677?returnURL=/blog/1677">Edit</a></span>
+									</div>
+								
+								<div class="fixed"></div>
+							</div>
+
+							<div class="article entry-content">
+								<div style="
+    margin: 10px;
+    padding: 5px;
+    border: 5px solid #EEE;
+
+    border-radius:         7px;
+    -moz-border-radius:    7px;
+    -webkit-border-radius: 7px;
+">
+
+<div class="imageblock center" style="float: left; margin-right: 10px;"><a href="http://reznoa.wo.tc/blog/attach/1/5498989159.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/5498989159.jpg" alt="IM+" class="appico-88" height="88" width="88" style="cursor: pointer;" /></a><p class="cap1">Free<br /><br />
+<a href="http://itunes.apple.com/kr/app/id367784473?mt=8"><img src="http://images.apple.com/kr/home/elements/korea.png" width="22" height="22" align="absmiddle" title="한국 앱스토어" /></a>
+<a href="http://itunes.apple.com/us/app/id367784473?mt=8"><img src="http://images.apple.com/global/elements/flags/22x22/usa.png" width="22" height="22" align="absmiddle" title="US Appstore" /></a>
+<a href="http://appshopper.com/books/%EC%9C%A0%EB%A6%AC%EA%B0%80%EB%A9%B4%EA%B3%B5%EC%8B%9D-%EB%94%94%EC%A7%80%ED%84%B8-%EC%BD%94%EB%AF%B9"><img src="http://appshopper.com/favicon.ico" width="22" height="22" align="absmiddle" title="AppShopper" /></a></p></div>
+
+<p>유리가면 앱은 대원+북잼의 3번째 합작 만화 앱북이다.</p>
+
+<p>기존 앱과 인터페이스가 좀 다른데, 소설용 앱 소스를 가져다 쓴 모양이다.
+쓸데없는건 빼는 등 좀 더 튜닝이 필요할 듯.
+여러 앱북을 낸 것 치고 황당한 버그나 자잘한 개선점도 있는데, 그래도 전체적으론 수준급이다.</p>
+
+<p>무엇보다 핵심인 만화 컨텐츠가 훌륭하다.
+레티나 디스플레이로 보는 유리가면은 감탄할만하다.
+다만, 컬러 페이지가 날아간건 아쉽다.
+<del>복원바람</del></p>
+
+<div style="clear:both;"></div>
+
+</div>
+
+<h3>대원+북잼의 3번째 합작 북앱</h3>
+
+<p>대원에서 유리가면 앱북이 나왔다.
+전에 나왔던 앱북 열혈강호와 마찬가지로 컨텐츠는 대원이 제공하고 앱은 북잼에서 만들었다.
+쿠폰을 쓸 때 북잼의 서비스를 통하는 것은 그런 이유 때문이다.
+아마도 제작사인 북잼에서 컨텐츠 관리 등을 다 하는 듯.</p>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/1693443956.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/1693443956.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">열혈강호 앱북처럼 대원+북잼 합작품이다.</p></div>
+
+<p>책은 애장판이 아닌 일반판을 기준으로 만든 듯하다.
+일반판은 현재 49권, 애장판은 14권까지 나와있으며, 애장판은 권당 분량을 늘려 총 42권을 14권에 나눠 담은 것이다.
+앱북은 종이책과 달리 두께나 무게로 인한 불편이 없으므로 어떤 기준으로 권을 나누든 큰 상관 없는데, 앞으로의 단행본 발간과 맞추기 위해 일반판을 기준으로 한 듯하다.</p>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/8858400851.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/8858400851.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">아직 발간된 종이책만큼도 다 나오지 않았다. 생각보다 1권 처리하는게 오래 걸리는 모양.</p></div>
+
+<p>종이책은 현재 49권까지 나왔지만 앱북은 현재 41권까지만 볼 수 있다.
+41권도 최근에 업데이트 된 것인데, 생각보다 책 1권을 디지털 컨텐츠로 만드는데 시간이 많이 걸리는 모양이다.
+41권을 업데이트하면서 42권이 나오는 시기도 2013-08-30이라 공개하였는데, 49권을 따라잡을 때 까지는 앞으로도 이런식으로 업데이트 예고가 있지 않을까 싶다.</p>
+
+<h3>가격</h3>
+
+<p>가격은 권당 $2.99(약 3500원)으로 생각보다 비싼 편이다.
+이는 종이책 4500원과 비교해도 26%정도밖에 싸지 않으며, 다른 온라인 서점의 e-book 가격(2500원)과 비교해도 좀 더 나가는 것이다.<sup><a href="#footnote_1677_1" id="footnote_link_1677_1" onmouseover="FootnoteTooltip.show(this, 1677, 1)" onmouseout="FootnoteTooltip.hide(1677, 1)">주1</a></sup>
+게다가 종이책은 쇼핑몰에 따라 할인해주기도 하므로 사실상 종이책과 큰 가격차는 없는거다.<sup><a href="#footnote_1677_2" id="footnote_link_1677_2" onmouseover="FootnoteTooltip.show(this, 1677, 2)" onmouseout="FootnoteTooltip.hide(1677, 2)">주2</a></sup>
+열혈강호도 1~48권은 $1.99이지만 49권 이후는 $2.99인걸 보면, 이북에도 일정 이상의 가격을 붙이려는게 대원의 정책이 아닌가 싶다.</p>
+
+<div class="imageblock dual" style="text-align: center;"><table cellspacing="5" cellpadding="0" border="0" style="margin: 0 auto;" width="100%"><tr><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/8858400851.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/8858400851.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">전자책으로는 꽤 비싼 편이다. 하지만 세트 할인을 이용하면 상당히 싸진다. :)</p></td><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/3677316418.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/3677316418.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">권당 $2.99는 대원의 정책인 듯.</p></td></tr></table></div>
+
+<p>대신 한번에 샀을 때 추가 할인을 꽤 해준다.
+10권 묶음은 $21.99(약 2'5000원)로 권당 가의 25%,
+1~40권 패키지는 $84.99(약 9'5000원)로 30% 싸게 살 수 있다.
+이렇게 되면 할인 폭이 크게 늘어나는데, 종이책이나 다른 e-book에는 패키지 할인이 없으므로, 이를 이용하면 종이책이나 다른 e-book보다 더 싼 가격에 살 수 있다.<sup><a href="#footnote_1677_3" id="footnote_link_1677_3" onmouseover="FootnoteTooltip.show(this, 1677, 3)" onmouseout="FootnoteTooltip.hide(1677, 3)">주3</a></sup></p>
+
+<h3>간단한 앱북 소개</h3>
+
+<p>유리가면 앱북은 '만화를 보기 위한 앱'이니 만큼 크게 뻑적지근한 기능은 없다.
+구매하고 만화를 보는 기본 기능과, 그것만 있으면 왠지 허전할까봐 덧붙여논 깨알같은 기능 몇개가 다다.</p>
+
+<p>깨알같은 기능에는 '인물 소개', '비망록', '갤러리'가 있는데, 모두 '보너스'라 할만한 정도다.</p>
+
+<div class="imageblock dual" style="text-align: center;"><table cellspacing="5" cellpadding="0" border="0" style="margin: 0 auto;" width="100%"><tr><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/8361882736.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/8361882736.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">인물 소개에는 주요 인물만 나온다.</p></td><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/1979917248.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/1979917248.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">관계도도 볼 수 있다는. ㅋ</p></td></tr></table></div>
+
+<div class="imageblock dual" style="text-align: center;"><table cellspacing="5" cellpadding="0" border="0" style="margin: 0 auto;" width="100%"><tr><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/5202691991.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/5202691991.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">비망록은 주요 장면을 모아놓은 것이다. 근데 '비망록'.. 이름이 안어울려;</p></td><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/9207575930.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/9207575930.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">구매한 권에 해당하는 장면만 볼 수 있다. 원치않는 까발림을 고려한 듯.</p></td></tr></table></div>
+
+<div class="imageblock dual" style="text-align: center;"><table cellspacing="5" cellpadding="0" border="0" style="margin: 0 auto;" width="100%"><tr><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/6241650003.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/6241650003.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">갤러리에선 음악과 함께 일러스트를 감상할 수 있다.</p></td><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/2544108200.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/2544108200.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">카메라롤로 빼낼 수 있다.</p></td></tr></table></div>
+
+<p>만화를 볼 때는 익숙한 방법을 사용한다.
+즉, 좌우 끝을 누르거나 좌→우 또는 우→좌로 끌어서 페이지를 넘긴다.
+페이지 전환 효과는 총 4개를 제공하므로 효과가 맘에 안든다면 바꿀 수도 있다.</p>
+
+<h3>앱북의 사소한 단점들</h3>
+
+<p>앱북은 이미 이전에도 열혈강호, 짱을 낸 바 있는만큼 이미 수준급이다.
+몇가지 개선점이 있기는 하지만 말이다.</p>
+
+<p>앱북의 개선점을 몇가지 들어보면 다음과 같다:</p>
+
+<ol>
+<li>마지막 쪽에서 '다음권 보기', 첫 쪽에서 '이전권 보기'가 안된다.</li>
+<li>즐겨찾기를 한번에 볼 수 없다.</li>
+<li>차례가 나오지 않는다.</li>
+<li>검색 기능도 동작 않긴 마찬가지.</li>
+<li>2쪽 보기 스타일을 정할 수 없다.</li>
+<li>버그도 있고 갑자기 죽기도 한다.</li>
+<li>'클라우드 서재'를 지원하지 않는다.</li>
+</ol>
+
+<p>이 중 가장 마음에 안들었던것은 2쪽 보기 스타일을 정할 수 없다는거다.
+여기서 '2쪽 보기 스타일'이라 함은, 2쪽 보기(유리가면 앱은 가로로 보면 자동으로 2쪽 보기가 된다)로 봤을 때, 가운데가 마치 책을 접었을 때처럼 그림자가 지는 효과가 나는것을 말하는 것이다.
+이걸 정할 수 없는게 불만이라고 해서 딱히 다른 효과를 원하는건 아니고, 사실은 이 '책 접힘 효과'를 끌 수 없는게 불만인거다.</p>
+
+<p>왜냐하면, 2장 보기가 꼭 필요한건 진짜로 2장에 걸쳐 그린 장면을 보려는 때이기 때문이다.
+
+그럴때 책 접힘 효과는 차라리 없는게 더 낫다.
+종이책도 사실 제본 방식의 한계 때문에 어쩔 수 없이 그렇게 된거지, 좋아서 그렇게 만든게 아니잖아.
+굳이 앱북에서까지 가운데 선을 보게 만든건 그야말로 '쓸데없는 스큐어몰피즘'이다.</p>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/2239184956.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/2239184956.jpg" alt="사용자 삽입 이미지" height="300" width="400" style="cursor: pointer;" /></a><p class="cap1">2쪽 보기 때 나오는 책 접힘 효과는 쓸데없는 스큐어몰피즘이다. 없는게 낫다.</p></div>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/4472558127.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/4472558127.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">1쪽 보기 때처럼 때는 책처럼 보이게 해주는 효과가 아무것도 없는데, 차라리 여백이 많은 1쪽 보기에 그런 효과를 주는게 더 나았을거다.</p></div>
+
+<p>1쪽씩 볼 때는 실제 책처럼 보이기 위한 효과를 주지 않으면서, 굳이 2쪽씩 볼 때만 책 접힌 효과를 넣은 이유를 모르겠다.
+책 넘김 효과를 여러개 중에서 고를 수 있는 옵션보다, 이런거 끌 수 있는 옵션이나 넣어줬음 좋겠다.</p>
+
+<p>버그는 뭐가 있나 예를들어 보면, 2쪽 보기로 볼 때 한쪽이 안나오는 일도 있고, 다음 쪽이 오른쪽(유리가면은 오른쪽 펴기 방식이라 오른쪽에 더 앞쪽이 나온다)에 겹쳐 나오기도 하며, 드물지만 죽기도 한다.
+뭐, 애교수준이긴 하다만..<sup><a href="#footnote_1677_4" id="footnote_link_1677_4" onmouseover="FootnoteTooltip.show(this, 1677, 4)" onmouseout="FootnoteTooltip.hide(1677, 4)">주4</a></sup>
+벌써 3번째 앱북인것 치고는 꽤나 황당한 버그다.</p>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/1116035647.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/1116035647.jpg" alt="사용자 삽입 이미지" height="300" width="400" style="cursor: pointer;" /></a><p class="cap1">한 페이지가 표시가 안되 검게 나왔다. 원래는 '책 뒷표지'가 나와야 한다. 껐다 켜면 괜찮아진다.</p></div>
+
+<div class="imageblock dual" style="text-align: center;"><table cellspacing="5" cellpadding="0" border="0" style="margin: 0 auto;" width="100%"><tr><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/5512083795.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/5512083795.jpg" alt="사용자 삽입 이미지" height="225" width="300" style="cursor: pointer;" /></a><p class="cap1">다음 쪽이 오른쪽에 겹쳐 나오기도 한다.</p></td><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/4869132948.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/4869132948.jpg" alt="사용자 삽입 이미지" height="225" width="300" style="cursor: pointer;" /></a><p class="cap1">원래는 이렇게 나와야 한다. 차이를 아시겠는가.</p></td></tr></table></div>
+
+<p>그 외에 '차례'나 '검색'은 사실상 쓸모없는 기능인데.. 굳이 붙어있는걸 보면 기존에 있던걸 이용해 유리가면을 만들면서 안뺀게 아닌가 싶다.
+유리가면에 맞게 튜닝을 다 안했다는거지. 음;</p>
+
+<div class="imageblock dual" style="text-align: center;"><table cellspacing="5" cellpadding="0" border="0" style="margin: 0 auto;" width="100%"><tr><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/3381666736.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/3381666736.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">차례엔 아무것도 나오지 않는다. 왜 있나;</p></td><td width="50%"><a href="http://reznoa.wo.tc/blog/attach/1/8055365255.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/8055365255.jpg" alt="사용자 삽입 이미지" height="400" width="300" style="cursor: pointer;" /></a><p class="cap1">본문 검색이 되는건가 하고 들떴었다. (쳇)</p></td></tr></table></div>
+
+<p>차례에 아무것도 나오지 않는것은 유리가면이 딱히 화 구별을 표시하지 않기 때문이다. 보통은 연재 당시에 썼던 화 구성을 단행본에서도 쓰는데, 유리가면은 단행본을 그렇게 만들지 않았거든. 그냥 끊김없이 한 호흡으로 이었다. 그래서 마땅한 (공식적인) 구분이 없는 것이기도 하다만.. 그렇다면 차라리 메뉴에서도 뺐어야지.</p>
+
+<p>개인적으로는 전체 세트(권별 차례 말고)를 아우르는 주요 사건별 바로가기 개념의 차례 정도는 들어가있으면 좋겠다고 생각한다. 어떤 장면을 다시 보고 싶을 때 바로 볼 수 있게 말이다. 예를들어, '두 사람의 왕녀 연극 시작'이라던가.. 하는식으로 말이다.</p>
+
+<p>본문 검색도 처음 봤을 땐 깜짝 놀라게 하는 것이었다.
+만화는 전자책이라도 보통 이미지만 제공하는데, 본문 텍스트도 함께 제공해서 검색을 지원하는지 알았기 때문이다.
+하지만 그저 바램, 김칫국이었을 뿐; 쩝.
+아마 유리가면 앱북의 원본 소스가 소설책이었던 모양이다.</p>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/5798935308.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/5798935308.jpg" alt="사용자 삽입 이미지" height="300" width="400" style="cursor: pointer;" /></a><p class="cap1">노트라고 나오지만 즐겨찾기(또는 북마크) 기능이다. 메모는 안된다는.</p></div>
+
+<p>그 밖에도 '노트'라고 표시되는 즐겨찾기는 목록이 각 권마다 따로 표시되므로, 즐겨찾기가 어떤 권에 있는지를 기억해야 한다는것도 불편하다. 차라리 통으로 관리하는게 훨씬 좋은데 말이다. 또 실제로는 메모를 할 수 없음에도 '노트'라고 표시하는것도 어색하다.</p>
+
+<p>하지만, 이런 몇가지를 제외하고는 꽤 잘 만든 편이다.
+조작 방법도 이미 익숙한 것을 썼고, 책과 서재를 오가는것도 불편하지 않다.<sup><a href="#footnote_1677_5" id="footnote_link_1677_5" onmouseover="FootnoteTooltip.show(this, 1677, 5)" onmouseout="FootnoteTooltip.hide(1677, 5)">주5</a></sup></p>
+
+<p>사소한 문제(?)는 향후 업데이트를 통해 나아질거라고 본다.</p>
+
+<h3>잘 디지털화한 컨텐츠</h3>
+
+<p>앱북이 얼마나 잘 만들어졌든 못만들어졌든 유리가면은 만화 앱북.
+중요한건 앱의 질이 아니라 만화의 질이다.
+그런점에서 유리가면은 정말 훌륭한 앱북이라 할 수 있다.
+컨텐츠가 꽤 수준급이기 때문이다.</p>
+
+<p>잡티가 좀 남아있긴 하지만 그림의 선도 하나하나 선명하고 글씨도 또렷하다.
+게다가 2쪽에 걸쳐서 그린 그림도 가운데 짤림 없이 온전하다. 완전 굿~!<sup><a href="#footnote_1677_6" id="footnote_link_1677_6" onmouseover="FootnoteTooltip.show(this, 1677, 6)" onmouseout="FootnoteTooltip.hide(1677, 6)">주6</a></sup>
+그만큼 앱북 컨텐츠에 신경을 많이 썼다는 얘기겠지?
+만약 이전에 그만그만한 웹 뷰어로 만화를 봤었다면 저도 몰래 감탄하게 될 지도 모르겠다.</p>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/6130572922.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/6130572922.jpg" alt="사용자 삽입 이미지" height="300" width="400" style="cursor: pointer;" /></a><p class="cap1">1:1 크롭해봤다. 선과 톤이 잘 살아있다.</p></div>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/2239184956.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/2239184956.jpg" alt="사용자 삽입 이미지" height="300" width="400" style="cursor: pointer;" /></a><p class="cap1">2쪽에 걸친 그림도 가운데 짤림 없이 온전하다.<br />..가운데 저 효과만 없으면 더 좋았으련만.</p></div>
+
+<div class="imageblock center" style="text-align: center; clear: both;"><a href="http://reznoa.wo.tc/blog/attach/1/9299679798.jpg" class="highslide" onclick="return hs.expand(this, { slideshowGroup: 'rezslide-images' })"><img src="http://reznoa.wo.tc/blog/attach/1/9299679798.jpg" alt="사용자 삽입 이미지" height="300" width="400" style="cursor: pointer;" /></a><p class="cap1">컬러를 날려버린건 그저 아쉽고 아쉽고 아쉬울 따름.</p></div>
+
+<p>그렇다고 마냥 좋기만 한건 아니다.
+컬러는 다 날아갔거든.
+보통 일반판 단행본은 비용문제도 있고 해서 컬러 페이지도 그냥 흑백으로 출력해서 내놓는데, 그걸 그대로 스캔해서 넣은 듯 하다.
+디지털 컨텐츠는 원래 컬러였던걸 컬러로 넣는다고 비용이 더 들어가는것도 아니건만, 참 아쉬운 점이다.<sup><a href="#footnote_1677_7" id="footnote_link_1677_7" onmouseover="FootnoteTooltip.show(this, 1677, 7)" onmouseout="FootnoteTooltip.hide(1677, 7)">주7</a></sup>
+추후에라도 업데이트를 통해 컬러 페이지를 복원해주면 좋겠다는 생각을 해본다.</p>
+
+
+<fieldset class="footnotes"><legend>註.</legend><ol><li id="footnote_1677_1"><span id="footnote_content_1677_1">물론, 대여면 더 싸지. 인터넷으로 보는것만 봐도 N스토어가 500원, 다음 만화마켓은 300원이니 사는것과는 비교가 안된다.</span> <a href="#footnote_link_1677_1">[Back]</a></li>
+<li id="footnote_1677_2"><span id="footnote_content_1677_2">네이버 책만 봐도 16% 할인해 3780원에 판다. 일반 쇼핑몰도 10%는 할일해주므로 못해도 4050원에는 살 수 있다.</span> <a href="#footnote_link_1677_2">[Back]</a></li>
+<li id="footnote_1677_3"><span id="footnote_content_1677_3">물론, 새책 기준이다. 중고까지 치면 답없지. ㅋ</span> <a href="#footnote_link_1677_3">[Back]</a></li>
+<li id="footnote_1677_4"><span id="footnote_content_1677_4">심한건 T스토어 북 앱 같은거지. 무려 대기업에서 냈음에도 불구하고 이놈은 걸핏하면 죽기 바쁘다. 대체 이딴걸 내다니.. SK도 대단하고, 심사를 통과시킨 애플도 대단하다. 쯧.</span> <a href="#footnote_link_1677_4">[Back]</a></li>
+<li id="footnote_1677_5"><span id="footnote_content_1677_5">열혈강호 앱은 일반적인 인터페이스와 달라서 좀 불편했다. 예를들어, 서재로 돌아가기위한 버튼이 아래쪽에 있는데, iOS 앱은 대부분 그런 기능의 버튼을 왼쪽 위에 둔다. 그래서 처음 쓸 때는 조금 눈을 굴려야 한다는. 그에 비하면 유리가면은 좀 더 익숙한 방식이라 좋다.</span> <a href="#footnote_link_1677_5">[Back]</a></li>
+<li id="footnote_1677_6"><span id="footnote_content_1677_6">
+열혈강호는 가운데가 짤려있어서 굉장히 아쉬웠었는데, <a href="https://twitter.com/bookjampub/status/245044684962013184">앱 재작사인 북잼의 얘기</a>에 따르면 원본이 그런 모양이더라.
+하지만, 만화가가 그림을 그렇게 그렸을리는 없잖아?
+짤렸다면 그 후에 짤린거겠지.
+외국 만화는 복사본밖에 없겠지만, 한국 만화는 원본이 있을텐데 오히려 외국 만화의 상태가 더 좋다니.
+한국 만화 원고 관리가 제대로 안되고 있다는 생각이 들면서 뭔가 암울한게.. 참 거시기하다.</span> <a href="#footnote_link_1677_6">[Back]</a></li>
+<li id="footnote_1677_7"><span id="footnote_content_1677_7">출판물은 좀 다르다. 컬러를 넣으려면 컬러용 용지를 써야하고 또 컬러로 인쇄해야하며, 그게 번지지 않도록 코팅도 해야한다. 꽤 돈 들어가지.</span> <a href="#footnote_link_1677_7">[Back]</a></li>
+</ol></fieldset><div id="relposts_1677" class="relposts"><div class="relposts_title">"<a href="/blog/category/놀기/만화&amp;애니 이야기">만화&amp;애니 이야기</a>" 카테고리의 다른 글</div><ul class="relposts_list"><li class="currpost"><span class="date">2013/08/28</span><span class="title"><a href="/blog/1677">잘 만든 만화 앱북, 유리가면</a></span> </li><li><span class="date">2013/08/22</span><span class="title"><a href="/blog/1579">여장 변신 히어로 개그물, 나와 히어로와 마법소녀(俺とヒ?ロ?と魔法...</a></span> </li><li><span class="date">2013/08/05</span><span class="title"><a href="/blog/1658">대원CI, 만화 유리가면 앱북 체험단 모집 (2013-08-05 ~ 2013-08-11)</a></span> </li><li><span class="date">2013/07/09</span><span class="title"><a href="/blog/1278">계속되는 강품의 미스터리 시리즈, 조명가게</a></span> </li><li><span class="date">2013/06/15</span><span class="title"><a href="/blog/1611">레드블러드 원작만화, 회원가입없이 보는 방법</a></span> </li><li><span class="date">2013/05/06</span><span class="title"><a href="/blog/1574">중국의 신 이야기, 아무도 모르는(子不語)</a></span> </li><li><span class="date">2013/04/28</span><span class="title"><a href="/blog/1560">괴작, THE PENISMAN</a></span> </li></ul></div><div id="SNSConnect" class="SNSConnect_L" style=""><ul><li><iframe id="SNSConnect_Twitter" allowtransparency="true" frameborder="0" scrolling="no" src="http://platform.twitter.com/widgets/tweet_button.html?url=http%3A%2F%2Freznoa.wo.tc%2Fblog%2F1677&text=잘 만든 만화 앱북, 유리가면&count=vertical" style="width:60px; height:62px;"></iframe></li><li><iframe id="SNSConnect_Facebook" allowtransparency="true" frameborder="0" scrolling="no" src="http://www.facebook.com/plugins/like.php?href=http%3A%2F%2Freznoa.wo.tc%2Fblog%2F1677&layout=box_count&send=false&show_faces=false&action=like&colorscheme=light&width=60&height=62&locale=ko_KR" style="width: 60px; height: 62px;"></iframe></li><li><g:plusone size="tall" href="http%3A%2F%2Freznoa.wo.tc%2Fblog%2F1677"></g:plusone></li><li><a class="FlattrButton" style="display:none;" href="https://flattr.com/profile/reznoa"></a><noscript><a href="http://flattr.com/thing/463422/reznoa-on-Flattr" target="_blank"><img src="http://api.flattr.com/button/flattr-badge-large.png" alt="Flattr this" title="Flattr this" border="0" /></a></noscript></li><li><iframe width="402px" height="90px" src="http://api.v.daum.net/widget1?nid=49519548" frameborder="no"></iframe></li></ul></div>
+								<div class="fixed"></div>
+					<div style="display:none">
+					<abbr class="updated" title="2013-08-28T03:02:12+09:00">2013/08/13 16:16</abbr>
+					<abbr class="published" title="2013-08-13T16:16:36+09:00">2013/08/13 16:16</abbr>
+					</div>
+							</div>
+							
+							<div id="reltags">
+								<span class="icon"></span>
+								<a href="http://reznoa.wo.tc/blog/tag/대원씨아이" rel="tag">대원씨아이</a>,
+<a href="http://reznoa.wo.tc/blog/tag/만화" rel="tag">만화</a>,
+<a href="http://reznoa.wo.tc/blog/tag/북잼" rel="tag">북잼</a>,
+<a href="http://reznoa.wo.tc/blog/tag/앱북" rel="tag">앱북</a>
+							</div>
+							
+							<div id="cmtswitcher">
+								<span class="addcomment">
+								<a href="#rp" onclick="loadComment(1677,1,false,false); return false">Leave a Commnet</a>
+								</span>
+								<span class="addtrackback">
+								<a href="#tb" onclick="toggleLayer('entry1677Trackback'); return false">
+									Leave a Trackback
+								</a>
+								</span>
+								<div class="fixed"></div>
+							</div>
+
+								<div id="entry1677Trackback" style="display:block">
+									<span class="tbtitle">Trackback Address:<span onclick="copyUrl('http://reznoa.wo.tc/blog/trackback/1677', this)">http://reznoa.wo.tc/blog/trackback/1677</span></span>
+									<div id="trackbacks">
+									
+									</div>
+								</div>
+
+								<div id="entry1677Comment" style="display:block">
+								<div id="comments">
+									<div id="commentlist">
+										
+									</div><!-- commentlist close -->
+
+									<div id="respond">
+
+									<form id="entry1677WriteComment" method="post" action="/blog/comment/add/1677" onsubmit="return false" style="margin: 0">
+
+										
+													
+													<div class="row">
+														<input type="checkbox" class="checkbox" id="secret_1677" name="secret" value="1" />
+														<label for="secret_1677">비밀 답글</label>
+													</div>
+												
+
+											<div class="row"><textarea name="comment" id="comment" cols="50" rows="8" ></textarea></div>
+											<div id="submitbox"><input type="submit" value="답글 작성하기" id="submit" onclick="addComment(this, 1677); return false;" /></div>
+
+									</form>
+									</div>
+									<div class="fixed"></div>
+								</div><!-- comment close -->
+							</div>
+						</div><!-- entry -->
+					
+</div><!--
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+      xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:trackback="http://madskills.com/public/xml/rss/module/trackback/">
+<rdf:Description
+   rdf:about="/blog/1677"
+   dc:identifier="/blog/1677"
+   dc:title="잘 만든 만화 앱북, 유리가면"
+   trackback:ping="http://reznoa.wo.tc/blog/trackback/1677" />
+</rdf:RDF>
+-->
+</div>
+
+					
+						<div id="pagenavi">
+							<a href='/blog/1678' class="">◀ PREV </a>
+							<span class="numbox">
+								
+								<a href='/blog/1710' class="num">[<span>1</span>]</a>
+								 <span class="interword">...</span> 
+								<a href='/blog/1681' class="num">[<span>30</span>]</a>
+								
+								<a href='/blog/1680' class="num">[<span>31</span>]</a>
+								
+								<a href='/blog/1679' class="num">[<span>32</span>]</a>
+								
+								<a href='/blog/1678' class="num">[<span>33</span>]</a>
+								
+								<a  class="num">[<span class="selected" >34</span>]</a>
+								
+								<a href='/blog/1676' class="num">[<span>35</span>]</a>
+								
+								<a href='/blog/1675' class="num">[<span>36</span>]</a>
+								
+								<a href='/blog/1674' class="num">[<span>37</span>]</a>
+								
+								<a href='/blog/1673' class="num">[<span>38</span>]</a>
+								 <span class="interword">...</span> 
+								<a href='/blog/1673' class="num">[<span>1710</span>]</a>
+								
+							</span>
+							<a href='/blog/1676' class="">NEXT ▶</a>
+						</div>
+					
+
+				</div><!-- main fin-->
+				<div id="sidebar">
+					
+						<!-- 검색 -->
+							<div id="searchBox" class="widget">
+								<form id="TTSearchForm" name="TTSearchForm" action="/blog/search/" method="get" onsubmit="return searchBlog();">
+									<input type="text" id="s" name="search" value="" onkeypress="if (event.keyCode == 13) { searchBlog(); }" class="textfield"/>
+									<input value="검색" id="searchsubmit" type="button" onclick="searchBlog();" class="switcher"/>
+								</form>
+							</div>
+						<div class="SB_Spacer" style="height:20px;"></div><div align="center"><script type="text/javascript">aladdin_ttb_key = 'ttbreznoa0249002'; aladdin_ttb_channel = '10855'; aladdin_ttb_width = '243'; aladdin_ttb_height = '182'; </script><script type="text/javascript" language="javascript" src="http://ttb2.aladdin.co.kr/ad_ttb.aspx"></script></div><div align="center"><script type="text/javascript">aladdin_ttb_key = 'ttbreznoa0249002'; aladdin_ttb_channel = '10858'; aladdin_ttb_width = '243'; aladdin_ttb_height = '182'; </script><script type="text/javascript" language="javascript" src="http://ttb2.aladdin.co.kr/ad_ttb.aspx"></script></div><object id="tagpo8759348" type="application/x-shockwave-flash" data="http://cfs.tistory.com/custom/blog/6/66267/skin/images/tagpo.swf?r=7429970" width="300" height="300"><param name="movie" value="http://cfs.tistory.com/custom/blog/6/66267/skin/images/tagpo.swf?r=7429970" /><param name="bgcolor" value="#990000" /><param name="AllowScriptAccess" value="always" /><param name="wmode" value="transparent" /><param name="flashvars" value="tagsize=75&amp;mode=tags&amp;tagcloud=%3Ctags%3E%3Ca+href%3D%27%2Fblog%2Ftag%2FTCG%27+class%3D%27tag-link-3151%27+title%3D%2714+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+17pt%3B%27%3ETCG%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25ED%2586%25A0%25EC%259A%2594%25EC%25B9%25B4%25EC%2599%2580%2B%25EC%2597%2590%25EC%25B8%25A0%25EC%258B%259C%27+class%3D%27tag-link-3767%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%ED%86%A0%EC%9A%94%EC%B9%B4%EC%99%80+%EC%97%90%EC%B8%A0%EC%8B%9C%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2Fdaemon%27+class%3D%27tag-link-2957%27+title%3D%272+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+14pt%3B%27%3Edaemon%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EC%2596%2591%25EC%259E%25AC%25ED%2598%2584%27+class%3D%27tag-link-3358%27+title%3D%272+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+14pt%3B%27%3E%EC%96%91%EC%9E%AC%ED%98%84%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EA%25B3%25B5%25EC%259D%25B8%27+class%3D%27tag-link-2865%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%EA%B3%B5%EC%9D%B8%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EB%25B0%25B0%25EB%259E%2580%27+class%3D%27tag-link-2488%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%EB%B0%B0%EB%9E%80%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EC%25A7%2581%25EC%2597%2585%27+class%3D%27tag-link-2856%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%EC%A7%81%EC%97%85%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EC%2598%2581%25EC%2583%259D%27+class%3D%27tag-link-2694%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%EC%98%81%EC%83%9D%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EC%259D%25B4%25EC%25A7%2580%25EC%2595%2584%27+class%3D%27tag-link-3017%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%EC%9D%B4%EC%A7%80%EC%95%84%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EA%25B2%258C%25EC%259E%2584%25EB%25A9%2594%25EC%25B9%25B4%27+class%3D%27tag-link-3366%27+title%3D%272+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+14pt%3B%27%3E%EA%B2%8C%EC%9E%84%EB%A9%94%EC%B9%B4%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EB%25A7%258C%25ED%2599%2594%25EC%2586%258D%25EC%2584%25B8%25EC%2583%2581%27+class%3D%27tag-link-3098%27+title%3D%275+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+15pt%3B%27%3E%EB%A7%8C%ED%99%94%EC%86%8D%EC%84%B8%EC%83%81%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EB%2590%2598%25EB%258F%258C%25EC%2595%2584%25EB%25B3%25B4%25EA%25B8%25B0%27+class%3D%27tag-link-2194%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%EB%90%98%EB%8F%8C%EC%95%84%EB%B3%B4%EA%B8%B0%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25ED%258A%25B8%25EB%259E%2599%25EB%25B0%25B1%27+class%3D%27tag-link-1351%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%ED%8A%B8%EB%9E%99%EB%B0%B1%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EC%25BA%2590%25EC%2582%25B0%27+class%3D%27tag-link-2731%27+title%3D%273+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+14pt%3B%27%3E%EC%BA%90%EC%82%B0%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EC%258A%25A4%25EC%258B%259C%27+class%3D%27tag-link-2519%27+title%3D%272+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+14pt%3B%27%3E%EC%8A%A4%EC%8B%9C%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2FIP%27+class%3D%27tag-link-3619%27+title%3D%272+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+14pt%3B%27%3EIP%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2Fimeem%27+class%3D%27tag-link-1953%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3Eimeem%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2Fbase64%27+class%3D%27tag-link-2126%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3Ebase64%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2FJSP%27+class%3D%27tag-link-1737%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3EJSP%3C%2Fa%3E%3Ca+href%3D%27%2Fblog%2Ftag%2F%25EA%25B3%25B5%25EC%259C%25A0%25EA%25B8%25B0%27+class%3D%27tag-link-3678%27+title%3D%271+topic%27+rel%3D%27tag%27+style%3D%27font-size%3A+13pt%3B%27%3E%EA%B3%B5%EC%9C%A0%EA%B8%B0%3C%2Fa%3E%3C%2Ftags%3E" /><p>Tagnetic Poetry by <a href="http://reznoa.wo.tc/">reznoa</a> requires Flash Player 9 or better.</p></object>
+						<!-- 글 분류-->
+							<div id="categoryList" class="widget">
+								<h3>글 분류</h3>
+								<ul>
+<li>
+<a href="/blog/category" class="categoryItem">전체 <span class="c_cnt">(1710)</span></a>
+<ul>
+<li>
+<a href="/blog/category/i,%20developlayer" class="categoryItem">i, developlayer <span class="c_cnt">(209)</span></a>
+<ul>
+<li>
+<a href="/blog/category/i,%20developlayer/Design%20Pattern" class="categoryItem">Design Pattern <span class="c_cnt">(1)</span></a>
+</li>
+<li>
+<a href="/blog/category/i,%20developlayer/CodeSnipet" class="categoryItem">CodeSnipet <span class="c_cnt">(82)</span></a>
+</li>
+<li>
+<a href="/blog/category/i,%20developlayer/compression" class="categoryItem">compression <span class="c_cnt">(6)</span></a>
+</li>
+<li>
+<a href="/blog/category/i,%20developlayer/devTools" class="categoryItem">devTools <span class="c_cnt">(61)</span></a>
+</li>
+<li class="lastChild">
+<a href="/blog/category/i,%20developlayer/resume" class="categoryItem">resume <span class="c_cnt">(4)</span></a>
+</li>
+</ul>
+</li>
+<li>
+<a href="/blog/category/project" class="categoryItem">project <span class="c_cnt">(95)</span></a>
+<ul>
+<li>
+<a href="/blog/category/project/아이디어" class="categoryItem">아이디어 <span class="c_cnt">(38)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/cbfind" class="categoryItem">cbfind <span class="c_cnt">(11)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/pbfind" class="categoryItem">pbfind <span class="c_cnt">(1)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/wdbconv" class="categoryItem">wdbconv <span class="c_cnt">(5)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/gmouse" class="categoryItem">gmouse <span class="c_cnt">(2)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/moregreen" class="categoryItem">moregreen <span class="c_cnt">(2)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/tagcloud" class="categoryItem">tagcloud <span class="c_cnt">(14)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/r.p.g." class="categoryItem">r.p.g. <span class="c_cnt">(0)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/ndigger" class="categoryItem">ndigger <span class="c_cnt">(6)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/ms-sms" class="categoryItem">ms-sms <span class="c_cnt">(3)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/songfind" class="categoryItem">songfind <span class="c_cnt">(1)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/stardict-data-crawler" class="categoryItem">stardict-data-crawler <span class="c_cnt">(4)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/upl" class="categoryItem">upl <span class="c_cnt">(1)</span></a>
+</li>
+<li>
+<a href="/blog/category/project/quizpedia" class="categoryItem">quizpedia <span class="c_cnt">(3)</span></a>
+</li>
+<li class="lastChild">
+<a href="/blog/category/project/jpegcheck" class="categoryItem">jpegcheck <span class="c_cnt">(1)</span></a>
+</li>
+</ul>
+</li>
+<li>
+<a href="/blog/category/PC%20갖고%20놀기" class="categoryItem">PC 갖고 놀기 <span class="c_cnt">(378)</span></a>
+<ul>
+<li>
+<a href="/blog/category/PC%20갖고%20놀기/show%20me%20the%20M$" class="categoryItem">show me the M$ <span class="c_cnt">(30)</span></a>
+</li>
+<li>
+<a href="/blog/category/PC%20갖고%20놀기/i,%20linuxer" class="categoryItem">i, linuxer <span class="c_cnt">(41)</span></a>
+</li>
+<li>
+<a href="/blog/category/PC%20갖고%20놀기/mad%20appler" class="categoryItem">mad appler <span class="c_cnt">(174)</span></a>
+</li>
+<li>
+<a href="/blog/category/PC%20갖고%20놀기/andruid" class="categoryItem">andruid <span class="c_cnt">(41)</span></a>
+</li>
+<li>
+<a href="/blog/category/PC%20갖고%20놀기/애플리케이션%20길들이기" class="categoryItem">애플리케이션 길들이기 <span class="c_cnt">(64)</span></a>
+</li>
+<li class="lastChild">
+<a href="/blog/category/PC%20갖고%20놀기/인터넷%20중독" class="categoryItem">인터넷 중독 <span class="c_cnt">(22)</span></a>
+</li>
+</ul>
+</li>
+<li>
+<a href="/blog/category/놀기" class="categoryItem">놀기 <span class="c_cnt">(738)</span></a>
+<ul>
+<li>
+<a href="/blog/category/놀기/짤방" class="categoryItem">짤방 <span class="c_cnt">(23)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/ass%20design" class="categoryItem">ass design <span class="c_cnt">(8)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/만화%26애니%20이야기" class="categoryItem">만화&amp;애니 이야기 <span class="c_cnt">(76)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/게임%20이야기" class="categoryItem">게임 이야기 <span class="c_cnt">(112)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/online%20single%20play" class="categoryItem">online single play <span class="c_cnt">(15)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/음악%20이야기" class="categoryItem">음악 이야기 <span class="c_cnt">(84)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/TV%26영화%26연극%20이야기" class="categoryItem">TV&amp;영화&amp;연극 이야기 <span class="c_cnt">(48)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/책%20이야기" class="categoryItem">책 이야기 <span class="c_cnt">(29)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/한글화" class="categoryItem">한글화 <span class="c_cnt">(9)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/blog%20life" class="categoryItem">blog life <span class="c_cnt">(139)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/찍사의%20로망" class="categoryItem">찍사의 로망 <span class="c_cnt">(2)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/타기" class="categoryItem">타기 <span class="c_cnt">(6)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/고전%26신화%20이야기" class="categoryItem">고전&amp;신화 이야기 <span class="c_cnt">(2)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/돌아다니기" class="categoryItem">돌아다니기 <span class="c_cnt">(26)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/식기행" class="categoryItem">식기행 <span class="c_cnt">(30)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/MTG" class="categoryItem">MTG <span class="c_cnt">(16)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/논리%20이야기" class="categoryItem">논리 이야기 <span class="c_cnt">(13)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/어른아이" class="categoryItem">어른아이 <span class="c_cnt">(8)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/hack%26crack" class="categoryItem">hack&amp;crack <span class="c_cnt">(37)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/fake-real-fiction" class="categoryItem">fake-real-fiction <span class="c_cnt">(22)</span></a>
+</li>
+<li>
+<a href="/blog/category/놀기/코미디" class="categoryItem">코미디 <span class="c_cnt">(12)</span></a>
+</li>
+<li class="lastChild">
+<a href="/blog/category/놀기/homo%20academicus" class="categoryItem">homo academicus <span class="c_cnt">(3)</span></a>
+</li>
+</ul>
+</li>
+<li>
+<a href="/blog/category/생활의%20발견" class="categoryItem">생활의 발견 <span class="c_cnt">(114)</span></a>
+<ul>
+<li>
+<a href="/blog/category/생활의%20발견/어쩌면%20좋을까" class="categoryItem">어쩌면 좋을까 <span class="c_cnt">(4)</span></a>
+</li>
+<li>
+<a href="/blog/category/생활의%20발견/不滿" class="categoryItem">不滿 <span class="c_cnt">(13)</span></a>
+</li>
+<li>
+<a href="/blog/category/생활의%20발견/우리말%20나들이" class="categoryItem">우리말 나들이 <span class="c_cnt">(8)</span></a>
+</li>
+<li>
+<a href="/blog/category/생활의%20발견/이런거%20어떨가" class="categoryItem">이런거 어떨가 <span class="c_cnt">(12)</span></a>
+</li>
+<li>
+<a href="/blog/category/생활의%20발견/je,%20le%20penseur" class="categoryItem">je, le penseur <span class="c_cnt">(31)</span></a>
+</li>
+<li class="lastChild">
+<a href="/blog/category/생활의%20발견/지구인%20통신" class="categoryItem">지구인 통신 <span class="c_cnt">(13)</span></a>
+</li>
+</ul>
+</li>
+<li class="lastChild">
+<a href="/blog/category/목차" class="categoryItem">목차 <span class="c_cnt">(7)</span></a>
+</li>
+</ul>
+</li>
+</ul>
+
+							</div>
+						
+						<!--최근 글 -->
+							<div id="recentPosts" class="widget">
+								<h3>최근 글</h3>
+								<ul>
+									
+									<li>
+										<a href="/blog/1710">잘 만든 코드보다 잘 읽히는 코드가 더...</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1709">재미로해보는 사이코패스 테스트</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1708">ip address ↔ domain name 알아내기</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1707">로저 젤라즈니 작품 목록</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1706">되 삶</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1705">레고로 만든 매킨토시(Macintosh)</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1704">책 읽는 생활</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1703">우미하라 카와세 ? 2nd 에디션 완전판...</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1702">가볍게 보기 좋은, 좀비우스의 '게임 ...</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1701">섹드립이 넘치는 러브(?) 코미디, 부랄...</a>
+									</li>
+									
+								</ul>
+							</div>
+						
+						<!-- 최근 답글-->
+							<div id="recentComments" class="widget">
+								<h3>최근 답글</h3>
+								<ul>
+									
+									<li>
+										난초보:<a href="/blog/1045?commentId=97902#comment97902">감사합니다..
+
+여러 조건을 만족하는 R...</a>
+									</li>
+									
+									<li>
+										레즈:<a href="/blog/1628?commentId=97901#comment97901">도움이 되었다니 좋네요. :)</a>
+									</li>
+									
+									<li>
+										오쿠무라:<a href="/blog/1628?commentId=97900#comment97900">정말 감사합니다 ^^</a>
+									</li>
+									
+									<li>
+										레즈:<a href="/blog/589?commentId=97898#comment97898">정오를 지났으니 오후라.. 그럴듯 한데...</a>
+									</li>
+									
+									<li>
+										레즈:<a href="/blog/589?commentId=97897#comment97897">헛; 스팸 필터에 걸려있는걸 발견해 복...</a>
+									</li>
+									
+								</ul>
+							</div>
+						
+						<!-- 최근 트랙백-->
+							<div id="recentTrackbacks" class="widget">
+								<h3>최근 트랙백</h3>
+								<ul>
+									
+									<li>
+										<a href="/blog/1155#trackback12123">Temple Run Download</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1260#trackback11878">Age of Mythology - Windows 7에서 하는 방법</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1453#trackback11877">로봇 타이쿤(Robot Tycoons)을 하다!</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1466#trackback11876">Age of Mythology - Windows 7에서 한국어로 나오게 하는 방법</a>
+									</li>
+									
+									<li>
+										<a href="/blog/1441#trackback11875">아키올로지(Archaeology)의 커스텀 테마 버전, 로봇(Robots)</a>
+									</li>
+									
+								</ul>
+							</div>
+						<div id="daumview_mynews" class="widget">
+				<h3>나의 DaumView</h3><ol>
+<li><a href="http://v.daum.net/link/49752753" onclick="window.open(this.href);return false;" title="ip address ↔ domain name 알아내기">ip address ↔ domain name 알아내기</a></li>
+<li><a href="http://v.daum.net/link/49720010" onclick="window.open(this.href);return false;" title="섹드립이 넘치는 러브(?) 코미디, 부랄친구">섹드립이 넘치는 러브(?) 코미디, 부랄친구</a></li>
+<li><a href="http://v.daum.net/link/49695183" onclick="window.open(this.href);return false;" title="Java - 경고음(beep) 출력하기">Java - 경고음(beep) 출력하기</a></li>
+<li><a href="http://v.daum.net/link/49572062" onclick="window.open(this.href);return false;" title="Dropbox - Mailbox와 연동하고 추가용량 1GB 받기">Dropbox - Mailbox와 연동하고 추가용량 1GB 받기</a></li>
+<li><a href="http://v.daum.net/link/49519548" onclick="window.open(this.href);return false;" title="잘 만든 만화 앱북, 유리가면">잘 만든 만화 앱북, 유리가면</a></li>
+<li><a href="http://v.daum.net/link/49513612" onclick="window.open(this.href);return false;" title="축가로 좋은 CCM, 축복하노라">축가로 좋은 CCM, 축복하노라</a></li>
+<li><a href="http://v.daum.net/link/49444934" onclick="window.open(this.href);return false;" title="여장 변신 히어로 개그물, 나와 히어로와 마법소녀(俺とヒ?ロ?と魔法少女)">여장 변신 히어로 개그물, 나와 히어로와 마법소녀(俺とヒ?ロ?と魔法少女)</a></li>
+<li><a href="http://v.daum.net/link/49419082" onclick="window.open(this.href);return false;" title="JavaScript - pack/unpack, compress/uncompress, minify 하기">JavaScript - pack/unpack, compress/uncompress, minify 하기</a></li>
+<li><a href="http://v.daum.net/link/49301986" onclick="window.open(this.href);return false;" title="YouTube - XML 캡션을 SRT 자막으로 바꾸기">YouTube - XML 캡션을 SRT 자막으로 바꾸기</a></li>
+<li><a href="http://v.daum.net/link/49301983" onclick="window.open(this.href);return false;" title="YouTube - XML 캡션 다운받기">YouTube - XML 캡션 다운받기</a></li>
+<li><a href="http://v.daum.net/link/49298863" onclick="window.open(this.href);return false;" title="포르노와 현실의 차이?">포르노와 현실의 차이?</a></li>
+<li><a href="http://v.daum.net/link/48708624" onclick="window.open(this.href);return false;" title="물이 없어 물에 강한 자외선 차단제, 오띠 워터리스 선스프레이">물이 없어 물에 강한 자외선 차단제, 오띠 워터리스 선스프레이</a></li>
+</ol>
+</div><div class="SB_Spacer" style="height:20px;"></div><div id='draco_counter' ><div id='draco_counter_y'><p>1340 </p><p class='mid'>715 </p></div><div id='draco_counter_right'><div id='draco_counter_graph' onmousemove="point_it(event)" onmouseout="highlight_off()"  onclick="movetoday(event)" style="cursor:pointer"><span id='highlight_line' onmouseover="highlight_hold()"></span><img src='http://chart.apis.google.com/chart?chs=232x100&amp;chd=t:50.0,34.0,34.0,35.0,39.0,41.0,65.0,55.0,53.0,40.0,44.0,55.0,54.0,66.0,95.0,72.0,85.0,65.0,49.0,48.0,40.0,43.0,46.0,42.0,58.0,67.0,36.0,47.0,39.0,23.0&amp;cht=lc&amp;chco=577EE1&amp;chf=bg,s,FFFFFF&amp;chls=2,4,0&amp;chm=B,F4F7FF,0,0,0|c,6C57E2,0,14.0,10.0|x,E25757,0,29.0,10.0' name='d_chart' border='0' alt='google chart api graph'/></div><div id='draco_counter_x'><p class='left'>-30 days</p><p class='right'>today : 319</p></div></div></div>
+<script type='text/javascript'>
+// <![CDATA[
+	var ary_thetxt = new Array();
+	var ary_day_post = new Array();
+	var ary_dcount = new Array();
+	var pos_day_prev = 0;
+	ary_thetxt[0] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 8일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 706명</li></ul>"; ary_day_post[0] ="0"; ary_dcount[0] = "/blog/archive/20130808"; 
+ary_thetxt[1] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 9일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 484명</li></ul>"; ary_day_post[1] ="0"; ary_dcount[1] = "/blog/archive/20130809"; 
+ary_thetxt[2] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 10일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 480명</li></ul>"; ary_day_post[2] ="0"; ary_dcount[2] = "/blog/archive/20130810"; 
+ary_thetxt[3] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 11일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 491명</li></ul>"; ary_day_post[3] ="0"; ary_dcount[3] = "/blog/archive/20130811"; 
+ary_thetxt[4] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 12일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 554명</li></ul>"; ary_day_post[4] ="0"; ary_dcount[4] = "/blog/archive/20130812"; 
+ary_thetxt[5] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 13일</li><li id='tooltip_post'>포스팅 : 1개</li><li id='tooltip_guest'>방문자 : 576명</li></ul>"; ary_day_post[5] ="1"; ary_dcount[5] = "/blog/archive/20130813"; 
+ary_thetxt[6] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 14일</li><li id='tooltip_post'>포스팅 : 3개</li><li id='tooltip_guest'>방문자 : 923명</li></ul>"; ary_day_post[6] ="3"; ary_dcount[6] = "/blog/archive/20130814"; 
+ary_thetxt[7] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 15일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 777명</li></ul>"; ary_day_post[7] ="0"; ary_dcount[7] = "/blog/archive/20130815"; 
+ary_thetxt[8] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 16일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 754명</li></ul>"; ary_day_post[8] ="0"; ary_dcount[8] = "/blog/archive/20130816"; 
+ary_thetxt[9] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 17일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 560명</li></ul>"; ary_day_post[9] ="0"; ary_dcount[9] = "/blog/archive/20130817"; 
+ary_thetxt[10] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 18일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 626명</li></ul>"; ary_day_post[10] ="0"; ary_dcount[10] = "/blog/archive/20130818"; 
+ary_thetxt[11] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 19일</li><li id='tooltip_post'>포스팅 : 1개</li><li id='tooltip_guest'>방문자 : 781명</li></ul>"; ary_day_post[11] ="1"; ary_dcount[11] = "/blog/archive/20130819"; 
+ary_thetxt[12] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 20일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 765명</li></ul>"; ary_day_post[12] ="0"; ary_dcount[12] = "/blog/archive/20130820"; 
+ary_thetxt[13] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 21일</li><li id='tooltip_post'>포스팅 : 1개</li><li id='tooltip_guest'>방문자 : 937명</li></ul>"; ary_day_post[13] ="1"; ary_dcount[13] = "/blog/archive/20130821"; 
+ary_thetxt[14] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 22일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 1340명</li></ul>"; ary_day_post[14] ="0"; ary_dcount[14] = "/blog/archive/20130822"; 
+ary_thetxt[15] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 23일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 1012명</li></ul>"; ary_day_post[15] ="0"; ary_dcount[15] = "/blog/archive/20130823"; 
+ary_thetxt[16] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 24일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 1197명</li></ul>"; ary_day_post[16] ="0"; ary_dcount[16] = "/blog/archive/20130824"; 
+ary_thetxt[17] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 25일</li><li id='tooltip_post'>포스팅 : 1개</li><li id='tooltip_guest'>방문자 : 911명</li></ul>"; ary_day_post[17] ="1"; ary_dcount[17] = "/blog/archive/20130825"; 
+ary_thetxt[18] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 26일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 698명</li></ul>"; ary_day_post[18] ="0"; ary_dcount[18] = "/blog/archive/20130826"; 
+ary_thetxt[19] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 27일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 673명</li></ul>"; ary_day_post[19] ="0"; ary_dcount[19] = "/blog/archive/20130827"; 
+ary_thetxt[20] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 28일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 560명</li></ul>"; ary_day_post[20] ="0"; ary_dcount[20] = "/blog/archive/20130828"; 
+ary_thetxt[21] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 29일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 605명</li></ul>"; ary_day_post[21] ="0"; ary_dcount[21] = "/blog/archive/20130829"; 
+ary_thetxt[22] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 30일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 644명</li></ul>"; ary_day_post[22] ="0"; ary_dcount[22] = "/blog/archive/20130830"; 
+ary_thetxt[23] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 8월 31일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 595명</li></ul>"; ary_day_post[23] ="0"; ary_dcount[23] = "/blog/archive/20130831"; 
+ary_thetxt[24] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 9월 1일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 815명</li></ul>"; ary_day_post[24] ="0"; ary_dcount[24] = "/blog/archive/20130901"; 
+ary_thetxt[25] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 9월 2일</li><li id='tooltip_post'>포스팅 : 1개</li><li id='tooltip_guest'>방문자 : 939명</li></ul>"; ary_day_post[25] ="1"; ary_dcount[25] = "/blog/archive/20130902"; 
+ary_thetxt[26] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 9월 3일</li><li id='tooltip_post'>포스팅 : 1개</li><li id='tooltip_guest'>방문자 : 502명</li></ul>"; ary_day_post[26] ="1"; ary_dcount[26] = "/blog/archive/20130903"; 
+ary_thetxt[27] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 9월 4일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 667명</li></ul>"; ary_day_post[27] ="0"; ary_dcount[27] = "/blog/archive/20130904"; 
+ary_thetxt[28] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 9월 5일</li><li id='tooltip_post'>포스팅 : 1개</li><li id='tooltip_guest'>방문자 : 554명</li></ul>"; ary_day_post[28] ="1"; ary_dcount[28] = "/blog/archive/20130905"; 
+ary_thetxt[29] ="<ul id='tooltip_ul'><li id='tooltip_date'>2013년 9월 6일</li><li id='tooltip_post'>포스팅 없음<li id='tooltip_guest'>방문자 : 319명</li></ul>"; ary_day_post[29] ="0"; ary_dcount[29] = "/blog/archive/20130906"; 
+
+
+	function point_it(event){
+	if(document.all) pos_x = event.offsetX;
+	else pos_x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("draco_counter_graph").offsetLeft;
+	if(pos_x <= (30 * 8) && pos_x > 0) {
+		pos_day = Math.round(pos_x / 8);
+		if(pos_day >= 30) pos_day = 29;
+		if(pos_day_prev != pos_day){
+			pos_day_prev = pos_day;
+			repos_x = pos_day * 8;
+			document.getElementById("highlight_line").style.left = repos_x+"px";
+			}
+		document.getElementById("highlight_line").style.visibility = 'visible';		
+		ddrivetip(ary_thetxt[pos_day_prev],'#fff', 135);
+		if(ary_day_post[pos_day_prev] == 0) document.getElementById("draco_counter_graph").style.cursor='default';
+		else document.getElementById("draco_counter_graph").style.cursor='pointer';
+	}}
+	
+	function movetoday(event){
+	pos_x = event.offsetX?(event.offsetX):event.pageX-document.getElementById("draco_counter_graph").offsetLeft;
+	pos_day = Math.round(pos_x / 8);
+	
+	if(ary_day_post[pos_day] != 0 && ary_day_post[pos_day]!=undefined) location.replace(ary_dcount[pos_day]);	
+	}
+	
+	function highlight_off(){
+		document.getElementById("highlight_line").style.visibility = 'hidden';
+		hideddrivetip();
+	}
+	
+	function highlight_hold(){
+		document.getElementById("highlight_line").style.visibility = 'visible';
+		ddrivetip(ary_thetxt[pos_day_prev],'#fff', 135);
+	}	
+// ]]>	
+</script>
+				</div><!--sidebar fin-->
+				<div class="fixed"></div>
+			</div><!-- content fin-->
+
+			<div id="footer">
+				<a href="http://wordpress.org/" id="powered">WordPress</a>
+				<div id="copyright">Copyright ⓒ 2009 FluteMuse.net	</div>
+				<div id="themeinfo">
+					Theme by <a href="http://www.neoease.com/">mg12</a>. Converted by <a href="http://flutemuse.net">FluteMuse.net</a>. Valid <a href="http://validator.w3.org/check?uri=referer">XHTML 1.1</a> and <a href="http://jigsaw.w3.org/css-validator/">CSS 3</a>.	</div>
+			</div><!--footer fin-->
+
+		</div><!-- container fin -->
+
+	</div><!-- wrap fin -->
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-2606866-2");
+pageTracker._initData();
+pageTracker._trackPageview();
+</script><iframe name="nayana_action" src="http://log.nayana.com/free_check.php?account=reznoa.nayana.com&uri=/" width="0" height="0" frameborder="0" target="paran_main"></iframe><script type="Text/javascript">prettyPrint();</script></body>
+</html>

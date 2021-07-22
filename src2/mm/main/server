@@ -1,0 +1,142 @@
+#!/bin/sh
+#
+# ALTIBASE Server Startup/Shutdown Script
+#
+
+ADMIN="${ALTIBASE_HOME}/bin/isql -u sys -p MANAGER -sysdba -noprompt"
+ISQL="${ALTIBASE_HOME}/bin/isql -s localhost -u sys -p MANAGER -silent"
+
+# Permit sysdba via IPC
+FUNC_CHECK_ISQL_CONN()
+{
+	case $ISQL_CONNECTION in
+		[Ii][Pp][Cc])
+		unset ISQL_CONNECTION
+		;;
+
+		*)
+		;;
+	esac
+}
+
+if [ "$1" = "status" ]; then
+	MODE=`echo $* | cut -f 2-4 -d ' '`
+	if [ "$MODE" = "status" ]; then
+		MODE=
+	fi
+fi
+
+case "$1" in
+'start')
+	${ADMIN} << EOF
+startup
+quit
+EOF
+	;;
+
+'stop')
+	# Permit sysdba via IPC
+	FUNC_CHECK_ISQL_CONN
+
+	${ADMIN} << EOF > /dev/null
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_PAGE_COUNT = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_SEC  = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_USEC = 0;
+quit;
+EOF
+	killCheckServer > ${ALTIBASE_HOME}/trc/killCheckServer.log 2>&1
+	${ADMIN} << EOF
+shutdown immediate;
+quit;
+EOF
+	;;
+'kill')
+	${ADMIN} << EOF
+shutdown abort
+quit
+EOF
+	;;
+'status')
+	${ADMIN} << EOF
+select * from tab;
+quit
+EOF
+
+    ;;
+'create')
+if [ $# = 3 ]; then
+    rm -f live-altibase.txt;
+    ${ISQL}  << EOF > /dev/null
+spool  live-altibase.txt;
+EOF
+    if [ -f live-altibase.txt ]; then
+        echo " server is running !!!! \n "
+        echo " you must shutdown first before server create " 
+        rm -f live-altibase.txt;
+    else
+	    ${ADMIN} << EOF
+startup process;
+create database mydb INITSIZE=10M noarchivelog character set $2 national character set $3;
+quit
+EOF
+        ${ADMIN} << EOF > /dev/null
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_PAGE_COUNT = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_SEC  = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_USEC = 0;
+shutdown abort;
+quit;
+EOF
+fi
+else
+echo "Usage: server create [DB Character-set] [National Character-set]"
+exit 1
+fi
+	;;
+'restart')
+	# Permit sysdba via IPC
+	FUNC_CHECK_ISQL_CONN
+
+	${ADMIN} << EOF > /dev/null
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_PAGE_COUNT = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_SEC  = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_USEC = 0;
+quit
+EOF
+        ${ADMIN} << EOF
+shutdown immediate
+quit
+EOF
+	${ADMIN} << EOF
+startup
+quit
+EOF
+	;;
+'downgrade')
+rm -f live-altibase.txt;
+    ${ISQL}  << EOF > /dev/null
+spool  live-altibase.txt;
+EOF
+    if [ -f live-altibase.txt ]; then
+        echo " server is running !!!! \n "
+        echo " you must shutdown first before server downgrade" 
+        rm -f live-altibase.txt;
+    else
+	    ${ADMIN} << EOF
+startup downgrade
+quit
+EOF
+
+        ${ADMIN} << EOF > /dev/null
+ALTER SYSTEM CHECKPOINT;
+ALTER SYSTEM CHECKPOINT;
+shutdown abort;
+quit;
+EOF
+fi
+	;;
+*)
+	echo "Usage: server { start | stop | kill | status | create db_charset national_charset | restart | downgrade }"
+	exit 1
+	;;
+esac
+exit 0

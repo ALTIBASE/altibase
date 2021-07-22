@@ -1,0 +1,69 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-DEC_TRU64.ic 48789 2011-09-27 08:36:15Z djin $
+ **********************************************************************/
+
+/* ------------------------------------------------
+ *
+ * DEC TRU64 
+ *
+ * ----------------------------------------------*/
+
+#include <unistd.h>
+#include <sys/time.h>
+#include <sched.h>
+#include <c_asm.h>
+#include <alpha/builtins.h>
+
+#if defined(__GNUC__)
+  /* ------------------------------------------------
+   *  GNU C Compilter 
+   * ----------------------------------------------*/
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return 0;
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) 0
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj) ;
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+}
+#else
+  /* ------------------------------------------------
+   *  Native Compilter 
+   * ----------------------------------------------*/
+
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return (__LOCK_LONG_RETRY((aObj), 1) == 1) ? 1 : 0;
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) (*((volatile iduNativeMutexObj *) (obj)) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  asm("mb")
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    asm("mb");
+    __UNLOCK_LONG((volatile void*)aObj);
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    releaseNativeMutex(aObj);
+    *((volatile iduNativeMutexObj *)(aObj)) = 0;
+}
+
+#endif /* native compiler */
+
