@@ -1,0 +1,84 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-SPARC_SOLARIS.ic 48789 2011-09-27 08:36:15Z djin $
+ **********************************************************************/
+
+/* ------------------------------------------------
+ *
+ * SPARC CPU : Solaris Native Latch Implementation
+ *
+ * ----------------------------------------------*/
+
+# include <time.h>
+# include <unistd.h>
+# include <sys/atomic.h>
+# include <stdlib.h>
+
+#if defined(__GNUC__)
+  /* ------------------------------------------------
+   *  GNU C Compilter 
+   * ----------------------------------------------*/
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj)    0
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return 0;
+    
+}
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+}
+
+#else
+  /* ------------------------------------------------
+   *  Native Compilter 
+   * ----------------------------------------------*/
+
+#if OS_MAJORVER != 2 || OS_MINORVER != 9 
+# if defined(__cplusplus)
+extern "C" {
+#endif
+    int iduCas32(int* , int);
+    void iduLockEnter();
+    void iduLockExit();
+# if defined(__cplusplus)
+}
+#endif
+#endif
+
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    register int _res = 1;
+    return (iduCas32((int *)aObj, _res) == 0 ? 1 : 0);
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) (*((volatile iduNativeMutexObj *) (obj)) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  iduLockEnter();;
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    iduLockExit();
+    
+    IDE_CASSERT(*aObj != 0);
+    
+    (*((volatile iduNativeMutexObj *) (aObj)) = 0);
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    (*((volatile iduNativeMutexObj *) (aObj)) = 0);
+}
+
+#endif /* native compiler */
+

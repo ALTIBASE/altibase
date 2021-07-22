@@ -1,0 +1,15 @@
+LIBRARY "rp_so"
+
+EXPORTS
+?destroy@rpdQueue@@QEAAXXZ
+?read@rpdQueue@@QEAAXPEAPEAUrpdXLog@@PEA_K@Z
+?read@rpdQueue@@QEAAXPEAPEAUrpdXLog@@@Z
+?write@rpdQueue@@QEAAXPEAUrpdXLog@@@Z
+?allocXLog@rpdQueue@@SA?AW4IDE_RC@@PEAPEAUrpdXLog@@@Z
+?initialize@rpdQueue@@QEAA?AW4IDE_RC@@PEAD@Z
+?initializeStatic@iduMutexMgr@@SA?AW4IDE_RC@@W4iduPeerType@@@Z
+?destroy@rprSNMapMgr@@QEAAXXZ
+?deleteTxByReplicatedCommitSN@rprSNMapMgr@@QEAAX_KPEAW4idBool@@@Z
+?getMinReplicatedSN@rprSNMapMgr@@QEAA_KXZ
+?insertEntry@rprSNMapMgr@@QEAA?AW4IDE_RC@@PEAUrpdRecoveryInfo@@@Z
+?initialize@rprSNMapMgr@@QEAA?AW4IDE_RC@@PEBD@Z

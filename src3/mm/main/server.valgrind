@@ -1,0 +1,96 @@
+#!/bin/sh
+#
+# ALTIBASE Server Startup/Shutdown Script
+#
+
+ADMIN="${ALTIBASE_HOME}/bin/isql -u sys -p MANAGER -sysdba"
+ISQL="${ALTIBASE_HOME}/bin/isql -s localhost -u sys -p MANAGER -silent"
+
+if [ "$1" = "status" ]; then
+	MODE=`echo $* | cut -f 2-4 -d ' '`
+	if [ "$MODE" = "status" ]; then
+		MODE=
+	fi
+fi
+
+case "$1" in
+'start')
+	${ADMIN} << EOF 2>> $ALTIBASE_HOME/trc/valgrind.log;
+startup
+quit
+EOF
+	;;
+
+'stop')
+	${ADMIN} << EOF > /dev/null
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_PAGE_COUNT = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_SEC  = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_USEC = 0;
+quit;
+EOF
+	killCheckServer > ${ALTIBASE_HOME}/trc/killCheckServer.log 2>&1
+	${ADMIN} << EOF
+shutdown immediate;
+quit;
+EOF
+	;;
+'kill')
+	${ADMIN} << EOF
+shutdown abort
+quit
+EOF
+	;;
+'status')
+	${ADMIN} << EOF
+select * from tab;
+quit
+EOF
+
+    ;;
+'create')
+rm -f live-altibase.txt;
+${ISQL}  << EOF
+spool  live-altibase.txt;
+EOF
+if [ -f live-altibase.txt ]; then
+   echo " server is running !!!! \n "
+   echo " you must shutdown first before server create " 
+   rm -f live-altibase.txt;
+else
+	${ADMIN} << EOF
+startup process;
+create database mydb INITSIZE=10M noarchivelog character set $2 national character set $3;
+quit
+EOF
+        ${ADMIN} << EOF > /dev/null
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_PAGE_COUNT = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_SEC  = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_USEC = 0;
+shutdown abort;
+quit;
+EOF
+fi
+	;;
+'restart')
+	${ADMIN} << EOF > /dev/null
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_PAGE_COUNT = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_SEC  = 0;
+ALTER SYSTEM SET CHECKPOINT_BULK_WRITE_SLEEP_USEC = 0;
+quit
+EOF
+        ${ADMIN} << EOF
+shutdown immediate
+quit
+EOF
+
+${ADMIN} << EOF 2>> $ALTIBASE_HOME/trc/valgrind.log;
+startup
+quit
+EOF
+	;;
+*)
+	echo "Usage: $0 { start | stop | kill | status | create | restart }"
+	exit 1
+	;;
+esac
+exit 0

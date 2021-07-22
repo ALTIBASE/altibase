@@ -1,0 +1,80 @@
+[QCP]
+    [qcpManager.cpp]
+        - ERR_PARSER : qpERR_ABORT_QCP_SYNTAX
+    [qcphManager.cpp]
+        - ERR_PARSER : qpERR_ABORT_QCP_SYNTAX
+    [qcply.y]
+        - qpERR_ABORT_QCP_SYNTAX
+        - qpERR_ABORT_QCP_MEMORY_ALLOCATION
+        - qpERR_ABORT_QCP_NOT_SUPPORTED_SYNTAX
+        - qpERR_ABORT_QCP_CONFLICT_NULL_CONSTRAINT
+        - qpERR_ABORT_QCP_NO_HAVE_DATATYPE_IN_CRT_TBL
+        - qpERR_ABORT_QCP_HAVE_DATATYPE_IN_CRT_TBL_AS_SELECT
+        - qpERR_ABORT_QCP_DUPLICATE_OBJECT_NAME
+        - qpERR_ABORT_QCP_HAVE_NO_COLUMN
+
+[QCM]
+    [qcm.cpp]
+        - 
+
+[QDB]
+    [qdb.cpp]
+        - ERR_DUP_TABLE_NAME
+        - ERR_NOT_EXIST_TABLE
+        - ERR_DUP_COLUMN_NAME
+
+[QDC]
+    [qdc.cpp]
+        - 
+
+[QDD]
+    [qdd.cpp]
+        - ERR_NOT_EXIST_TABLE
+        - ERR_DDL_WITH_REPLICATED_TABLE
+        - ERR_NOT_EXIST_INDEX
+        - ERR_NO_GRANT
+        - ERR_NO_DROP_SYS_USER
+        - ERR_NOT_EXIST_USER
+        - ERR_NOT_EXIST_SEQUENCE
+        - ERR_EXIST_OWN_OBJECT
+
+[QDN]
+    [qdn.cpp]
+        - 
+
+[QDR]
+    [qdr.cpp]
+        - ERR_NO_GRANT
+        - ERR_DUPLCATED_USER
+        - ERR_NOT_EXIST_USER
+
+[QDS]
+    [qds.cpp]
+        - 
+
+[QDX]
+    [qdx.cpp]
+        - 
+
+[QMV]
+    [qmv.cpp]
+        - 
+
+    [qmvQuerySet.cpp]
+        - ERR_NOT_MATCH_TARGET_COUNT_IN_QUERYSET
+
+    [qmvOrderBy.cpp]
+        - ERR_INVALID_ORDERBY_EXP
+
+[QMC]
+    [qmcMemory.cpp]
+        -
+    
+    [qmcQSort.cpp]
+        -
+
+[QTC]
+    [qtc.cpp]
+        - ERR_EXCEED
+        - ERR_MEMORY
+        - ERR_UNINITAILIZED

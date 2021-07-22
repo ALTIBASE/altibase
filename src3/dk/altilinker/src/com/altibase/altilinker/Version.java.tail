@@ -1,0 +1,42 @@
+
+    private static final String  JAVA_VERSION_PATTERN_REGEX = "java version ([0-9]+)\\.([0-9]+)\\.([0-9]+)(?:[\\._]([0-9]+))?";
+    private static final Pattern JAVA_VERSION_PATTERN       = Pattern.compile(JAVA_VERSION_PATTERN_REGEX);
+    private static final int     JAVA_MAJOR_VERSION;
+    private static final int     JAVA_MINOR_VERSION;
+    private static final int     JAVA_PATCH_VERSION;
+    private static final int     JAVA_BUILD_VERSION;
+
+    private static final String  JDK_VERSION_STRING;
+
+    static
+    {
+        Matcher m = JAVA_VERSION_PATTERN.matcher(JAVA_VERSION);
+        if (m.matches())
+        {
+            JAVA_MAJOR_VERSION = Integer.parseInt( m.group(1) );
+            JAVA_MINOR_VERSION = Integer.parseInt( m.group(2) );
+            JAVA_PATCH_VERSION = Integer.parseInt( m.group(3) );
+            JAVA_BUILD_VERSION = (m.group(4) != null) ? Integer.parseInt( m.group(4) ) : 0;
+
+            if (JAVA_MAJOR_VERSION == 1 && JAVA_MINOR_VERSION >= 5)
+            {
+                JDK_VERSION_STRING = String.valueOf( JAVA_MINOR_VERSION );
+            }
+            else
+            {
+                JDK_VERSION_STRING = JAVA_MAJOR_VERSION + "." + JAVA_MINOR_VERSION;
+            }
+        }
+        else
+        {
+            JAVA_MAJOR_VERSION = JAVA_MINOR_VERSION = JAVA_PATCH_VERSION = JAVA_BUILD_VERSION = 0;
+            JDK_VERSION_STRING = "?";
+        }
+    }
+
+    public static String getVersion()
+    {
+        return new String( "Altilinker " + ALTIBASE_VERSION_STRING +
+                           " compiled with JDK " + JDK_VERSION_STRING );
+    }
+}

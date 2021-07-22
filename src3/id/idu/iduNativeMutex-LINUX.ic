@@ -1,0 +1,183 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-LINUX.ic 48789 2011-09-27 08:36:15Z djin $
+ **********************************************************************/
+
+/* ------------------------------------------------
+ *
+ * LINUX Platform : consider each CPU types
+ *
+ * ----------------------------------------------*/
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sched.h>
+
+#if defined(__GNUC__)
+
+
+# if defined(INTEL_LINUX) || defined(AMD64_LINUX)  || defined(XEON_LINUX) || defined(X86_64_LINUX)
+
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    UInt sRet;
+    register iduNativeMutexObj * sLatch = (aObj);
+    
+    __asm__ __volatile__("movl $1,%%eax; "
+                         "lock; "
+                         "xchgb %1,%%al; "
+                         "xorl $1,%%eax; "
+                         "sfence         "
+                         : "=&a" (sRet), "=m" (*sLatch): "m" (*sLatch));
+    return sRet;
+}
+
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) ((*obj) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    __asm __volatile ("sfence");
+    *(aObj) = 0;
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    releaseNativeMutex(aObj);
+}
+
+# elif defined(IA64_LINUX) || defined(IA64_SUSE_LINUX)
+               
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+  iduNativeMutexObj            sRet;
+
+  __asm__ __volatile__(
+		       "       xchg4   %0=%1,%2        \n"
+		       :               "=r"(sRet), "+m"(*aObj)
+		       :               "r"(1)
+		       :               "memory");
+  return (sRet == 0 ? 1 : 0);
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) (*((volatile iduNativeMutexObj *) (obj)) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    __asm __volatile ("mf");
+    *((volatile iduNativeMutexObj *) (aObj)) = 0;
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    releaseNativeMutex(aObj);
+}
+# elif defined(POWERPC64_LINUX)
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    return __sync_bool_compare_and_swap(aObj, 0, 1)==0? 0:1;
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) (*((volatile iduNativeMutexObj *) (obj)) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+   __sync_synchronize();
+   *(aObj) = 0;
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    releaseNativeMutex(aObj);
+}
+
+# else /* other cpus*/
+  /* ------------------------------------------------
+   *  Other CPU ????? : not yet support.
+   * ----------------------------------------------*/
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj)    0
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_CASSERT(1); /* Not support */
+
+    return 0;
+}
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_CASSERT(1); /* Not support */
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_CASSERT(1); /* Not support */
+}
+
+# endif
+
+#else /* other compiles*/
+
+# if defined(__xlC__) /* Native compiler */
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    SInt sOld = 0;
+    return __compare_and_swap((SInt*)aObj, &sOld, 1);
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) (*((volatile iduNativeMutexObj *) (obj)) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    __sync();
+    *(aObj) = 0;
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    releaseNativeMutex(aObj);
+}
+
+# else
+
+  /* ------------------------------------------------
+   *  Intel c++ compiler????? : not yet support.
+   * ----------------------------------------------*/
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj)    0
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_CASSERT(1); /* Not support */
+
+    return 0;
+}
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_CASSERT(1); /* Not support */
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    IDE_CASSERT(1); /* Not support */
+}
+
+# endif
+
+#endif

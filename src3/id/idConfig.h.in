@@ -1,0 +1,202 @@
+/***********************************************************************
+ * Copyright 1999-2000, RTBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: idConfig.h.in 88304 2020-08-07 06:18:48Z kclee $
+ **********************************************************************/
+
+/***********************************************************************
+ *
+ * NAME
+ *   smConfig.h   (auto creation from config.h.in by configure script )
+ * 
+ * DESCRIPTION
+ * Configure 스크립트에 의해 자동적으로 생성되는 시스템 config 화일
+ *
+ **********************************************************************/
+
+#ifndef _O_ID_CONFIG_H_
+#define _O_ID_CONFIG_H_ 1
+
+/*
+ * 현재 검사되는 운영체제 리스트 (아래의 #undef 참조요망)
+ 
+ * 변수명 : 1. OS_TARGET (CPU 및 운영체제)
+               SPARC_SOLARIS : 스팍용 솔라리스
+               INTEL_LINUX   : 인텔용 리눅스
+                
+            2. OS_MAJORVER (0 ~ n) : 메이저 운영체제 넘버
+            3. OS_MINORVER (0 ~ n) : 마이너 운영체제 넘버
+
+   예1) 솔라리스 7의 경우 
+        얻어지는 값) sparc-sun-solaris2.7
+
+        OS_TARGET : SPARC_SOLARIS
+        OS_MAJORVER : 2
+        OS_MINORVER : 7
+   
+   예2) 인텔 리눅스의 경우 (운영체제버젼보다, 라이브러리 버젼이 더 중요)
+        얻어지는 값) i686-pc-linux-gnu
+
+        OS_TARGET : INTEL_LINUX
+        OS_MAJORVER : 0 (리눅스의 경우 라이브러리 버젼을 넣어야 할 것임)
+        OS_MINORVER : 0
+ */
+
+#undef ALTIBASE_PRODUCT
+#undef ALTIBASE_PRODUCT_HDB
+#undef ALTIBASE_PRODUCT_XDB
+
+#undef PRODUCT_PREFIX
+
+#undef ALTIBASE_3     
+#undef ALTIBASE_4
+
+/* 해당 시스템이 BIG ENDIAN이면 아래의 매크로가 정의됨 */
+#undef ENDIAN_IS_BIG_ENDIAN
+
+/* SMP 고려한 컴파일 플래그 */
+#undef COMPILE_FOR_NO_SMP
+
+/* RP2 compile */
+#undef COMPILE_FOR_RP2 
+ 
+/* block sigterm in linux */
+#undef BLOCK_SIGTERM_IN_LINUX
+
+/* OS 종류 및 버젼정보 */
+
+#undef OS_SYSTEM_TYPE
+
+#undef SPARC_SOLARIS
+#undef X86_SOLARIS
+#undef INTEL_LINUX
+#undef POWERPC_LINUX
+#undef POWERPC64_LINUX
+#undef POWERPC64LE_LINUX
+#undef IA64_SUSE_LINUX
+#undef IA64_LINUX
+#undef AMD64_LINUX
+#undef XEON_LINUX
+#undef X86_64_LINUX
+#undef ALPHA_LINUX
+#undef ARM_LINUX
+#undef ELDK_LINUX
+#undef MIPS64_LINUX
+#undef WRS_LINUX
+#undef PC_CYGWIN
+#undef HP_HPUX
+#undef IA64_HP_HPUX
+#undef DEC_TRU64
+#undef IBM_AIX
+#undef NTO_QNX
+#undef X86_64_DARWIN
+
+#undef OS_TARGET
+#undef OS_MAJORVER
+#undef OS_MINORVER
+
+#undef OS_LINUX_PACKAGE
+#undef OS_LINUX_VERSION
+
+/* cpu types */
+#undef ALTI_CFG_CPU
+#undef ALTI_CFG_CPU_SPARC
+#undef ALTI_CFG_CPU_X86
+#undef ALTI_CFG_CPU_AMD64
+#undef ALTI_CFG_CPU_XEON
+#undef ALTI_CFG_CPU_POWERPC
+#undef ALTI_CFG_CPU_IA64
+#undef ALTI_CFG_CPU_PARISC
+#undef ALTI_CFG_CPU_ALPHA
+
+/* os types */
+#undef ALTI_CFG_OS
+#undef ALTI_CFG_OS_SOLARIS
+#undef ALTI_CFG_OS_LINUX
+#undef ALTI_CFG_OS_AIX
+#undef ALTI_CFG_OS_HPUX
+#undef ALTI_CFG_OS_TRU64
+#undef ALTI_CFG_OS_ITRON
+#undef ALTI_CFG_OS_QNX
+#undef ALTI_CFG_OS_WINDOWS
+#undef ALTI_CFG_OS_DARWIN
+
+/* os versions */
+#undef ALTI_CFG_OS_MAJOR
+#undef ALTI_CFG_OS_MINOR
+
+/* edition types */
+#undef ALTI_CFG_EDITION_ENTERPRISE
+#undef ALTI_CFG_EDITION_STANDARD
+#undef ALTI_CFG_EDITION_MINI
+#undef ALTI_CFG_EDITION_MOBILE
+#undef ALTI_CFG_EDITION_DISK
+#undef ALTI_CFG_EDITION_OPEN
+
+/* if linux platform configured, define this macros. */
+#undef OS_LINUX_KERNEL
+
+#undef BUILD_MODE
+#undef BUILD_MODE_DEBUG
+#undef BUILD_MODE_PRERELEASE
+#undef BUILD_MODE_RELEASE
+#undef COMPILER_NAME
+#undef GCC_VERSION
+#undef BISON_POSTFIX_HPP
+#undef BISON_POSTFIX_CPP_H
+
+/* Compatibility mode */
+
+#undef OS_COMPAT_MODE
+
+/* 몇비트로 컴파일 하는가?  64비트일 경우 COMPILE_64가 1로 정의됨 */
+#undef COMPILE_64BIT
+
+#undef ALTIBASE_MEMORY_CHECK
+
+#undef ALTIBASE_SM_MODULE_TEST
+
+#undef ALTIBASE_USE_VALGRIND
+
+#undef ALTIBASE_FIT_CHECK
+
+#undef ALTIBASE_SHARD
+
+#undef ALTIBASE_ENABLE_SMARTSSD
+
+#undef ALTIBASE_HEAPMIN
+
+
+#undef USE_READLINE
+
+#undef COMPILE_FOR_PAGE64
+
+#undef ALTIBASE_VALGRIND_PATH
+
+/* dbadmin을 INET을 이용해서 접속, 그렇지 않으면, UNIX DOMAIN으로 사용됨 */
+#undef USE_ADMIN_INET
+
+/* cm network config */
+
+#undef CM_DISABLE_TCP
+#undef CM_DISABLE_UNIX
+#undef CM_DISABLE_IPC
+#undef CM_DISABLE_SSL
+
+/* BUG-47816 ST_Transform 함수 지원 */
+#undef ST_ENABLE_PROJ4_LIBRARY
+
+#ifdef __CSURF__
+#define ALTIBASE_MEMORY_CHECK 1
+#endif
+
+
+#ifdef POWERPC64LE_LINUX
+#define  POWERPC64_LINUX
+#endif
+
+#endif
+

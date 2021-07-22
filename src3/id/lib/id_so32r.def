@@ -1,0 +1,8 @@
+LIBRARY "id_so"
+
+EXPORTS
+?free@idlOS@@SAXPAX@Z
+?destroyStatic@iduMutexMgr@@SA?AW4IDE_RC@@XZ
+?destroyStatic@iduCond@@SA?AW4IDE_RC@@XZ
+?destroy@idp@@SA?AW4IDE_RC@@XZ
+?initializeStatic@iduCond@@SA?AW4IDE_RC@@W4iduPeerType@@@Z

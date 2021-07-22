@@ -1,0 +1,47 @@
+Date: Sat, 27 Sep 1997 17:43:13 +0200
+From: Jochen Wiedmann <wiedmann@Neckar-Alb.DE>
+
+    Compiling the DBI sources for Adabas is fairly easy. First you
+    have to set the usual environment variable "DBROOT", that
+    points to the main Adabas installation directory, for example
+
+	DBROOT=/opt/adabas-pe; export DBROOT	(sh or bash)
+
+		or
+
+	setenv DBROOT=/opt/adabas-pe		(csh or tcsh)
+
+    Next point is to setup the environment variables that tell
+    the DBI test scripts which DSN to use for the tests:
+
+	DBI_DSN=dbi:ODBC:MYDB
+	DBI_USER=demo
+	DBI_PASS=demo
+
+    (I've grabbed the appropriate settings for the widely spread
+    personal edition.) Finally you have to create a file
+    "/usr/spool/sql/config/odbc.ini" (the name is fixed, I did
+    not choose it ...), which describes the connection parameters
+    to use for DSN MYDB, for example
+
+	[ODBC Data Sources]
+
+	MYDB
+
+	[MYDB]
+
+	ServerDB=MYDB
+
+	ServerNode=192.168.1.2		# Leave empty for local host
+
+    I'd be happy to leave this away and use the dsn
+
+	dbi:ODBC:servernode=192.168.1.2;serverdb=MYDB
+
+    or something similar, but I didn't get this working. Perhaps
+    someone at SAG can help?
+
+    Finally do just the usual "perl Makefile.PL", "make", "make test"
+    and "make install".
+
+

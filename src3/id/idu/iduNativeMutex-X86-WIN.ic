@@ -1,0 +1,48 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: iduNativeMutex-IBM_AIX.ic 14978 2006-01-26 01:43:16Z sjkim $
+ **********************************************************************/
+
+/* ------------------------------------------------
+ *
+ *  X86 windows (2000/2003)
+ *
+ * ----------------------------------------------*/
+
+#include <unistd.h>
+/* ------------------------------------------------
+ *  Native Compilter 
+ * ----------------------------------------------*/
+
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+#if (_MSC_VER <= 1200)
+    LONG sExchange = 1;
+    LONG sCompare  = 0;
+
+    return ( InterlockedCompareExchange( (void **)aObj, 
+                                         (void *)sExchange, 
+                                         (void *)sCompare) == 0 ? 1 : 0 );
+#else 
+    return ( InterlockedCompareExchange( (LONG *)aObj, 1, 0) == 0 ? 1 : 0 );
+#endif
+}
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) ((*obj) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+  *aObj = 0;
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    releaseNativeMutex(aObj);
+}
+

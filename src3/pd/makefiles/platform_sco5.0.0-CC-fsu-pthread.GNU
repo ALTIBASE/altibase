@@ -1,0 +1,37 @@
+# platform_sco5.0.0-CC-fsu-pthread.GNU,v 4.1 1998/08/02 01:32:15 schmidt Exp
+
+# Requires FSU pthreads and gcc 2.7.2 Skunkware 97
+# to produce libPDL.so correctly changed the specs file for gcc 2.7.2
+# for not link -lc and -lgcc and other not shared libraries
+
+debug = 1
+optimize = 1
+
+CC              = cc
+# for threads
+# for no threads
+#CXX		= gcc -fno-implicit-templates -w -fno-strict-prototypes
+# LDFLAGS	+= -L $(PD_DIR)/pdl -L ./ ${FSU_PTHREADS_DIR}/init/init.o # -z muldefs
+# LDLIBS	+= -L $(PD_DIR)/pdl -L ./ ${FSU_PTHREADS_DIR}/init/init.o -lPDL # -z muldefs
+LDLIBS	+= -L $(PD_DIR)/pdl # -z muldefs
+CXX		= CC
+CFLAGS		+= -belf
+CCFLAGS		+= +.cpp +d -Dvolatile= -belf -Kpic -pts -I ${FSU_PTHREADS_DIR}/include 
+DCFLAGS		+= -g
+DCCFLAGS	+= $(DCFLAGS)
+CDLD            = $(CC)
+DLD             = $(CXX)
+LD              = $(CXX) /usr/lib/libc.so.1
+#LD              = $(CXX)
+LIBS            = -lm -L${FSU_PTHREADS_DIR}/lib -lgthreads -lnsl -lsocket  -lgthreads
+OCFLAGS		+= -O2
+OCCFLAGS        += $(OCFLAGS) $(added_optimizer_flag)
+PIC             = -fPIC
+AR              = ar
+ARFLAGS         = ruv
+RANLIB          = /bin/true
+
+SOFLAGS = $(CPPFLAGS) -melf -fPIC -G 
+SOBUILD = $(COMPILE.cc) $(PIC) -o $(VSHDIR)$*.so $<
+# SOLINK	= $(SOLINK.cc) -o $@ $(LDFLAGS) $<
+PRELIB  = @true

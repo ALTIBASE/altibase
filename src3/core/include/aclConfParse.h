@@ -1,0 +1,9 @@
+#define ACL_CONF_TOKEN_PAREN_CLOSE                     1
+#define ACL_CONF_TOKEN_KEY                             2
+#define ACL_CONF_TOKEN_ASSIGN_COLLECTION               3
+#define ACL_CONF_TOKEN_PAREN_OPEN                      4
+#define ACL_CONF_TOKEN_ASSIGN_NULL                     5
+#define ACL_CONF_TOKEN_ASSIGN_VALUE                    6
+#define ACL_CONF_TOKEN_COMMA                           7
+#define ACL_CONF_TOKEN_VALUE                           8
+#define ACL_CONF_TOKEN_QVALUE                          9

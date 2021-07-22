@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<project name="altilinker" default="build_all_debug">
+
+    <description>AltiLinker for DB-Link</description>
+
+    <property name="src.dir"  value="${basedir}/src" />
+    <property name="bin.dir"  value="${basedir}/bin" />
+    <property name="dist.dir" value="${basedir}/dist" />
+    <property name="lib.dir"  value="${basedir}/lib" />
+    <property name="pkg.file" value="altilinker.jar" />
+
+    <path id="class.path">
+        <pathelement location="${lib.dir}/junit-3.8.2.jar" />
+        <pathelement path="${java.class.path}" />
+    </path>
+	
+	<!-- macro definition -->
+	<macrodef name="build-java">
+		<attribute name="debug" default="on" />
+		<sequential>
+	        <echo message="java.home=${java.home}" />
+	        <echo message="ant.java.version=${ant.java.version}" />
+	        <echo message="ant.version=${ant.version}" />
+	        <echo message="ant.home=${ant.home}" />
+	        <echo message="ant.file=${ant.file}" />
+	        <echo message="ant.core.lib=${ant.core.lib}" />
+	        <echo message="basedir=${basedir}" />
+            <echo/>
+	        <javac
+	            srcdir="${src.dir}"
+	            destdir="${bin.dir}"
+	            includeantruntime="false"
+	            fork="true"
+	            source="1.4"
+	            debug="@{debug}"
+	            classpathref="class.path"
+	        />
+			<echo/>
+	        <echo>build completed.</echo>
+		</sequential>
+	</macrodef>
+	
+	<macrodef name="package-jar">
+		<sequential>
+	        <jar destfile="${dist.dir}/${pkg.file}">
+	            <manifest>
+	                <attribute name="Main-Class" value="com.altibase.altilinker.MainApp" />
+	            </manifest>
+	        	<fileset dir="${bin.dir}">
+	        	    <exclude name="**/*Test*" />
+	        	</fileset>
+	        </jar>
+	        <echo>archive completed.</echo>
+	    </sequential>
+	</macrodef>
+
+	<!-- init phase -->
+	<target name="init">
+		<echo>init completed.</echo>
+	</target>
+	
+    <!-- build phase -->
+    <target name="build_debug" depends="init">
+    	<build-java/>
+    </target>
+
+    <target name="build_release" depends="init">
+        <build-java debug="off" />
+    </target>
+	
+    <!-- build_all phase -->
+    <target name="build_all_debug" depends="clean,build_debug">
+        <echo>rebuild all completed.</echo>
+    </target>
+	
+    <target name="build_all_release" depends="clean,build_release">
+        <echo>rebuild all completed.</echo>
+    </target>
+	
+    <!-- package phase -->
+    <target name="package_debug" depends="build_all_debug">
+        <package-jar />
+    </target>
+	
+    <target name="package_release" depends="build_all_release">
+        <package-jar />
+    </target>
+
+    <!-- clean phase -->
+    <target name="clean" depends="init">
+        <delete includeEmptyDirs="true">
+            <fileset dir="${bin.dir}" includes="**/*" excludes=".svn,.empty" />
+        </delete>
+        <delete file="${dist.dir}/${pkg.file}" />
+        <echo>clean completed.</echo>
+    </target>
+</project>

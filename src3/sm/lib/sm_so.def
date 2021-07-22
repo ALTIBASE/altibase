@@ -1,0 +1,9 @@
+LIBRARY "sm_so"
+
+EXPORTS
+?isGTE@smrCompareLSN@@SA?AW4idBool@@PEBUsmLSN@@0@Z
+?isGT@smrCompareLSN@@SA?AW4idBool@@PEBUsmLSN@@0@Z
+?isZero@smrCompareLSN@@SA?AW4idBool@@PEBUsmLSN@@@Z
+?isEQ@smrCompareLSN@@SA?AW4idBool@@PEBUsmLSN@@0@Z
+?initLogicalHdr@sdpPhyPage@@SAPEAEPEAUsdpPhyPageHdr@@I@Z
+?initCTL@sdpPhyPage@@SAXPEAUsdpPhyPageHdr@@IPEAPEAE@Z

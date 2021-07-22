@@ -1,0 +1,102 @@
+#########################################################################
+# TASK-3649 SM architecture layer를 고려한 prefix rule convention 정립  # 
+# TASK-4011 [SM-memory] 메모리 저장 관리자 역량 향상                    #
+#                                                                       #
+# 아래 정리한 내용은 Task, Project 진행에 따라서 변경될 수 있습니다.    #
+# 따라서 참고자료로만 사용하시기 바랍니다.                              #
+#########################################################################
+
+####################################
+#        Layer Prefix 설명         #
+####################################
+
+Interface
+    smi : QP, RP, LK, MM에서 호출하는 인터페이스  
+
+Application 
+    sma : GC, Refine Module  
+
+Transaction 
+    sml : Lock Manger  
+    smx : Transaction Manager  
+
+Index
+    smn : Memory index, sequential access  
+    sdn : Disk index(B-Tree, temp B-Tree, temp Hash),sequential access  
+    svn : Volatile index, sequential access  
+
+Record 
+    smc : Memory record(lob 포함), Catalog table, Table, Object, Sequence 생성  
+    sdc : Disk row(lob 포함), Disk temp row, Direct Path Insert  
+    svc : Volatile record  
+
+Extractor
+    sce : Common Extractor
+    scef: Common Extractor File
+
+Page 
+    smp : Memory page manager  
+    sdp : Disk page, segment manager  
+    svp : Volatile page manager  
+
+Recovery 
+    smr : Memory backup, checkpoint, log anchor, log file,recovery manager  
+    sdr : Disk recovery manager, mini transaction  
+    svr : Volatile recovery manager  
+
+Resource 
+    smm : Memory manager  
+    svm : Volatile manager  
+    sdd : Disk manager  
+    sdb : Buffer manager  
+    sct : Tablespace manager  
+    sgm : Global Memory manager  
+    sds : Secondary Buffer Manager
+
+Common
+    scc : Common meta layer(smcTableHeader를 액세스하기 위한 인터페이스)  
+
+Utilities
+    smt : Multi thread utility  
+    smu : Property, SM Utilities(Queue, Hash, List 등)
+    util : Dump Tools
+
+#########################################
+#   Second Prefix                      # 
+#########################################
+TT : TempTable
+TC : TempCursor
+TR : TempRow
+WA : WorkArea
+WP : WorkareaPage
+
+#########################################
+#   Storage Management Architecture     # 
+#########################################
+
+Interface Layer     (i)     상위 QP모듈에 의해 호출  
+Application Layer   (a)     SM 응용 Thread(GC, Refine)  
+Transaction Layer   (x,l)   Transaction과 Lock Manager  
+Index Layer         (n)     각종 커서 및 인덱스  
+Record Layer        (c)     Logical 정보를 담고 있는 Record 구조  
+Extractor Layer     (e)     Data를 추출하는 기능
+Page Layer          (p)     Physical Page Structure, Extent, Segment  
+Recovery Layer      (r)     Logging, Restart Recovery 관련  
+Resource Layer      (m)     Memory/Buffer Mgr/Disk Mgr  
+
+
+#########################################
+#              naming rule              # 
+#########################################
+
+s(x)(x)
+
+첫번째 x는
+            m(memory)
+            d(disk)
+            v(volatile)
+            c(common)
+
+두번째 x는
+            각 Storage Management Architecture
+

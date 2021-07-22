@@ -1,0 +1,502 @@
+# Copyright 1999-2007, ALTIBASE Corporation or its subsidiaries.
+# All rights reserved.
+
+# $Id:
+#
+
+ifeq ($(COMPILE_BIT),)
+COMPILE_BIT=32
+endif
+
+ifeq ($(ALINT_USE),)
+ALINT_USE=0
+endif
+
+include ../makefiles/root.mk
+
+INCLUDES += $(ALTICORE_HOME)/include
+LIBDIRS += $(ALTICORE_HOME)/lib$(COMPILE_BIT)
+
+CORE_LIBS = alticore_$(ALTICORE_VERSION)
+CTEST_LIBS = altictest_$(ALTICORE_VERSION)
+
+ifeq ($(ALTI_CFG_OS),WINDOWS)
+unittest:$(BUILD_DIR)/dbghelp.dll
+
+$(BUILD_DIR)/dbghelp.dll:
+	@$(ECHO) "Copying debug DLLs"
+	@$(CP) $(UTILS_DIR)/windows/dbghelp$(COMPILE_BIT).dll $(BUILD_DIR)/dbghelp.dll
+endif
+
+SUBDIRS                = lib msg
+
+UNITTEST_TARGETS       = acpTypes          \
+                         acpAlign          \
+                         acpAtomic         \
+                         acpAtomicSpatial  \
+                         acpBit            \
+                         acpByteOrder      \
+                         acpCallstack      \
+                         acpChar           \
+                         acpCStr           \
+                         acpDir            \
+                         acpDl             \
+                         acpEnv            \
+                         acpError          \
+                         acpFile           \
+                         acpInet           \
+                         acpMath           \
+                         acpMem            \
+                         acpMemBarrier     \
+                         acpMmap           \
+                         acpOpt            \
+                         acpPoll           \
+                         acpPollEx         \
+                         acpPrintf         \
+                         acpProc           \
+                         acpProcEnv        \
+                         acpPset           \
+                         acpProcMutex      \
+                         acpRand           \
+                         acpSem            \
+                         acpShm            \
+                         acpSignal         \
+                         acpSock           \
+                         acpSort           \
+                         acpSpinLock       \
+                         acpStd            \
+                         acpStr            \
+                         acpSys            \
+                         acpThr            \
+                         acpThrBarrier     \
+                         acpThrCond        \
+                         acpThrMutex       \
+                         acpThrRwlock      \
+                         acpTime           \
+                         acpTls            \
+                         aceAssert         \
+                         aceException      \
+                         aceMsgTable       \
+                         aclConf           \
+                         aclContext        \
+                         aclHash           \
+                         aclLog            \
+                         aclLogThreads     \
+                         acpList           \
+                         aclMem            \
+                         aclMemArea        \
+                         aclMemPool        \
+                         aclQueue          \
+                         aclCodeUTF8       \
+                         aclCryptTEA       \
+                         aclLic            \
+                         acpProcDaemon     \
+                         acpPath           \
+                         acpFeature        \
+                         acpCStrFind       \
+                         acpSearch
+
+
+PERFTEST_TARGETS       = acpAtomicPerf     \
+                         acpAtomicInterprocess \
+                         acpCStrPerf       \
+                         acpPollPerf       \
+                         acpPrintfPerf     \
+                         acpProcPerf       \
+                         acpShmPerf        \
+                         acpStdPerf        \
+                         acpTimePerf       \
+                         aclQueuePerf      \
+                         testPerfAtomicCAS \
+                         testPerfAtomicINC \
+                         testPerfAtomicDEC \
+                         testPerfAtomicADD \
+                         testPerfAtomicSUB \
+                         testPerfSpinLock  \
+                         testPerfQueue     \
+                         testPerfHRTime    \
+                         testPerfCStrToInt64  \
+                         testPerfCStrToDouble \
+                         testPerfMemAlloc
+
+
+EXEC_TARGETS           =
+
+acpTypes_NAME          = testAcpTypes
+acpTypes_SRCS          = testAcpTypes.c
+acpTypes_LIBS          = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpAlign_NAME          = testAcpAlign
+acpAlign_SRCS          = testAcpAlign.c
+acpAlign_LIBS          = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpAtomic_NAME         = testAcpAtomic
+acpAtomic_SRCS         = testAcpAtomic.c
+acpAtomic_LIBS         = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpAtomicSpatial_NAME         = testAcpAtomicSpatial
+acpAtomicSpatial_SRCS         = testAcpAtomicSpatial.c
+acpAtomicSpatial_LIBS         = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpAtomicInterprocess_NAME         = testAcpAtomicInterprocess
+acpAtomicInterprocess_SRCS         = testAcpAtomicInterprocess.c
+acpAtomicInterprocess_LIBS         = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpBit_NAME            = testAcpBit
+acpBit_SRCS            = testAcpBit.c
+acpBit_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpByteOrder_NAME      = testAcpByteOrder
+acpByteOrder_SRCS      = testAcpByteOrder.c
+acpByteOrder_LIBS      = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpCallstack_NAME      = testAcpCallstack
+acpCallstack_SRCS      = testAcpCallstack.c
+acpCallstack_LIBS      = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpChar_NAME           = testAcpChar
+acpChar_SRCS           = testAcpChar.c
+acpChar_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpCStr_NAME           = testAcpCStr
+acpCStr_SRCS           = testAcpCStr.c
+acpCStr_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpDir_NAME            = testAcpDir
+acpDir_SRCS            = testAcpDir.c
+acpDir_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpDl_NAME             = testAcpDl
+acpDl_SRCS             = testAcpDl.c
+acpDl_LIBS             = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpEnv_NAME            = testAcpEnv
+acpEnv_SRCS            = testAcpEnv.c
+acpEnv_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpError_NAME          = testAcpError
+acpError_SRCS          = testAcpError.c
+acpError_LIBS          = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpFile_NAME           = testAcpFile
+acpFile_SRCS           = testAcpFile.c
+acpFile_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpInet_NAME           = testAcpInet
+acpInet_SRCS           = testAcpInet.c
+acpInet_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpMath_NAME           = testAcpMath
+acpMath_SRCS           = testAcpMath.c
+acpMath_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpMem_NAME            = testAcpMem
+acpMem_SRCS            = testAcpMem.c
+acpMem_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+
+acpMemBarrier_NAME     = testAcpMemBarrier
+acpMemBarrier_SRCS     = testAcpMemBarrier.c
+acpMemBarrier_LIBS     = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpMmap_NAME           = testAcpMmap
+acpMmap_SRCS           = testAcpMmap.c
+acpMmap_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpOpt_NAME            = testAcpOpt
+acpOpt_SRCS            = testAcpOpt.c
+acpOpt_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpPoll_NAME           = testAcpPoll
+acpPoll_SRCS           = testAcpPoll.c
+acpPoll_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpPollEx_NAME           = testAcpPollEx
+acpPollEx_SRCS           = testAcpPollEx.c
+acpPollEx_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpPrintf_NAME         = testAcpPrintf
+acpPrintf_SRCS         = testAcpPrintf.c
+acpPrintf_LIBS         = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpProc_NAME           = testAcpProc
+acpProc_SRCS           = testAcpProc.c
+acpProc_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpProcEnv_NAME        = testAcpProcEnv
+acpProcEnv_SRCS        = testAcpProcEnv.c
+acpProcEnv_LIBS        = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpProcPerf_NAME       = testAcpProcPerf
+acpProcPerf_SRCS       = testAcpProcPerf.c
+acpProcPerf_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpProcMutex_NAME      = testAcpProcMutex
+acpProcMutex_SRCS      = testAcpProcMutex.c
+acpProcMutex_LIBS      = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpRand_NAME           = testAcpRand
+acpRand_SRCS           = testAcpRand.c
+acpRand_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpSearch_NAME         = testAcpSearch
+acpSearch_SRCS         = testAcpSearch.c
+acpSearch_LIBS         = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpSem_NAME            = testAcpSem
+acpSem_SRCS            = testAcpSem.c
+acpSem_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpShm_NAME            = testAcpShm
+acpShm_SRCS            = testAcpShm.c
+acpShm_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpSignal_NAME         = testAcpSignal
+acpSignal_SRCS         = testAcpSignal.c
+acpSignal_LIBS         = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpSock_NAME           = testAcpSock
+acpSock_SRCS           = testAcpSock.c
+acpSock_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpSort_NAME           = testAcpSort
+acpSort_SRCS           = testAcpSort.c
+acpSort_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpSpinLock_NAME       = testAcpSpinLock
+acpSpinLock_SRCS       = testAcpSpinLock.c
+acpSpinLock_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpStr_NAME            = testAcpStr
+acpStr_SRCS            = testAcpStr.c
+acpStr_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpStd_NAME            = testAcpStd
+acpStd_SRCS            = testAcpStd.c
+acpStd_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpSys_NAME            = testAcpSys
+acpSys_SRCS            = testAcpSys.c
+acpSys_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpThr_NAME            = testAcpThr
+acpThr_SRCS            = testAcpThr.c
+acpThr_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpThrBarrier_NAME     = testAcpThrBarrier
+acpThrBarrier_SRCS     = testAcpThrBarrier.c
+acpThrBarrier_LIBS     = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpThrCond_NAME        = testAcpThrCond
+acpThrCond_SRCS        = testAcpThrCond.c
+acpThrCond_LIBS        = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpThrMutex_NAME       = testAcpThrMutex
+acpThrMutex_SRCS       = testAcpThrMutex.c
+acpThrMutex_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpThrRwlock_NAME      = testAcpThrRwlock
+acpThrRwlock_SRCS      = testAcpThrRwlock.c
+acpThrRwlock_LIBS      = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpTime_NAME           = testAcpTime
+acpTime_SRCS           = testAcpTime.c
+acpTime_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpTls_NAME            = testAcpTls
+acpTls_SRCS            = testAcpTls.c
+acpTls_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+aceAssert_NAME         = testAceAssert
+aceAssert_SRCS         = testAceAssert.c
+aceAssert_LIBS         = $(CTEST_LIBS) $(CORE_LIBS)
+
+aceException_NAME      = testAceException
+aceException_SRCS      = testAceException.c
+aceException_LIBS      = $(CTEST_LIBS) $(CORE_LIBS)
+
+aceMsgTable_NAME       = testAceMsgTable
+aceMsgTable_SRCS       = testAceMsgTable.c
+aceMsgTable_OBJS       = $(BUILD_DIR)/msg/testMsg$(OBJ_SUF)
+aceMsgTable_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclConf_NAME           = testAclConf
+aclConf_SRCS           = testAclConf.c
+aclConf_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclContext_NAME        = testAclContext
+aclContext_SRCS        = testAclContext.c
+aclContext_LIBS        = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclHash_NAME           = testAclHash
+aclHash_SRCS           = testAclHash.c
+aclHash_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclLog_NAME            = testAclLog
+aclLog_SRCS            = testAclLog.c
+aclLog_OBJS            = $(BUILD_DIR)/msg/testMsg$(OBJ_SUF)
+aclLog_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclLogThreads_NAME      = testAclLogThreads
+aclLogThreads_SRCS      = testAclLogThreads.c
+aclLogThreads_OBJS      = $(BUILD_DIR)/msg/testMsg$(OBJ_SUF)
+aclLogThreads_LIBS      = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpList_NAME            = testAcpList
+acpList_SRCS            = testAcpList.c
+acpList_OBJS            = $(BUILD_DIR)/msg/testMsg$(OBJ_SUF)
+acpList_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclMem_NAME             = testAclMem
+aclMem_SRCS             = testAclMem.c
+aclMem_LIBS             = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclMemArea_NAME        = testAclMemArea
+aclMemArea_SRCS        = testAclMemArea.c
+aclMemArea_LIBS        = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclMemPool_NAME        = testAclMemPool
+aclMemPool_SRCS        = testAclMemPool.c
+aclMemPool_LIBS        = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclQueue_NAME          = testAclQueue
+aclQueue_SRCS          = testAclQueue.c
+aclQueue_LIBS          = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclQueuePerf_NAME      = testAclQueue
+aclQueuePerf_SRCS      = testAclQueue.c
+aclQueuePerf_LIBS      = $(CTEST_LIBS) $(CORE_LIBS)
+aclQueuePerf_ARGS      = perf
+
+aclCompression_NAME    = testAclCompression
+aclCompression_SRCS    = testAclCompression.c
+aclCompression_LIBS    = $(CTEST_LIBS) $(CORE_LIBS)
+
+
+aclCodeUTF8_NAME       = testAclCodeUTF8
+aclCodeUTF8_SRCS       = testAclCodeUTF8.c
+aclCodeUTF8_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclCryptTEA_NAME       = testAclCryptTEA
+aclCryptTEA_SRCS       = testAclCryptTEA.c
+aclCryptTEA_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+aclLic_NAME            = testAclLic
+aclLic_SRCS            = testAclLic.c
+aclLic_LIBS            = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpAtomicPerf_NAME     = testAcpAtomicPerf
+acpAtomicPerf_SRCS     = testAcpAtomicPerf.c 
+acpAtomicPerf_LIBS     = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpPollPerf_NAME       = testAcpPollPerf
+acpPollPerf_SRCS       = testAcpPollPerf.c
+acpPollPerf_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpPrintfPerf_NAME     = testAcpPrintfPerf
+acpPrintfPerf_SRCS     = testAcpPrintfPerf.c
+acpPrintfPerf_LIBS     = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpTimePerf_NAME       = testAcpTimePerf
+acpTimePerf_SRCS       = testAcpTimePerf.c
+acpTimePerf_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpCStrPerf_NAME       = testAcpCStrPerf
+acpCStrPerf_SRCS       = testAcpCStrPerf.c
+acpCStrPerf_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpShmPerf_NAME       = testAcpShmPerf
+acpShmPerf_SRCS       = testAcpShmPerf.c
+acpShmPerf_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpStdPerf_NAME       = testAcpStdPerf
+acpStdPerf_SRCS       = testAcpStdPerf.c
+acpStdPerf_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpProcDaemon_NAME     = testAcpProcDaemon
+acpProcDaemon_SRCS     = testAcpProcDaemon.c
+acpProcDaemon_LIBS     = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpPset_NAME           = testAcpPset
+acpPset_SRCS           = testAcpPset.c
+acpPset_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpPath_NAME           = testAcpPath
+acpPath_SRCS           = testAcpPath.c
+acpPath_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpFeature_NAME           = testAcpFeature
+acpFeature_SRCS           = testAcpFeature.c
+acpFeature_LIBS           = $(CTEST_LIBS) $(CORE_LIBS)
+
+acpCStrFind_NAME       = testAcpCStrFind
+acpCStrFind_SRCS       = testAcpCStrFind.c
+acpCStrFind_LIBS       = $(CTEST_LIBS) $(CORE_LIBS)
+
+
+##############################################################################
+# Performance Test Module 
+##############################################################################
+
+testPerfMemAlloc_NAME   = testPerfMemAlloc
+testPerfMemAlloc_SRCS   = testPerfMain.c  testPerfMemAllocModule.c
+testPerfMemAlloc_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfAtomicCAS_NAME   = testPerfAtomicCAS
+testPerfAtomicCAS_SRCS   = testPerfMain.c  testPerfAtomicCASModule.c
+testPerfAtomicCAS_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfAtomicINC_NAME   = testPerfAtomicINC
+testPerfAtomicINC_SRCS   = testPerfMain.c  testPerfAtomicINCModule.c
+testPerfAtomicINC_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfAtomicDEC_NAME   = testPerfAtomicDEC
+testPerfAtomicDEC_SRCS   = testPerfMain.c  testPerfAtomicDECModule.c
+testPerfAtomicDEC_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfAtomicADD_NAME   = testPerfAtomicADD
+testPerfAtomicADD_SRCS   = testPerfMain.c  testPerfAtomicADDModule.c
+testPerfAtomicADD_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfAtomicSUB_NAME   = testPerfAtomicSUB
+testPerfAtomicSUB_SRCS   = testPerfMain.c  testPerfAtomicSUBModule.c
+testPerfAtomicSUB_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfSpinLock_NAME = testPerfSpinLock
+testPerfSpinLock_SRCS = testPerfMain.c  testPerfSpinLockModule.c
+testPerfSpinLock_LIBS = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfQueue_NAME    = testPerfQueue
+testPerfQueue_SRCS    = testPerfMain.c  testPerfQueueModule.c
+testPerfQueue_LIBS    = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfHRTime_NAME   = testPerfHRTime
+testPerfHRTime_SRCS   = testPerfMain.c  testPerfHRTimeModule.c
+testPerfHRTime_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfCStrToInt64_NAME   = testPerfCStrToInt64
+testPerfCStrToInt64_SRCS   = testPerfMain.c  testPerfCStrToInt64Module.c
+testPerfCStrToInt64_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+testPerfCStrToDouble_NAME   = testPerfCStrToDouble
+testPerfCStrToDouble_SRCS   = testPerfMain.c  testPerfCStrToDoubleModule.c
+testPerfCStrToDouble_LIBS   = $(CTEST_LIBS) $(CORE_LIBS)
+
+ALINT_IGNORES         += testAcpPrintf.c
+ALINT_IGNORES         += testAclConf.c
+
+define shtest_template
+$(1)_SHLIBS = $($(1)_LIBS)
+$(1)_LIBS = 
+endef
+
+ifneq ($(TEST_SHLIB),)
+$(foreach target, $(UNITTEST_TARGETS), $(eval $(call shtest_template,$(target))))
+$(foreach target, $(PERFTEST_TARGETS), $(eval $(call shtest_template,$(target))))
+DEFINES               += ACP_CFG_DL_IMPORT
+else
+DEFINES               += ACP_CFG_DL_STATIC
+endif
+
+
+include $(MAKEFILES_DIR)/rule.mk

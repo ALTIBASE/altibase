@@ -1,0 +1,61 @@
+/***********************************************************************
+ * Copyright 1999-2000, ALTIBase Corporation or its subsidiaries.
+ * All rights reserved.
+ **********************************************************************/
+
+/***********************************************************************
+ * $Id: 
+ **********************************************************************/
+
+/* ------------------------------------------------
+ * BUG-36386  [id] support native mutex on mac
+ * ----------------------------------------------*/
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sched.h>
+
+#if defined(__GNUC__)
+
+/* 0 : failure  1 : success of hold */
+static UInt tryHoldNativeMutex(iduNativeMutexObj *aObj)
+{
+    UInt sRet;
+    register iduNativeMutexObj * sLatch = (aObj);
+    
+    __asm__ __volatile__("movl $1,%%eax; "
+                         "lock; "
+                         "xchgb %1,%%al; "
+                         "xorl $1,%%eax; "
+                         "sfence         "
+                         : "=&a" (sRet), "=m" (*sLatch): "m" (*sLatch));
+    return sRet;
+}
+
+
+#define IDU_NATIVEMUTEX_IS_UNLOCKED(obj) ((*obj) == 0)
+#define IDU_NATIVEMUTEX_HOLD_POST_OP(obj)  ;
+
+static void releaseNativeMutex(iduNativeMutexObj *aObj)
+{
+    __asm __volatile ("sfence");
+    *(aObj) = 0;
+}
+
+static void initNativeMutex(iduNativeMutexObj *aObj)
+{
+    releaseNativeMutex(aObj);
+}
+
+#else 
+
+    /*
+     * THIS LINE MUST NOT BE REACHED.     
+     *
+     * I think it's better to make an error than doing a job in a wrong way 
+     * when native mutex isn't supported.	
+     */    
+#error  altibase only supports the compiler gcc in MAC OS X right now. 
+
+#endif

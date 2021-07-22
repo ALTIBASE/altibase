@@ -1,0 +1,472 @@
+#!/usr/bin/env python
+#encoding: utf-8
+
+# ACP common sources list
+alticore_acp_sources_common = [
+        'acpCallstack.c',
+        'acpCallstackPrivate.c',
+        'acpChar.c',
+        'acpCStr.c',
+        'acpCStrDouble.c',
+        'acpDir.c',
+        'acpDl.c',
+        'acpEnv.c',
+        'acpError.c',
+        'acpFeature.c',
+        'acpFile.c',
+        'acpInet.c',
+        'acpInit.c',
+        'acpMath.c',
+        'acpMmap.c',
+        'acpMem.c',
+        'acpOS.c',
+        'acpOpt.c',
+        'acpPoll.c',
+        'acpPrintf.c',
+        'acpPrintfCore.c',
+        'acpPrintfRender.c',
+        'acpProc.c',
+        'acpProcMutex.c',
+        'acpSem.c',
+        'acpPset.c',
+        'acpSearch.c',
+        'acpShm.c',
+        'acpSignal.c',
+        'acpSock.c',
+        'acpSockConnect.c',
+        'acpSockPoll.c',
+        'acpSockRecv.c',
+        'acpSockSend.c',
+        'acpSpinLock.c',
+        'acpSpinWait.c',
+        'acpStd.c',
+        'acpStr.c',
+        'acpStrCmp.c',
+        'acpStrFind.c',
+        'acpSym.c',
+        'acpSys.c',
+        'acpSysMacAddr-UNIX.c',
+        'acpSysIPAddr-UNIX.c',
+        'acpSysHardware.c',
+        'acpTest.c',
+        'acpThr.c',
+        'acpThrBarrier.c',
+        'acpThrCond.c',
+        'acpThrMutex.c',
+        'acpThrRwlock.c',
+        'acpTime.c',
+        'acpTls.c',
+        'acpVersion.c'
+]
+
+# Additional sources for windows
+alticore_acp_sources_msvc = [
+        'acpMemBarrier.c'
+]
+
+# Common GCC sources
+alticore_acp_sources_gcc_common = [
+        'acpAtomic.c',
+        'acpMemBarrier.c'
+]
+
+# PowerPC GCC sources 32 bit
+alticore_acp_sources_gcc_powerpc_32 = [
+        'acpAtomic-PPC16_32MODE.gs'
+]
+
+# PowerPC GCC sources 64 bit
+alticore_acp_sources_gcc_powerpc_64 = [
+        'acpAtomic-PPC16_64MODE.gs'
+]
+
+# IA64 GCC sources 32 bit
+alticore_acp_sources_gcc_ia64_32 = [
+        'acpAtomic-IA64_CAS16_32MODE.gs'
+]
+
+# IA64 GCC sources 64 bit
+alticore_acp_sources_gcc_ia64_64 = [
+        'acpAtomic-IA64_CAS16_64MODE.gs'
+]
+
+# PARISC native compiler sources
+alticore_acp_sources_native_parisc = [
+        'acpAtomic-PARISC_USE_LOCKS.c'
+]
+
+# PowerPC native compiler sources 32 bit
+alticore_acp_sources_native_powerpc_32 = [
+        'acpMemBarrier.c',
+        'acpAtomic-PPC16_32MODE.gs',
+        'acpAtomic-PPC_32MODE.s',
+        'acpMemBarrier-PPC_32MODE.s'
+]
+
+# PowerPC native compiler sources 64 bit
+alticore_acp_sources_native_powerpc_64 = [
+        'acpMemBarrier.c',
+        'acpAtomic-PPC16_64MODE.gs',
+        'acpAtomic-PPC_64MODE.s',
+        'acpMemBarrier-PPC_64MODE.s'
+]
+
+# ACE sources list
+alticore_ace_sources = [
+        'aceAssert.c',
+        'aceException.c',
+        'aceMsgTable.c'
+]
+
+# ACL sources list
+alticore_acl_sources = [
+        'aclConfParse.ly',
+        'aclConfLex.re',
+        'aclConf.c',
+        'aclConfPrivate.c',
+        'aclHash.c',
+        'aclHashFunc.c',
+        'aclLog.c',
+        'aclMem.c',
+        'aclMemArea.c',
+        'aclMemPool.c',
+        'aclMemTlsf.c',
+        'aclMemTlsfImp.c',
+        'aclQueue.c',
+#        'aclLzo.c',
+        'aclCompression.c',
+        'aclReadLine.c',
+        'aclCodeUTF8.c',
+        'aclCryptTEA.c',
+        'aclLicFile.c',
+        'aclLicLicense.c',
+        'aclSafeList.c',
+        'aclLFMemPool.c'
+]
+
+# ACI sources list
+alticore_aci_sources = [
+        'aciVa.c',
+        'aciErrorMgr.c',
+        'aciProperty.c',
+        'aciVersion.c',
+        'aciHashUtil.c',
+        'aciConv.c',
+        'aciConvAscii.c',
+        'aciConvCp949.c',
+        'aciConvEucjp.c',
+        'aciConvEuckr.c',
+        'aciConvGb2312.c',
+        'aciConvJisx0201.c',
+        'aciConvJisx0208.c',
+        'aciConvJisx0212.c',
+        'aciConvKsc5601.c',
+        'aciConvSjis.c',
+        'aciConvUhc1.c',
+        'aciConvUhc2.c',
+        'aciConvUtf8.c',
+        'aciConvBig5.c',
+        'aciConvCp936.c',
+        'aciConvCp936ext.c',
+        'aciConvGbk.c',
+        'aciConvGbkext1.c',
+        'aciConvGbkext2.c',
+        'aciConvGbkextinv.c',
+        'aciVarString.c'
+]
+
+# ReadLine sources
+libedit_sources = [
+        'chared.c',
+        'common.c',
+        'el.c',
+        'emacs.c',
+        'fcns.c',
+        'fgetln.c',
+        'help.c',
+        'hist.c',
+        'history.c',
+        'key.c',
+        'map.c',
+        'parse.c',
+        'prompt.c',
+        'read.c',
+        'refresh.c',
+        'search.c',
+        'sig.c',
+        'strlcat.c',
+        'strlcpy.c',
+        'term.c',
+        'tokenizer.c',
+        'tty.c',
+        'unvis.c',
+        'vi.c',
+        'vis.c',
+        'readline.c',
+        'local_ctype.c'
+]
+
+externalLib_sources = [
+        'lz4.c'
+]
+
+zookeeper_source = [
+        'zookeeper.c',
+        'recordio.c',
+        'zookeeper.jute.c',
+        'zk_log.c',
+        'zk_hashtable.c',
+        'addrvec.c',
+        'mt_adaptor.c',
+        'hashtable_itr.c',
+        'hashtable.c'
+]
+
+# ACT sources list
+altictest_sources = [
+        'actDump.c',
+        'actTest.c',
+        'actPerf.c'
+]
+
+#-----------------------------
+# Src file search function
+#-----------------------------
+def src_search(path_node, src_list):
+    return [path_node.find_node(src_file) for src_file in src_list]
+#-----------------------------
+
+###############################
+# Build alticore sources list #
+###############################
+# add common acp sources
+alticore_src = src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_common)
+
+if bld.env.CC_NAME == 'msvc':
+    alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_msvc))
+elif bld.env.CC_NAME == 'gcc':
+    alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_gcc_common))
+    if bld.env.MACHINE == 'powerpc':
+        if bld.env.COMPILE_BIT == 32:
+            alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_gcc_powerpc_32))
+        elif bld.env.COMPILE_BIT == 64:
+            alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_gcc_powerpc_64))
+    elif bld.env.MACHINE == 'ia64':
+        if bld.env.COMPILE_BIT == 32:
+            alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_gcc_ia64_32))
+        elif bld.env.COMPILE_BIT == 64:
+            alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_gcc_ia64_64))
+else:
+    # Native compiler support
+    if bld.env.MACHINE == 'powerpc':
+        if bld.env.COMPILE_BIT == 32:
+            alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_native_powerpc_32))
+        elif bld.env.COMPILE_BIT == 64:
+            alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_native_powerpc_64))
+    elif bld.env.MACHINE == 'parisc':
+        alticore_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, alticore_acp_sources_native_parisc))
+
+# Add precompiled objects for native compilers support
+alticore_acp_objects = {
+        'sun_sparc_64'   : ['acpAtomic-SPARC_CAS_64MODE.o',
+                            'acpMemBarrier-SPARC_64MODE.o'],
+        'sun_sparc_32'   : ['acpAtomic-SPARC_CAS_32MODE.o',
+                            'acpMemBarrier-SPARC_32MODE.o'],
+        'sun_x86_64'     : ['acpAtomic-X86_SOLARIS_64MODE.o',
+                            'acpMemBarrier-X86_SOLARIS_64MODE.o'],
+        'sun_x86_32'     : ['acpAtomic-X86_SOLARIS_32MODE.o',
+                            'acpMemBarrier-X86_SOLARIS_32MODE.o'],
+        'hpcc_ia64_64'   : ['acpAtomic-HPUX_IA64_CAS16_64MODE.o',
+                            'acpAtomic-HPUX_IA64_64MODE.o',
+                            'acpMemBarrier-HPUX_IA64_64MODE.o'],
+        'hpcc_ia64_32'   : ['acpAtomic-HPUX_IA64_CAS16_32MODE.o',
+                            'acpAtomic-HPUX_IA64_32MODE.o',
+                            'acpMemBarrier-HPUX_IA64_32MODE.o'],
+        'hpcc_parisc_64' : ['acpSpinLock-PARISC_64MODE.o',
+                            'acpMemBarrier-PARISC_64MODE.o'],
+        'hpcc_parisc_32' : ['acpSpinLock-PARISC_32MODE.o',
+                            'acpMemBarrier-PARISC_32MODE.o'],
+        'xlc_powerpc_32' : ['acpAtomic-PPC64_32MODE.o'],
+        'undefined'      : []
+}
+alticore_acp_objects_pic = {
+        'sun_sparc_64'   : ['acpAtomic-SPARC_CAS_64MODE_pic.o',
+                            'acpMemBarrier-SPARC_64MODE_pic.o'],
+        'sun_sparc_32'   : ['acpAtomic-SPARC_CAS_32MODE_pic.o',
+                            'acpMemBarrier-SPARC_32MODE_pic.o'],
+        'sun_x86_64'     : ['acpAtomic-X86_SOLARIS_64MODE_pic.o',
+                            'acpMemBarrier-X86_SOLARIS_64MODE_pic.o'],
+        'sun_x86_32'     : ['acpAtomic-X86_SOLARIS_32MODE_pic.o',
+                            'acpMemBarrier-X86_SOLARIS_32MODE_pic.o'],
+        'hpcc_ia64_64'   : ['acpAtomic-HPUX_IA64_CAS16_64MODE_pic.o',
+                            'acpAtomic-HPUX_IA64_64MODE_pic.o',
+                            'acpMemBarrier-HPUX_IA64_64MODE_pic.o'],
+        'hpcc_ia64_32'   : ['acpAtomic-HPUX_IA64_CAS16_32MODE_pic.o',
+                            'acpAtomic-HPUX_IA64_32MODE_pic.o',
+                            'acpMemBarrier-HPUX_IA64_32MODE_pic.o'],
+        'hpcc_parisc_64' : ['acpSpinLock-PARISC_64MODE_pic.o',
+                            'acpMemBarrier-PARISC_64MODE_pic.o'],
+        'hpcc_parisc_32' : ['acpSpinLock-PARISC_32MODE_pic.o',
+                            'acpMemBarrier-PARISC_32MODE_pic.o'],
+        'xlc_powerpc_32' : ['acpAtomic-PPC64_32MODE_pic.o'],
+        'undefined'      : []
+}
+precompiled_objects = src_search(bld.env.ALTICORE_OBJECTS_DIR, bld.platform_objects(bld, alticore_acp_objects))
+precompiled_objects_pic = src_search(bld.env.ALTICORE_OBJECTS_DIR, bld.platform_objects(bld, alticore_acp_objects_pic))
+
+# Add other dirs sources to alticore source list
+alticore_src.extend(src_search(bld.env.ALTICORE_ACE_DIR, alticore_ace_sources))
+alticore_src.extend(src_search(bld.env.ALTICORE_ACL_DIR, alticore_acl_sources))
+alticore_src.extend(src_search(bld.env.ALTICORE_ACI_DIR, alticore_aci_sources))
+
+# Add ReadLine sources if READLINE_SUPPORT enabled
+if bld.env.READLINE_SUPPORT == 'yes':
+    alticore_src.extend(src_search(bld.env.ALTICORE_LIBEDIT_DIR, libedit_sources))
+
+alticore_src.extend(src_search(bld.env.ALTICORE_EXTERNAL_LIB_DIR, externalLib_sources))
+
+################################
+# Build altictest sources list #
+################################
+altictest_src = src_search(bld.env.ALTICORE_ACT_DIR, altictest_sources)
+
+#################
+# ALINT ignores #
+#################
+alint_ignores_src = src_search(bld.env.ALTICORE_LIBEDIT_DIR, libedit_sources)
+alint_ignores_src = src_search(bld.env.ALTICORE_EXTERNAL_LIB_DIR, externalLib_sources)
+
+alint_ignores_src.extend(src_search(bld.env.ALTICORE_ACI_DIR, alticore_aci_sources))
+alint_ignores_src.extend(src_search(bld.env.ALTICORE_ACL_DIR, ['aclLzo.c']))
+alint_ignores_src.extend(src_search(bld.env.ALTICORE_ACP_DIR, ['acpCStrDouble.c']))
+
+###################
+# Define includes #
+###################
+# alticore
+bld (
+        includes = [bld.env.ALTICORE_INCLUDE_DIR,
+                    bld.env.ALTICORE_INCLUDE_DIR.get_bld(),
+                    bld.env.ALTICORE_ACP_DIR,
+                    bld.env.LIBEDIT_INCLUDE_DIR,
+                    bld.env.EXTERNAL_LIB_INCLUDE_DIR],
+        export_includes = [bld.env.ALTICORE_INCLUDE_DIR,
+                           bld.env.ALTICORE_INCLUDE_DIR.get_bld(),
+                           bld.env.ALTICORE_ACP_DIR,
+                           bld.env.LIBEDIT_INCLUDE_DIR,
+                           bld.env.EXTERNAL_LIB_INCLUDE_DIR],
+        name     = 'alticore_includes'
+)
+
+# altictest
+bld (
+        includes = [bld.env.ALTICORE_INCLUDE_DIR,
+                    bld.env.ALTICORE_INCLUDE_DIR.get_bld()],
+        export_includes = [bld.env.ALTICORE_INCLUDE_DIR,
+                           bld.env.ALTICORE_INCLUDE_DIR.get_bld()],
+        name     = 'altictest_includes'
+)
+
+#################
+# Build targets #
+#################
+# Build alticore shared objects
+bld(
+        features      = 'c alint',
+        source        = alticore_src,
+        alint_ignores = alint_ignores_src,
+        target        = 'alticore_shared_objects',
+        use           = 'alticore_includes PIC'
+)
+
+# Build alticore static objects
+bld(
+        features      = 'c alint',
+        source        = alticore_src,
+        alint_ignores = alint_ignores_src,
+        target        = 'alticore_static_objects',
+        use           = 'alticore_includes'
+)
+
+# Build altictest shared objects
+bld(
+        features      = 'c alint',
+        source        = altictest_src,
+        alint_ignores = alint_ignores_src,
+        target        = 'altictest_shared_objects',
+        use           = 'altictest_includes PIC'
+)
+
+# Build altictest static objects
+bld(
+        features      = 'c alint',
+        source        = altictest_src,
+        alint_ignores = alint_ignores_src,
+        target        = 'altictest_static_objects',
+        use           = 'altictest_includes'
+)
+
+# Link alticore shared library
+bld(
+        name         = 'alticore_shlib',
+        features     = 'c cshlib',
+        source       = [],
+        target       = bld.lib_target(bld, 'alticore'),
+        install_path = bld.lib_install_path(bld),
+        precompiled  = precompiled_objects_pic,
+        vnum         = bld.lib_version(),
+        use          = 'alticore_shared_objects'
+)
+
+# Link alticore static library
+bld(
+        name         = 'alticore_stlib',
+        features     = 'c cstlib',
+        source       = [],
+        target       = bld.lib_target(bld, 'alticore'),
+        install_path = bld.lib_install_path(bld),
+        precompiled  = precompiled_objects,
+        use          = 'alticore_static_objects'
+)
+
+# Link alticore_pic static library
+bld(
+        name         = 'alticore_pic_stlib',
+        features     = 'c cstlib',
+        source       = [],
+        target       = bld.lib_target(bld, 'alticore_pic'),
+        install_path = bld.lib_install_path(bld),
+        precompiled  = precompiled_objects_pic,
+        use          = 'alticore_shared_objects'
+)
+
+# Link altictest shared library
+bld(
+        name         = 'altictest_shlib',
+        features     = 'c cshlib',
+        source       = [],
+        target       = bld.lib_target(bld, 'altictest'),
+        install_path = bld.lib_install_path(bld),
+        vnum         = bld.lib_version(),
+        use          = 'altictest_shared_objects alticore_pic_stlib'
+)
+
+# Link altictest static library
+bld(
+        name         = 'altictest_stlib',
+        features     = 'c cstlib',
+        source       = [],
+        target       = bld.lib_target(bld, 'altictest'),
+        install_path = bld.lib_install_path(bld),
+        use          = 'altictest_static_objects'
+)
+
+# Link altictest_pic static library
+bld(
+        name         = 'altictest_pic_stlib',
+        features     = 'c cstlib',
+        source       = [],
+        target       = bld.lib_target(bld, 'altictest_pic'),
+        install_path = bld.lib_install_path(bld),
+        use          = 'altictest_shared_objects'
+)
