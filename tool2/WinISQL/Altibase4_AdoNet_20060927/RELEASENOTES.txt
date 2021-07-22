@@ -1,0 +1,5 @@
+
+Altibase4_AdoNet_20060927.zip:  BUG-15353  [ADO.NET] float 타입의 값을 fetch할때 에러가 발생합니다.
+
+Altibase4_AdoNet_20060920.zip:  BUG-15314  [ADO.NET] BIGINT 컬럼을 fetch한 결과가 부정확합니다.
+                                BUG-14414  [ADO.NET] 서버가 KO16KSC5601로 설정되어 있을 때 에러 발생합니다.

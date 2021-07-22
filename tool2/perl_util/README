@@ -1,0 +1,11 @@
+This dir contain some useful utilite
+
+meta_dump.pl  - utilite for print information about tables on the database
+	Use for work DBI_ODBC - enveroument like that:
+	DBI_DSN="dbi:ODBC:DSN=192.168.1.11;UID=SYS;PWD=MANAGER;CONNTYPE=1;NLS_USE=US7ASCII;PORT_NO=20545"
+	Befor used this utilite your shuld set Enveroument and check do your  install odbc_perl
+	WithOut any parametr utilite PRINT all table
+	:QPM - print only metatables
+	:TBL - print user tables
+	TAB*TEST - print by pattern match table 
+	

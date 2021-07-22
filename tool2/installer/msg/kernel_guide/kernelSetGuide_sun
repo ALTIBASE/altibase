@@ -1,0 +1,71 @@
+
+
+ ================ SunOS ================
+ [ Recommended Kernel Parameter Values ]
+
+ When ALTIBASE XDB uses the file system cache rather than direct I/O, the 
+ priority_paging parameter (related to the file system cache on Sun systems) must
+ be set in order to prevent issues related to excessive memory use. 
+ (Applies only to SunOS version 5.7 and above.)
+
+ shminfo_shmmax = 2147483648
+ shminfo_shmmin = 1
+ shminfo_shmmni = 500
+ shminfo_shmseg = 200
+ seminfo_semmns = 8192
+ seminfo_semmni = 5029
+ seminfo_semmsl = 2000
+ seminfo_semmap = 5024
+ seminfo_semmnu = 1024
+ seminfo_semopm = 512
+ seminfo_semume = 512
+ rlim_fd_max = 4096
+ rlim_fd_cur = 2048
+
+ [ How to modify kernel parameter values ]
+
+ =  Solaris 10  =
+ cf) projadd -U [user name] -K "project.max-sem-ids=(priv,5029,deny)" user.[user name] 
+ cf) projmod -a -K "project.max-shm-memory=(priv, real memory max value,deny)" user.[user name] 
+
+ # Default Values for sem- and shm-related Parameters
+    projadd -U altibase -K "project.max-sem-ids=(priv,5029,deny)" user.altibase
+    projmod -a -K "project.max-shm-memory=(priv, real memory max value,deny)" user.altibase 
+    projmod -a -K "process.max-sem-nsems=(priv,2000,deny)" user.altibase 
+    projmod -a -K "process.max-sem-ops=(priv,512,deny)" user.altibase 
+    projmod -a -K "project.max-shm-ids=(priv,1024,deny)" user.altibase
+
+ # Message Queue-related Parameters
+    projmod -a -K "project.max-msg-messages=(priv,100,deny)" user.altibase 
+    projmod -a -K "project.max-msg-ids=(priv,100,deny)" user.altibase
+    projmod -a -K "process.max-msg-qbytes=(priv,1048576,deny)" user.altibase
+
+ = is not  Solaris 10  =
+ Edit /etc/system file.
+
+ # Default Values for sem- and shm-related Parameters
+    set shmsys:shminfo_shmmax = 2147483648
+    set shmsys:shminfo_shmmin = 1
+    set shmsys:shminfo_shmmni = 500 
+    set shmsys:shminfo_shmseg = 200
+    set semsys:seminfo_semmns = 8192 
+    set semsys:seminfo_semmni = 5029 
+    set semsys:seminfo_semmsl = 2000 
+    set semsys:seminfo_semmap = 5024 
+    set semsys:seminfo_semmnu = 1024
+    set semsys:seminfo_semopm = 512 
+    set semsys:seminfo_semume = 512
+    set rlim_fd_max = 4096 
+    set rlim_fd_cur = 2048
+
+ # Message Queue-related Parameters
+    projmod -a -K "project.max-msg-messages=(priv,100,deny)" user.altibase 
+    projmod -a -K "project.max-msg-ids=(priv,100,deny)" user.altibase
+    projmod -a -K "process.max-msg-qbytes=(priv,1048576,deny)" user.altibase
+
+ These values must be set in order for ALTIBASE XDB to operate properly.
+ They must be set such that they are suitable for the system configuration.
+
+ =====================================
+
+

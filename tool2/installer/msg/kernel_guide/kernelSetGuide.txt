@@ -1,0 +1,29 @@
+
+ It is first necessary to set your system environment to ensure that ALTIBASE XDB
+ will run properly. Before installing ALTIBASE XDB, the kernel parameter values
+ must be set using the root user account. The kernel parameter values may be
+ modified after installation; however, they must be set prior to starting 
+ ALTIBASE XDB.
+
+ Please refer to the installation manual
+ or $ALTIBASE_XDB_HOME/install/kernelSetGuide.txt.
+
+
+
+
+ ================ LINUX ================
+ [ How to modify kernel parameter values ]
+
+ echo 512 32000 512 512 > /proc/sys/kernel/sem
+ echo 872415232 > /proc/sys/kernel/shmall
+
+ # shmall 
+ If it is desired to use ALTIBASE XDB in shared memory mode, the value of 'shmall'
+ must be set. This value determines the maximum size of an Altibase database.
+
+ These values must be set in order for ALTIBASE XDB to operate properly.
+ They must be set such that they are suitable for the system configuration.
+
+ =====================================
+
+

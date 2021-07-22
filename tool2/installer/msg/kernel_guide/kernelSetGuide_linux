@@ -1,0 +1,26 @@
+
+ ================ LINUX ================
+ [ How to modify kernel parameter values ]
+
+ 1. add the commands at the end of the /etc/rc.d/rc.local (redhat) 
+    or /etc/rc.local (ubuntu) script.
+ 
+       echo 2147483648 > /proc/sys/kernel/shmmax
+       echo 4096 > /proc/sys/kernel/shmmni
+       echo 1024 32000 1024 5026 > /proc/sys/kernel/sem
+       echo 30 > /proc/sys/vm/swappiness
+
+ 2. excute rc.local script.
+    eg. Redhat
+        $ sh /etc/rc.d/rc.local
+
+    eg. Ubuntu 
+        $ sh /etc/rc.local
+
+
+ These values must be set in order for ALTIBASE XDB to operate properly.
+ They must be set such that they are suitable for the system configuration.
+
+ =====================================
+
+

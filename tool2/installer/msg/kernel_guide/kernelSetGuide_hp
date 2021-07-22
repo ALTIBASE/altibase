@@ -1,0 +1,59 @@
+
+
+ ================ HP UX ================
+ [ Recommended Kernel Parameter Values ] 
+
+ shmmax = 2147483648
+ shmmni = 500 
+ shmseg = 200 
+ semmap = 1001
+ semmni = 1000
+ semmns = 4096
+ semmnu = 1000
+ semume = 1000
+ max_thread_proc = 600
+ maxusers = 64
+ dbc_min_pct = 5
+ dbc_max_pct = 5
+ maxdsiz = 1073741824
+ maxdsiz_64bit = 4294967296  # applies only to 32-bit applications
+
+ # maxdsiz_64bit
+ The ALTIBASE XDB server needs sufficient memory space in order to function
+ properly.
+ Please set the value to 70% of system memory or greater.
+
+ # dbc_min_pct and dbc_max_pct 
+ dbc_min_pct and dbc_max_pct were renamed filecache_min and filecache_max,
+ respectively, in HP-UX 11.31 and subsequent releases.
+
+ [ How to modify kernel parameter values ] 
+
+ /usr/sbin/kmtune -s shmmax=2147483648
+ /usr/sbin/kmtune -s shmmni=500 
+ /usr/sbin/kmtune -s shmseg=200
+ /usr/sbin/kmtune -s semmap=1001 
+ /usr/sbin/kmtune -s semmni=1000
+ /usr/sbin/kmtune -s semmns=4096 
+ /usr/sbin/kmtune -s semmnu=1000
+ /usr/sbin/kmtune -s semume=1000
+ /usr/sbin/kmtune -s max_thread_proc=600
+ /usr/sbin/kmtune -s maxusers=64
+ /usr/sbin/kmtune -s dbc_min_pct=5
+ /usr/sbin/kmtune -s dbc_max_pct=5
+ /usr/sbin/kmtune -s maxdsiz=1073741824 # applies only to 32-bit applications
+ /usr/sbin/kmtune -s maxdsiz_64bit=4294967296
+
+ # maxdsiz_64bit
+ The ALTIBASE XDB server needs sufficient memory space in order to function properly.
+ Please set the value to 70% of system memory or greater.
+
+ # dbc_min_pct and dbc_max_pct 
+ dbc_min_pct and dbc_max_pct were renamed filecache_min and filecache_max, respectively,
+ in HP-UX 11.31 and subsequent releases.
+
+ These values must be set in order for ALTIBASE XDB to operate properly.
+ They must be set such that they are suitable for the system configuration.
+
+ =======================================
+

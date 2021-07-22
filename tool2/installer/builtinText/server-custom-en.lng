@@ -1,0 +1,3 @@
+Installer.Ready.Text1=Setup is now ready to install %1$s.
+Installer.Installing.Text=Please wait until the setup wizard finishes installing %1$s.
+Installer.Installation.Finished.Text=Setup has finished installing the %1$s on your host.

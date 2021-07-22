@@ -1,0 +1,25 @@
+#!/bin/sh
+#for RECOVERY TEST script
+
+if [ $# = 0 ]; then
+	DB_CHARSET=KO16KSC5601
+	NATIONAL_CHARSET=UTF16
+fi
+if [ $# = 2 ]; then
+	DB_CHARSET=$1
+	NATIONAL_CHARSET=$2
+fi
+
+${ALTIBASE_HOME}/bin/shmutil -e
+rm ${ALTIBASE_HOME}/dbs/*
+rm ${ALTIBASE_HOME}/logs/*
+
+ADMIN="${ALTIBASE_HOME}/bin/isql -u sys -p manager -sysdba"
+
+
+        ${ADMIN} << EOF
+startup process;
+create database mydb INITSIZE=10M noarchivelog character set ${DB_CHARSET} national character set ${NATIONAL_CHARSET};
+shutdown abort
+quit
+EOF

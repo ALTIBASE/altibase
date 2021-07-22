@@ -1,0 +1,19 @@
+#!/usr/bin/sh
+
+usage ()
+{
+    echo "USAGE) csort cv_file";
+    echo "       sorting cv file and demangling it";
+}
+
+echo "cprof (Cache Profiler) Ver 1.0"
+echo "Copyright 1999-2002, ALTIBase Corporation or its subsidiaries."
+echo "All rights reserved."
+# cprof binary capacity linesize ways
+
+if  [ ! "$1" ]; then
+        usage;
+	exit;
+fi
+
+sort -n -r $1 | demangle

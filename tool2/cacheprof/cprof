@@ -1,0 +1,68 @@
+#!/usr/bin/sh
+
+BASIC_FLAG="-all -pthread -L."
+
+CPROF_TARGET=
+CPROF_CAPACITY=1024
+CPROF_LINESIZE=32
+CPROF_WAYS=2
+
+usage ()
+{
+    echo "USAGE) cprof binary output [capacity(k)] [linesize] [ways] ";
+    echo "       - capacity : cache capacity(k)   for simulator";
+    echo "                    default is 1024 (= 1M byte)";
+    echo "       - linesize : cache linesize      for simulator";
+    echo "                    default is 32";
+    echo "       - ways     : cache assiciativity for simulator";
+    echo "                    default is 2";
+    echo "       - CPROF_FLAG = additional environment variables for cprof"
+    echo "         hint) In case link error,  add '-Wca,O0' flag";
+    echo "";
+    echo "       WARNING!) must set CPROF_DIR environment ";
+    echo "                 ex) .../altidev/tool/cacheprof/";
+
+}
+
+echo "cprof (Cache Profiler) Ver 1.0"
+echo "Copyright 1999-2002, ALTIBase Corporation or its subsidiaries."
+echo "All rights reserved."
+# cprof binary capacity linesize ways
+
+if  [ ! "$1" ] || [ ! "$2" ] ; then
+        usage;
+	exit;
+fi
+
+CPROF_ORIGINAL="$1";
+CPROF_TARGET="$2";
+
+if  [ "$2" ] ; then
+        CPROF_CAPACITY="$3";
+fi
+
+if  [ "$3" ] ; then
+        CPROF_LINESIZE="$4";
+fi
+
+if  [ "$4" ] ; then
+        CPROF_WAYS="$5";
+fi
+
+ATOM_TOOL_ARGS="-toolargs=\"$CPROF_CAPACITY $CPROF_LINESIZE $CPROF_WAYS\"";
+echo "";
+echo "Cache Profiling for [$CPROF_TARGET] .. ";
+echo "Capacity=$CPROF_CAPACITY""k";
+echo "LineSize=$CPROF_LINESIZE"
+echo "WAYS=$CPROF_WAYS";
+echo "";
+
+EXEC_STR="atom $BASIC_FLAG $CPROF_FLAG $ATOM_TOOL_ARGS $CPROF_ORIGINAL $ALTIBASE_HOME/lib/lib_cprof_inst.o $ALTIBASE_HOME/lib/lib_cprof_anal.o -o $CPROF_TARGET"
+
+echo $EXEC_STR;
+
+eval "$EXEC_STR"
+
+
+
+

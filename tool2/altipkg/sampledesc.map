@@ -1,0 +1,115 @@
+#
+# This file is for packaging altibase product.
+#
+# Category Explain
+#   - PLATFORM [CPU-OS-V-V]
+#   - EDITION  [S/E]
+#   - DEVTYPE  [S/C]
+#   - BITTYPE  [32/64]
+#   - COMPTYPE [CC/GCC]
+#   - PERMTYPE [0644]
+#   - EXTTYPE  [*]  (EXE, OBJ, ARL, SHL, DIR)
+#  
+
+# Server Section 
+
+#[^*-WINDOWS-*-*/^*-QNX-*-*][S][S][*][*][0755][*]
+[^*-WINDOWS-*-*/*-QNX-*-*][*][*][*][*][0755][DIR] # directory creation
+N/A
+N/A
+bin
+N/A
+
+#[*][*][*][*][*][0755][DIR] # directory creation
+#N/A
+#N/A
+#bin
+#N/A
+
+
+[*][S][S/C][*][*][0755][DIR] # directory creation
+N/A
+N/A
+include
+N/A
+
+[*][S][S/C][*][*][0755][DIR] # directory creation
+N/A
+N/A
+lib
+N/A
+
+[*][S][S/C][*][*][0755][DIR] # directory creation
+N/A
+N/A
+dbs
+N/A
+
+[*][S][S/C][*][*][0755][DIR] # directory creation
+N/A
+N/A
+sample
+N/A
+
+[*][S][S/C][*][*][0755][DIR] # directory creation
+N/A
+N/A
+sample/SESC
+N/A
+
+[*][S][S/C][*][*][0755][DIR] # directory creation
+N/A
+N/A
+sample/SQLCLI
+N/A
+
+[*][S][S][*][*][0644][ARL]
+altibase_home/lib
+id
+lib
+id
+
+[*][S][S][*][*][0644][!ARL]
+altibase_home/lib
+idnofile
+lib
+id
+
+[*][S][S][*][*][0644][*]
+.
+Makefile
+.
+Makefile
+
+
+
+#[*][S][S][*][*][4755][EXE]
+#mm/src/main
+#altibase
+#bin
+#altibase
+
+
+#[*][S][S][*][*][4755][SHL]
+#mm/src/lib
+#mm
+#lib
+#mm
+
+#[^*-WINDOWS-*-*/^*-QNX-*-*][S][S][*][*][0755][*]
+#mm/src/main
+#altibase.map
+#bin
+#altibase.map
+
+#[^*-SOLARIS-*-*][S][S][*][*][0755][*]
+#mm/src/main
+#altibase.map
+#bin
+#altibase.map
+
+#[^*-SOLARIS-*-*][S][C][*][*][0755][*]
+#mm/src/main
+#altibase.map
+#bin
+#altibase.map

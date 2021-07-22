@@ -1,0 +1,123 @@
+#!/bin/sh
+
+PRODUCT_PREFIX=`basename $0 | sed 's%altierr$%%'`
+if [ "$PRODUCT_PREFIX" = "xdb" ]; then
+    ALTI_HOME=$ALTIBASE_XDB_HOME
+else
+    ALTI_HOME=$ALTIBASE_HOME
+fi
+THIS=`basename $0`
+MANUAL=$ALTI_HOME/msg/manual.txt
+TMP_SED=/tmp/$$.sed
+TMP_AWK=/tmp/$$.awk
+
+Usage()
+{
+   echo
+   echo "    $THIS {-w keyword_pattern | [-n] error_number}"
+   echo "    option :  "
+   echo "             -n : error Number search [default] "
+   echo "             -w : error string pattern search (multy result display)"
+   echo "    error_number : 0x111 ( hexa error number search)" 
+   echo "                    123  ( translate decimal number to hexa error number) [default]"
+   echo "                   -123  ( translate decimal number to positive error number)"
+   echo
+   echo "    keyword_pattern : all matched error list is displayed"
+   echo "              ex) connect"
+   echo "                 \"shared memory\""
+   echo
+   echo "    ex) "
+   echo "       $THIS 0x31045"
+   echo "       $THIS 200773"
+   echo "       $THIS -n 200773"
+   echo "       $THIS -n -200773"
+   echo "       $THIS -w connect"
+   echo "       $THIS -w \"does not\""
+   echo
+}
+
+word()
+{
+
+    PATT=$1
+
+    echo "BEGIN {                        " >> $TMP_AWK
+    echo "   i=0;                        " >> $TMP_AWK
+    echo "}                              " >> $TMP_AWK
+    echo "{                              " >> $TMP_AWK
+    echo "   i+=1;                       " >> $TMP_AWK
+    echo "   if (length(\$0) == 0)       " >> $TMP_AWK
+    echo "      j=i;                     " >> $TMP_AWK
+    echo "   if (match(\$0, \"$PATT\"))  " >> $TMP_AWK
+    echo "      print j+1                " >> $TMP_AWK
+    echo "}                              " >> $TMP_AWK
+
+    LIST=`awk -f $TMP_AWK $MANUAL |uniq`
+
+    for I in $LIST
+    do
+        echo "$I,/^$/p" >> $TMP_SED
+    done
+    if [ ! -f $TMP_SED ]; then
+       echo
+       echo "    Can't Search matched pattern !!"
+       echo
+       exit;
+    fi
+
+    echo
+    sed -n -f $TMP_SED $MANUAL
+}
+
+number1()
+{
+    ERRNUM=`echo "$1" | tr -d '-'`
+    ERRNUM=`echo "$ERRNUM" | tr [a-z] [A-Z]`
+    PREFIX=`echo "$ERRNUM" | cut -c 1-2`
+    #echo "ERRNUM=$ERRNUM"
+    
+    ERRNUM=`printf "%05X" "$ERRNUM" 2> /dev/null`
+    
+    if [ $? -ne 0 ]; then
+        echo "make sure Error Number format !!" 
+        Usage;
+    fi
+    
+    if [ "x$ERRNUM" = "x00000" ] ; then
+        Usage;
+    fi
+
+    if [ "$PREFIX" = "0X" ] ; then
+        ERRNUM=`echo "ibase=16;$ERRNUM" | bc`
+        ERRNUM=`printf "%05X" "$ERRNUM" 2> /dev/null`
+        ERRNUM=0x$ERRNUM
+    fi
+
+    echo 
+    sed -n "/$ERRNUM/,/^$/p" $MANUAL
+}
+
+number2()
+{
+    if [ "$1" = "-n" ]; then
+        number1 $2;
+    elif [ "$1" = "-w" ]; then
+        word "$2";
+    else
+        Usage;
+    fi
+}
+
+#---------------------------------------------------------------------------#
+#         main                                                              #
+#---------------------------------------------------------------------------#
+if [ $# -eq 1 ]; then
+   number1 $1; 
+elif [ $# -eq 2 ]; then
+   number2 $1 "$2";
+else
+    Usage
+fi
+
+rm -f $TMP_AWK
+rm -f $TMP_SED

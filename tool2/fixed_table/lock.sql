@@ -1,0 +1,11 @@
+CREATE OR REPLACE VIEW ADM_TABLE_LOCK AS
+SELECT  A.TABLE_NAME as table_name,
+        C.TRANS_ID as trans_id,
+        DECODE(C.IS_GRANT, 1, 'GRANT' , 0, 'WAITING') as state,
+        B.NAME as lock_mode
+FROM SYSTEM_.SYS_TABLES_ A,
+     SYSTEM_.SYSX_LOCK_MODE_ B,
+     SYSTEM_.SYSX_TABLE_LOCK_ C
+WHERE B.ID = C.LOCK_MODE AND
+      A.TABLE_OID = C.TABLE_OID ;
+

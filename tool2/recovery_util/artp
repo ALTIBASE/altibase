@@ -1,0 +1,55 @@
+#!/usr/local/bin/bash
+
+if [ $# -ne 3 ]
+then
+    echo "[usage] $0 list seed module";
+    exit;
+fi
+
+list=$1;
+seed=$2;
+module=$3;
+path=server_"$module";
+log=recResult_"$module".log
+
+rm -f $log 
+rm -rf $path;
+
+mkdir $path;
+mkdir $path/bin;
+mkdir $path/conf;
+mkdir $path/msg;
+mkdir $path/dbs;
+mkdir $path/dbs/CVS;
+mkdir $path/logs;
+mkdir $path/trc;
+mkdir $path/arch_logs;
+mkdir $path/install;
+mkdir $path/include;
+mkdir $path/lib;
+
+cp -f ${ALTIBASE_HOME}/bin/*                    $path/bin;
+cp -f ${ALTIBASE_HOME}/msg/*                    $path/msg;
+cp -f ${ALTIBASE_HOME}/conf/altibase.properties $path/conf;
+cp -f ${ALTIBASE_HOME}/conf/license             $path/conf;
+cp -f ${ALTIBASE_HOME}/install/*                $path/install;
+cp -f ${ALTIBASE_HOME}/include/*                $path/include;
+cp -f ${ALTIBASE_HOME}/lib/*                    $path/lib;
+
+port1=`grep PORT_NO ${ALTIBASE_HOME}/conf/altibase.properties | grep -v REP | grep -v grep | awk '{print $3;}'`;
+port2=`expr $port1 + $seed`;
+sed -e "s/$port1/$port2/g" $path/conf/altibase.properties > $path/conf/altibase.properties.old;
+mv $path/conf/altibase.properties.old $path/conf/altibase.properties;
+
+export ALTIBASE_HOME=`pwd`/$path;
+export ALTIBASE_PORT_NO=$port2;
+
+. ./art.env
+
+server kill;
+clean;
+server start;
+
+gawk -v LOG=$log -v LIST=$list -f doRecTest.awk
+
+server kill;

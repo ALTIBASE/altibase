@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2007-03-09 17:10:45.312.cpp,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\Unit6.cpp=C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\test123.cpp</Transaction>
+    <Transaction>2007-03-09 17:10:45.312.h,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\Unit6.h=C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\test123.h</Transaction>
+    <Transaction>2007-03-09 17:10:45.312.dfm,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\Unit6.dfm=C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\test123.dfm</Transaction>
+    <Transaction>2007-03-09 19:33:45.921.bdsproj,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\Project3.bdsproj=C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\aaaaaa1234.bdsproj</Transaction>
+    <Transaction>2007-03-09 20:44:53.125.cpp,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\test123.cpp=C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\sqlView.cpp</Transaction>
+    <Transaction>2007-03-09 20:44:53.125.h,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\test123.h=C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\sqlView.h</Transaction>
+    <Transaction>2007-03-09 20:44:53.125.dfm,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\test123.dfm=C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\sqlView.dfm</Transaction>
+    <Transaction>2007-03-09 20:45:24.687.cpp,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\sqlView.cpp=C:\winSQLView\sqlViewEditor.cpp</Transaction>
+    <Transaction>2007-03-09 20:45:24.687.h,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\sqlView.h=C:\winSQLView\sqlViewEditor.h</Transaction>
+    <Transaction>2007-03-09 20:45:24.687.dfm,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\sqlView.dfm=C:\winSQLView\sqlViewEditor.dfm</Transaction>
+    <Transaction>2007-03-09 20:45:40.890.bdsproj,C:\Documents and Settings\lim272\My Documents\Borland Studio Projects\aaaaaa1234.bdsproj=C:\winSQLView\sqlView.bdsproj</Transaction>
+    <Transaction>2007-03-09 20:48:33.453.cpp,C:\winSQLView\Unit1.cpp=C:\winSQLView\sqlRun.cpp</Transaction>
+    <Transaction>2007-03-09 20:48:33.453.h,C:\winSQLView\Unit1.h=C:\winSQLView\sqlRun.h</Transaction>
+    <Transaction>2007-03-09 20:48:33.453.dfm,C:\winSQLView\Unit1.dfm=C:\winSQLView\sqlRun.dfm</Transaction>
+  </Transactions>
+</BorlandProject>

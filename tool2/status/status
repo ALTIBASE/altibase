@@ -1,0 +1,88 @@
+SQLFILE="._tmp.sql"
+TMPOUTFILE="._tmp.out"
+LISTFILE="._list"
+GREP_V1="grep -v iSQL"
+GREP_V2="grep -v TABLE_NAME"
+GREP_V3="grep -v \----"
+GREP_V4="grep -v selected"
+GREP_V5="grep -v success."
+
+
+case "$1" in
+'db')
+   if [ "x$2" = "x" ] 
+   then
+       echo "exec dbinfo(0);" > $SQLFILE
+       echo "exec diskdbinfo;" >> $SQLFILE
+       echo "quit;" >> $SQLFILE
+       is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4  | $GREP_V5
+       exit;
+   fi
+   if [ "$2" = "all" ] 
+   then
+       echo "select distinct table_name from system_.sys_tables_ " > $SQLFILE
+       echo "where user_id > 1 order by table_name;" >> $SQLFILE
+       echo "quit;" >> $SQLFILE
+       is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4 | grep -v "where" > $LISTFILE
+
+       echo "exec dbinfo(0);" > $SQLFILE
+       echo "exec diskdbinfo;" >> $SQLFILE
+       echo "quit;" >> $SQLFILE
+       is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4 | $GREP_V5
+    
+       while read TNAME
+       do
+           echo "set heading off;" > $SQLFILE
+           echo "exec dbinfo('$TNAME');" >> $SQLFILE
+           echo "quit;" >> $SQLFILE
+           is -silent -f $SQLFILE | grep -v "iSQL" | grep -v "success."
+       done < $LISTFILE
+   else
+       echo "exec dbinfo('$2');" > $SQLFILE
+       echo "quit;" >> $SQLFILE
+       is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4  | $GREP_V5
+   fi
+;;
+
+
+'session')
+   if [ "$2" = "all" ]
+   then
+      echo "exec ssinfo(0);" > $SQLFILE
+      echo "quit;" >> $SQLFILE
+      is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4  | $GREP_V5
+      exit;
+   fi
+
+   if [ "x$2" = "x" ]
+   then
+      echo "exec ssinfo(0);" > $SQLFILE
+      echo "quit;" >> $SQLFILE
+      is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4  | $GREP_V5
+   else
+      echo "exec ssinfo($2);" > $SQLFILE
+      echo "quit;" >> $SQLFILE
+      is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4  | $GREP_V5
+   fi
+;;
+
+'replication')
+   if [ "x$2" = "x" ]
+   then
+      echo "exec repinfo(0);" > $SQLFILE
+      echo "quit;" >> $SQLFILE
+      is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4  | $GREP_V5
+   else
+      echo "exec repinfo(1);" > $SQLFILE
+      echo "quit;" >> $SQLFILE
+      is -silent -f $SQLFILE | $GREP_V1 | $GREP_V2 | $GREP_V3 | $GREP_V4  | $GREP_V5
+   fi
+;;
+
+*)
+   echo "status { db | db tableName | db all | session all | session sessionID | replication }"
+   exit;
+;;
+esac
+
+

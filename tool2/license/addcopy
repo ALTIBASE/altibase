@@ -1,0 +1,251 @@
+#!/bin/sh
+
+agplStr="/\*\* \n \
+\*  Copyright (c) 1999~2017, Altibase Corp. and/or its affiliates. All rights reserved.\n \
+\*\n \
+\*  This program is free software: you can redistribute it and/or modify\n \
+\*  it under the terms of the GNU Affero General Public License, version 3,\n \
+\*  as published by the Free Software Foundation.\n \
+\*\n \
+\*  This program is distributed in the hope that it will be useful,\n \
+\*  but WITHOUT ANY WARRANTY; without even the implied warranty of\n \
+\*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n \
+\*  GNU Affero General Public License for more details.\n \
+\*\n \
+\*  You should have received a copy of the GNU Affero General Public License\n \
+\*  along with this program. If not, see <http://www.gnu.org/licenses/>.\n \
+\*/\n "
+
+lgplStr="/\*\* \n \
+\*  Copyright (c) 1999~2017, Altibase Corp. and/or its affiliates. All rights reserved.\n \
+\*\n \
+\*  This program is free software: you can redistribute it and/or modify\n \
+\*  it under the terms of the GNU Lesser General Public License, version 3,\n \
+\*  as published by the Free Software Foundation.\n \
+\*\n \
+\*  This program is distributed in the hope that it will be useful,\n \
+\*  but WITHOUT ANY WARRANTY; without even the implied warranty of\n \
+\*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n \
+\*  GNU Lesser General Public License for more details.\n \
+\*\n \
+\*  You should have received a copy of the GNU Lesser General Public License\n \
+\*  along with this program. If not, see <http://www.gnu.org/licenses/>.\n \
+\*/\n "
+
+
+
+function usage()
+{
+    echo "Usage : [ AGPL | LGPL ]"
+    echo "        [ directory path ]"
+    echo "        [ -x exception file list with : ]        (optional)"
+    echo "        [ -f file list ]        (optional) "
+
+    exit 0
+}
+function removeLines()
+{
+    lineno=0
+    linenoEnd=0
+    sStat=0
+    currentLine=0
+
+    while read -r line; do
+
+        currentLine=$((currentLine+1))
+
+        if [ "$sStat" -le 0 ] 
+        then
+             lineno=$((lineno+1))
+        fi
+        if [ "$lineno" -gt 10 ] || [ "$sStat" == 4 ] 
+        then
+            break 
+        fi
+
+        if [ "$sStat" == 1 ] && [ "$currentLine" != "$((lineno+1))" ]
+        then
+            break
+        fi
+
+        if [ "$sStat" == 2 ] && [ "$currentLine" != "$((lineno+2))" ]
+        then
+            break
+        fi
+
+        if [ "$sStat" == 3 ] && [ "$currentLine" != "$((lineno+3))" ]
+        then
+            break
+        fi
+
+        if [ "$sStat" == 0 ] &&
+            [ `echo "$line" | grep "\/\*\**" | wc -l ` -ge 1 ]
+        then
+             sStat=$((sStat+1))
+             continue
+        fi
+
+        if [ "$sStat" == 1 ] &&
+           [ `echo "$line" | grep -i "Copyright.*atibase" | wc -l ` -ge 1 ]
+        then
+             sStat=$((sStat+1))
+             continue
+        fi
+
+        if [ "$sStat" == 1 ] &&
+           [ `echo "$line" | grep -i "Copyright.*altibase" | wc -l ` -ge 1 ]
+        then
+             sStat=$((sStat+1))
+             continue
+        fi
+
+        if [ "$sStat" == 1 ] &&
+           [ `echo "$line" | grep -i "Copyright.*rtbase" | wc -l ` -ge 1 ]
+        then
+             sStat=$((sStat+1))
+             continue
+        fi
+
+        if [ "$sStat" == 2 ] &&
+           [ `echo "$line" | grep -i "reserved" | wc -l ` -ge 1 ]
+        then
+             sStat=$((sStat+1))
+             continue
+        fi
+
+        if [ "$sStat" == 3 ] &&
+           [ `echo "$line" | grep "*\*\*\/" | wc -l ` -ge 1 ]
+        then
+             sStat=$((sStat+1))
+             linenoEnd=$((lineno+3))
+        fi
+
+        if [ "$sStat" == 4 ]
+        then
+            sed -i -e "${lineno},${linenoEnd}d" "$filename"
+            break
+        fi
+
+    done < "$filename"
+
+}
+function addLines()
+{
+    if [ "$lType" == "agpl" ]; then
+        sed -i '1i\'"${agplStr}" "$filename"
+    else
+        sed -i '1i\'"${lgplStr}" "$filename"
+    fi
+}
+
+lType=""      # license type
+dPath=""      # directory path
+xfPath=""     # exception file list
+fPath=""      # file list
+
+#-----
+# Argument Check
+#-----
+if [ $# -lt 2 ] ; then
+    usage
+fi
+
+while [[ $# -ge 1 ]]; do
+    PARAM="$1"
+
+    case $PARAM in
+        -h | --help)
+            usage
+            ;;
+        -x)                     
+            xfPath="$2"
+            shift
+            ;;
+        -f)                    
+            fPath="$2"
+            shift
+            ;;
+        [Aa][Gg][Pp][Ll])
+              lType="agpl"
+              ;;
+        [Ll][Gg][Pp][Ll])
+              lType="lgpl"
+              ;;
+
+         *)
+            if [ -d "$PARAM" ]; then
+                 dPath+=:"$PARAM"
+            elif [ -f "$PARAM" ]; then
+                fPath+=":$PARAM"
+            else 
+                 echo "Unknown argument" "$PARAM"
+                 usage
+             fi
+            ;;
+    esac
+    shift
+done
+
+if [ "$lType" == "" ];then
+   echo "Please input License type [ AGPL | LGPL ]"
+   usage
+fi
+
+
+#-----
+# directory 
+#-----
+if [ "$dPath" != "" ];then
+
+IFS=$':'
+
+    for d in $dPath
+    do
+        if [ "$d" != "" ]; then
+              filelist+=`find "${d}" -maxdepth 1 -regex ".*\([.]c\|[.]h\|[.]cpp\|[.]java\|[.]l\|[.]y\)"`
+              filelist+=$'\n'
+        fi
+    done
+
+    # exception file 
+    if [ "$xfPath" != "" ]; then
+
+
+        for f in $xfPath
+        do
+           if [ "$f" != "" ]; then
+               filelist=`echo "$filelist" | grep -v "$f"`
+           fi
+        done
+    fi
+
+IFS=$'\n'
+    if [ "$filelist" ]; then
+            for filename in $filelist
+            do
+                removeLines
+                addLines
+            done
+    fi
+
+#-----
+# file name 
+#-----
+elif [ "$fPath" != ""  ];then
+        
+IFS=$':'
+    for filename in $fPath
+    do
+       if [ "$filename" != "" ]; then
+            removeLines
+            addLines
+       fi
+    done
+
+else
+   echo "Please input directory or file path"
+   usage
+fi
+
+
+

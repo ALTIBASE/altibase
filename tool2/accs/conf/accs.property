@@ -1,0 +1,15 @@
+/* testing........ */
+
+
+PRELOAD_LIST = stdio.h stdlib.h
+
+TAB_SIZE  =  128
+TAB_SIZE  =  0x10
+TAB_SIZE  =  -128
+
+LINE_WIDTH = 80
+
+COL_START  = 1
+
+PREFIX_LIST = qp sm id ut
+

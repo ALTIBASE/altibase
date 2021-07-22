@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 9.00
+# Visual C# Express 2005
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WinISQL", "WinISQL\WinISQL.csproj", "{CEF640D0-B6D6-4D01-91AB-4C34C5C24CD4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SyntaxHighlighter", "SyntaxHighlighter\SyntaxHighlighter.csproj", "{2FB0F42E-F9B6-44C0-8443-FC051A44A64E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CEF640D0-B6D6-4D01-91AB-4C34C5C24CD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEF640D0-B6D6-4D01-91AB-4C34C5C24CD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEF640D0-B6D6-4D01-91AB-4C34C5C24CD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEF640D0-B6D6-4D01-91AB-4C34C5C24CD4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FB0F42E-F9B6-44C0-8443-FC051A44A64E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FB0F42E-F9B6-44C0-8443-FC051A44A64E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FB0F42E-F9B6-44C0-8443-FC051A44A64E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FB0F42E-F9B6-44C0-8443-FC051A44A64E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

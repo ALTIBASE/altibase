@@ -1,0 +1,62 @@
+
+
+ ================ AIX ================
+ [ Recommended Kernel Parameter Values ]
+
+ fsize = -1
+ data = -1
+ rss = -1
+
+ Maximum number of processes allowed per user
+     Must be greater than the value set using the ALTIBASE XDB property MAX_CLIENT
+
+ Size of the File System BufferCache
+     Must be less than 20% of total memory
+
+ AIO = Available
+
+ AMO = AIX version 5.2 ML04 and above
+              lru_file_repage=0
+              strict_maxclient%=0
+           = Versions prior to AIX version 5.2 ML04
+               lru_file_repage=0
+
+ [ How to modify kernel parameter values ]
+
+ Edit /etc/security/limits file
+ Set fsize, data and rss variables.
+
+ Run 'smit'
+  1) System Environments
+      System Environments -> Change / Show Characteristics Of Operating System
+      Change: 
+          Maximum number of processes allowed per user
+              Must be greater than the value set using the ALTIBASE XDB MAX_CLIENT
+              property
+          Size of the File System BufferCache
+              Must be less than 20% of total memory.
+  2) AIO 
+      Device -> Asynchronous I/O -> Posix Asynchronous I/O 
+      -> Configure Defined Asynchronous I/O
+      Change: posix_aio0=Available
+
+  3) AMO 
+      Performance & Resource Scheduling -> Tuning Kernel & Network Parameters 
+      -> Tuning Virtual Memory Manager, File System and Logical Volumes
+      Manager Parameters ->
+         + List All Characteristics of Current Parameters --- Check
+         + Change / Show Current Parameters --- Current Changes
+         + Change / Show Parameters for Next Boot --- Change upon Reboot
+
+      When using AIX version 5.2 ML04 or above:
+             Change: lru_file_repage=0
+             strict_maxclient%=0
+      The case of Versions prior to AIX version 5.2 ML04:
+             Change: lru_file_repage=0
+
+ These values must be set in order for ALTIBASE XDB to operate properly.
+ They must be set such that they are suitable for the system configuration.
+
+ ===================================
+
+

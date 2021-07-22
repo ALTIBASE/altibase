@@ -1,0 +1,12 @@
+
+ It is first necessary to set your system environment to ensure that ALTIBASE XDB
+ will run properly. Before installing ALTIBASE XDB, the kernel parameter values
+ must be set using the root user account. The kernel parameter values may be
+ modified after installation; however, they must be set prior to starting 
+ ALTIBASE XDB.
+
+ Please refer to the installation manual
+ or $ALTIBASE_XDB_HOME/install/kernelSetGuide.txt.
+
+
+
