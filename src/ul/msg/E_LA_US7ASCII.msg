@@ -491,5 +491,6 @@ ULA_TRC_I_XC_CREATE    = "[XLog Collector] [<%s>] Created.";
 ULA_TRC_I_XC_HANDSHAKE = "[XLog Collector] [<%s>] Handshaked.";
 ULA_TRC_I_XC_DESTROY   = "[XLog Collector] [<%s>] Destroyed.";
 
+ULA_TRC_I_COMPRESS_TYPE = "[Compress Type] Compress Type : [<%d>]";
 
 INTERNAL_TRACE_MESSAGE_END

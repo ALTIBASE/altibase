@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: ulaMeta.c 88197 2020-07-27 04:41:35Z donghyun1 $
+ * $Id: ulaMeta.c 91310 2021-07-22 05:10:54Z donghyun1 $
  **********************************************************************/
 
 #include <acp.h>
@@ -41,7 +41,8 @@ processProtocolOperationType gProcessProtocolOperationType[ULA_META_MAX] =
     { ULA_META_DICTTABLECOUNT, 7, 4, 2, 0 },
     { ULA_META_PARTITIONCOUNT, 7, 4, 4, 0 },
     { ULA_META_XSN           , 7, 4, 5, 0 },
-    { ULA_META_SRID          , 7, 4, 6, 0 }
+    { ULA_META_SRID          , 7, 4, 6, 0 },
+    { ULA_META_COMPRESSTYPE  , 7, 4, 8, 0 }    
 };
 
 /*
@@ -205,18 +206,19 @@ static void ulaMetaFreeMetaMemory(ulaMeta *aMeta)
  */
 ACI_RC ulaMetaSendMeta( cmiProtocolContext * aProtocolContext,
                         acp_char_t         * aRepName,
-                        ulaMeta            * aMeta,
+                        acp_uint64_t         aRemoteVersion,
                         acp_uint32_t         aFlag,
                         ulaErrorMgr        * aOutErrorMgr )
 {
     ACI_TEST( ulaCommSendMetaRepl( aProtocolContext,
                                    aRepName,
                                    aFlag,
+                                   aRemoteVersion,
                                    aOutErrorMgr )
               != ACI_SUCCESS );
 
     if ( needToProcessProtocolOperation( ULA_META_DICTTABLECOUNT,
-                                         aMeta->mReplication.mSenderVersion )
+                                         aRemoteVersion )
          == ACP_TRUE )
     {
         ACI_TEST( ulaCommSendMetaDictTableCount( aProtocolContext,
@@ -225,7 +227,7 @@ ACI_RC ulaMetaSendMeta( cmiProtocolContext * aProtocolContext,
     }
 
     if ( needToProcessProtocolOperation( ULA_META_XSN,
-                                         aMeta->mReplication.mSenderVersion )
+                                         aRemoteVersion )
          == ACP_TRUE )
     {
         ACI_TEST( ulaCommSendMetaInitFlag( aProtocolContext,
@@ -258,6 +260,8 @@ ACI_RC ulaMetaRecvMeta(ulaMeta            * aMeta,
 
     ACI_TEST_RAISE(aOutTransTableSize == NULL, ERR_PARAMETER_NULL);
 
+    aMeta->mReplication.mSenderVersion = aOutReplVersion.mVersion;
+    
     /* Replication 정보를 받는다. */
     ACI_TEST_RAISE( ulaCommRecvMetaRepl( aProtocolContext,
                                          &sDummy,
@@ -290,8 +294,6 @@ ACI_RC ulaMetaRecvMeta(ulaMeta            * aMeta,
     acpMemSet(aMeta->mReplication.mTableArray,
               0x00,
               aMeta->mReplication.mTableCount * ACI_SIZEOF(ulaTable));
-
-    aMeta->mReplication.mSenderVersion = aOutReplVersion.mVersion;
 
     /* Table 개수만큼 반복하며 Meta를 받는다. */
     for (sTC = 0; sTC < aMeta->mReplication.mTableCount; sTC++)

@@ -64,12 +64,14 @@ ACI_RC ulaCommSendVersion( cmiProtocolContext * aProtocolContext,
 ACI_RC ulaCommSendMetaRepl( cmiProtocolContext * aProtocolContext,
                             acp_char_t         * aRepName,
                             acp_uint32_t         aFlag,
+                            acp_uint64_t         sRemoteVersion,
                             ulaErrorMgr        * aOutErrorMgr );
 
 ACI_RC ulaCommRecvHandshakeAck( cmiProtocolContext * aProtocolContext,
                                 acp_bool_t         * aExitFlag,
                                 acp_uint32_t       * aResult,
                                 acp_char_t         * aMsg,
+                                acp_uint32_t       * aMsgLen,
                                 acp_uint32_t         aTimeOut,
                                 ulaErrorMgr        * aOutErrorMgr );
 /* Handshake */

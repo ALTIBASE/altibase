@@ -44,7 +44,7 @@ typedef struct ulaValue                // smiValue
 
 #define REPLICATION_MAJOR_VERSION   (7)
 #define REPLICATION_MINOR_VERSION   (4)
-#define REPLICATION_FIX_VERSION     (6)
+#define REPLICATION_FIX_VERSION     (8)
 
 #define RP_CURRENT_VERSION ( RP_MAKE_VERSION( REPLICATION_MAJOR_VERSION, \
                                               REPLICATION_MINOR_VERSION, \

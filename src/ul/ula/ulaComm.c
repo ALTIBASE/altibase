@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: ulaComm.c 88197 2020-07-27 04:41:35Z donghyun1 $
+ * $Id: ulaComm.c 91310 2021-07-22 05:10:54Z donghyun1 $
  **********************************************************************/
 
 #include <acp.h>
@@ -120,12 +120,14 @@ ACI_RC ulaCommRecvVersion( cmiProtocolContext * aProtocolContext,
 ACI_RC ulaCommSendMetaRepl(  cmiProtocolContext * aProtocolContext,
                              acp_char_t         * aRepName,
                              acp_uint32_t         aFlag,
+                             acp_uint64_t         sRemoteVersion,
                              ulaErrorMgr        * aOutErrorMgr)
 {
     acp_char_t   sOpCode;
     acp_uint32_t sRepNameLen = 0;
     acp_uint32_t sDummyLen = 1;
     acp_char_t   sDummyChar[32] = { 0, };
+    acp_uint32_t sDummy = 0;
 
     sRepNameLen = (acp_uint32_t)acpCStrLen( aRepName, ULA_NAME_LEN );
 
@@ -182,6 +184,13 @@ ACI_RC ulaCommSendMetaRepl(  cmiProtocolContext * aProtocolContext,
     CMI_WCP( aProtocolContext, (acp_char_t *)sDummyChar, sDummyLen );
     /* CMI_WCP( aProtocolContext, (UChar *)aRepl->mRemoteFaultDetectTime, sRemoteFaultDetectTimeLen ); */
 
+    if ( needToProcessProtocolOperation( ULA_META_COMPRESSTYPE,
+                                         sRemoteVersion )
+         == ACP_TRUE )
+    {
+        CMI_WR4( aProtocolContext, &( sDummy ) );
+    }
+    
      ACI_TEST_RAISE( cmiSend( aProtocolContext, ACP_TRUE )
                      != ACI_SUCCESS, ERR_SEND );
 
@@ -266,6 +275,13 @@ ACI_RC ulaCommRecvMetaRepl( cmiProtocolContext * aProtocolContext,
     CMI_SKIP_READ_BLOCK( aProtocolContext, sTempLen );
     /* CMI_RCP( aProtocolContext, (UChar *)aRepl->mRemoteFaultDetectTime, sRemoteFaultDetectTimeLen ); */
 
+    if ( needToProcessProtocolOperation( ULA_META_COMPRESSTYPE,
+                                         aOutRepl->mSenderVersion )
+         == ACP_TRUE )
+    {
+        CMI_RD4( aProtocolContext, &( aOutRepl->mCompressType ) );
+    }    
+    
     return ACI_SUCCESS;
 
     ACI_EXCEPTION( ERR_CHECK_OPERATION_TYPE );
@@ -628,13 +644,11 @@ ACI_RC ulaCommRecvHandshakeAck( cmiProtocolContext * aProtocolContext,
                                 acp_bool_t         * aExitFlag,
                                 acp_uint32_t       * aResult,
                                 acp_char_t         * aMsg,
+                                acp_uint32_t       * aMsgLen,
                                 acp_uint32_t         aTimeOut,
                                 ulaErrorMgr        * aOutErrorMgr )
 {
     acp_char_t   sOpCode;
-    acp_uint32_t sMsgLen;
-
-    sMsgLen = acpCStrLen( aMsg, ULA_ACK_MSG_LEN );
 
     ACI_TEST( ulaCommReadCmBlock( aProtocolContext,
                                   aExitFlag,
@@ -653,9 +667,9 @@ ACI_RC ulaCommRecvHandshakeAck( cmiProtocolContext * aProtocolContext,
         CMI_RD4( aProtocolContext, (acp_uint32_t*)&sFailbackStatus ); 
         CMI_RD8( aProtocolContext, (acp_uint64_t*)&sXSN ); 
     */
-    CMI_RD4( aProtocolContext, &sMsgLen ); 
-    CMI_RCP( aProtocolContext, (void *)aMsg, sMsgLen ); 
-    aMsg[sMsgLen] = '\0';
+    CMI_RD4( aProtocolContext, aMsgLen ); 
+    CMI_RCP( aProtocolContext, (void *)aMsg, *aMsgLen ); 
+    aMsg[*aMsgLen] = '\0';
 
     return ACI_SUCCESS;
 

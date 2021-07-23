@@ -265,7 +265,9 @@ ACI_RC ulaWakeupPeerSender( ulaXLogCollector * aCollector,
 
 ACI_RC ulaXLogCollectorCheckRemoteVersion( cmiProtocolContext * aProtocolContext,
                                            acp_uint32_t         aTimeout,
-                                           ulaErrorMgr        * aErrorMgr );
+                                           ulaErrorMgr        * aErrorMgr,
+                                           acp_char_t         * aMsg,
+                                           acp_uint32_t       * aMsgLen );
 
 /*
  * -----------------------------------------------------------------------------
@@ -318,5 +320,11 @@ ACI_RC ulaXLogCollectorGetXLogCollectorStatus
                         (ulaXLogCollector       *aCollector,
                          ulaXLogCollectorStatus *aOutXLogCollectorStatus,
                          ulaErrorMgr            *aErrorMgr);
+
+void ulaXLogCollectorGetVersionFromAck( acp_char_t     *aMsg,
+                                        acp_uint32_t    aMsgLen,
+                                        acp_uint64_t   *aVersion );
+
+acp_uint64_t ulaXLogCollectorNtoh( acp_uint64_t Value );
 
 #endif /* _O_XLOG_COLLECTOR_H_ */

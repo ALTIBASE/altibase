@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: ulaXLogCollector.c 88197 2020-07-27 04:41:35Z donghyun1 $
+ * $Id: ulaXLogCollector.c 91310 2021-07-22 05:10:54Z donghyun1 $
  **********************************************************************/
 
 #include <aclMem.h>
@@ -1521,6 +1521,10 @@ ACI_RC ulaWakeupPeerSender( ulaXLogCollector * aCollector,
     acp_uint32_t    sFlag         = ULA_WAKEUP_PEER_SENDER_FLAG_SET;
     acp_uint8_t     sState        = 0;
 
+    acp_char_t      sMsg[ULA_ACK_MSG_LEN] = {0, };
+    acp_uint32_t    sMsgLen               = acpCStrLen( sMsg, ULA_ACK_MSG_LEN );
+    acp_uint64_t    sRemoteVersion        = 0;
+
     cmiProtocolContext sProtocolContext;
 
     ACI_TEST_RAISE( aCollector->mSocketType == ULA_SOCKET_TYPE_NONE,
@@ -1545,7 +1549,7 @@ ACI_RC ulaWakeupPeerSender( ulaXLogCollector * aCollector,
                                      aCollector )
                     != ACI_SUCCESS, ERR_ALLOC_CM_BLOCK );
     sState = 2;
-
+        
     /* wake up Peer Sender */
     ACI_TEST( cmiConnectWithoutData( &sProtocolContext,
                                      &sConnectArg,
@@ -1555,18 +1559,24 @@ ACI_RC ulaWakeupPeerSender( ulaXLogCollector * aCollector,
     sState = 3;
 
     ACI_TEST( ulaXLogCollectorCheckRemoteVersion( &sProtocolContext,
-                                                  sTimeout, 
+                                                  sTimeout,
+                                                  sMsg,
+                                                  &sMsgLen,
                                                   aErrorMgr )
               != ACI_SUCCESS );
+    
+    ulaXLogCollectorGetVersionFromAck( sMsg,
+                                       sMsgLen,
+                                       &sRemoteVersion );
 
     ACI_TEST( ulaMetaSendMeta( &sProtocolContext, 
                                aCollector->mXLogSenderName,
-                               &aCollector->mMeta,
+                               sRemoteVersion,
                                sFlag,
                                aErrorMgr )
               != ACI_SUCCESS );
-  
     sState = 2;
+    
     ACI_TEST_RAISE( cmiShutdownLink( sConnectLink,
                                      CMI_DIRECTION_RDWR )
                     != ACI_SUCCESS, ERR_LINK_SHUTDOWN );
@@ -1867,6 +1877,22 @@ ACI_RC ulaXLogCollectorHandshake(ulaXLogCollector *aCollector,
                                     aErrorMgr )
                    != ACI_SUCCESS, ERR_META_RECEIVE);
 
+    if ( needToProcessProtocolOperation( ULA_META_COMPRESSTYPE,
+                                         aCollector->mMeta.mReplication.mSenderVersion )
+         == ACP_TRUE )
+    {
+        cmiDisableCompress( &(aCollector->mProtocolContext) );
+        cmiSetDecompressType( &(aCollector->mProtocolContext), aCollector->mMeta.mReplication.mCompressType ); 
+    }
+    else
+    {
+        aCollector->mMeta.mReplication.mCompressType = CMI_COMPRESS_LZO;
+    }        
+        
+    (void)ulaLogTrace( (ulaErrorMgr *)aErrorMgr, 
+                       ULA_TRC_I_COMPRESS_TYPE, 
+                       aCollector->mMeta.mReplication.mCompressType );
+    
     ACI_TEST(ulaMetaSortMeta(&aCollector->mMeta, aErrorMgr)
              != ACI_SUCCESS);
 
@@ -2020,19 +2046,21 @@ ACI_RC ulaXLogCollectorHandshake(ulaXLogCollector *aCollector,
 
 ACI_RC ulaXLogCollectorCheckRemoteVersion( cmiProtocolContext * aProtocolContext,
                                            acp_uint32_t         aTimeOut,
-                                           ulaErrorMgr        * aErrorMgr )
+                                           ulaErrorMgr        * aErrorMgr,
+                                           acp_char_t         * aMsg,
+                                           acp_uint32_t       * aMsgLen )
 {
     acp_uint32_t sResult = ULA_MSG_DISCONNECT; 
     acp_bool_t   sExitFlag = ACP_FALSE; /* Dummy */
-    acp_char_t   sBuffer[ULA_ACK_MSG_LEN] = {0, };
-
+    
     ACI_TEST_RAISE( ulaCommSendVersion( aProtocolContext, aErrorMgr ) 
                     != ACI_SUCCESS, ERR_SEND_VERSION );
 
     ACI_TEST_RAISE( ulaCommRecvHandshakeAck( aProtocolContext, 
                                              &( sExitFlag ),
                                              &sResult,
-                                             sBuffer,
+                                             aMsg,
+                                             aMsgLen,
                                              aTimeOut,
                                              aErrorMgr ) 
                     != ACI_SUCCESS, ERR_RECV_HANDSHAKE );
@@ -4057,4 +4085,30 @@ ACI_RC ulaXLogCollectorGetXLogCollectorStatus
 ulaMeta *ulaXLogCollectorGetMeta(ulaXLogCollector *aCollector)
 {
     return &aCollector->mMeta;
+}
+
+void ulaXLogCollectorGetVersionFromAck( acp_char_t     *aMsg,
+                                        acp_uint32_t    aMsgLen,
+                                        acp_uint64_t   *aVersion )
+{
+    if ( aMsgLen == ACI_SIZEOF( acp_uint64_t ) ) /* If version information exists in aMsg, get it.  */
+    {
+        *aVersion = ulaXLogCollectorNtoh ( *(acp_uint64_t*)aMsg );
+    }
+    else /* otherwise remote version is lower than 7_4_1 version */
+    {
+        *aVersion = RP_MAKE_VERSION( 7, 4, 1, 0 );
+    }
+}
+
+acp_uint64_t ulaXLogCollectorNtoh( acp_uint64_t Value )
+{
+    return ( ( ( Value & ACP_UINT64_LITERAL( 0xFF00000000000000 ) ) >> 56 ) |
+             ( ( Value & ACP_UINT64_LITERAL( 0x00FF000000000000 ) ) >> 40 ) |
+             ( ( Value & ACP_UINT64_LITERAL( 0x0000FF0000000000 ) ) >> 24 ) |
+             ( ( Value & ACP_UINT64_LITERAL( 0x000000FF00000000 ) ) >> 8  ) |
+             ( ( Value & ACP_UINT64_LITERAL( 0x00000000FF000000 ) ) << 8  ) |
+             ( ( Value & ACP_UINT64_LITERAL( 0x0000000000FF0000 ) ) << 24 ) |
+             ( ( Value & ACP_UINT64_LITERAL( 0x000000000000FF00 ) ) << 40 ) |
+             ( ( Value & ACP_UINT64_LITERAL( 0x00000000000000FF ) ) << 56 ) );
 }

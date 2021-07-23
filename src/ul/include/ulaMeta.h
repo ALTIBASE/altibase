@@ -50,6 +50,7 @@ typedef enum
     ULA_META_PARTITIONCOUNT  = 1,
     ULA_META_XSN             = 2,
     ULA_META_SRID            = 3,
+    ULA_META_COMPRESSTYPE    = 4,
     ULA_META_MAX
 } ULA_PROTOCOL_OP_CODE;
 
@@ -71,6 +72,8 @@ typedef struct ulaReplication
     acp_char_t    mDBCharSet[ULA_NAME_LEN];       /* DB Charter Set */
     acp_char_t    mDBNCharSet[ULA_NAME_LEN];      /* DB National Charter Set */
     acp_uint64_t  mSenderVersion;                 /* Sender Version */
+    cmiCompressType mCompressType;                /* Compress Type */
+    
 } ulaReplication;
 
 typedef struct ulaReplTempInfo
@@ -165,7 +168,7 @@ ACI_RC ulaMetaGetProtocolVersion(ulaProtocolVersion *aOutProtocolVersion,
 
 ACI_RC ulaMetaSendMeta( cmiProtocolContext * aProtocolContext,
                         acp_char_t         * aRepName,
-                        ulaMeta            * aMeta,
+                        acp_uint64_t         aRemoteVersion,
                         acp_uint32_t         aFlag,
                         ulaErrorMgr        * aOutErrorMgr );
 
@@ -208,5 +211,4 @@ acp_bool_t ulaMetaIsHiddenColumn( ulaColumn  * aColumn );
 
 acp_bool_t needToProcessProtocolOperation( ULA_PROTOCOL_OP_CODE aOpCode,
                                            acp_uint64_t         aVersion );
-
 #endif /* _O_ULA_META_H_ */
