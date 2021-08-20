@@ -2453,6 +2453,8 @@ IDE_RC sdl::commit( sdiConnectInfo * aConnectInfo,
 
     SET_LINK_FAILURE_FLAG( aIsLinkFailure, ID_FALSE );
 
+    IDU_FIT_POINT( "sdl::commit" );
+
     sRet = SQLTransact( NULL, aConnectInfo->mDbc, SDL_TRANSACT_COMMIT );
     IDE_TEST_RAISE( ( sRet != SQL_SUCCESS ) &&
                     ( sRet != SQL_SUCCESS_WITH_INFO ),

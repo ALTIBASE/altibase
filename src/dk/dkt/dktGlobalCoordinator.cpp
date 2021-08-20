@@ -3366,6 +3366,9 @@ IDE_RC  dktGlobalCoordinator::executeSimpleTransactionCommitCommitForShard()
             /* Nothing to do. */
         }
 
+        /* BUG-49124 FATAL Test */
+        IDE_DASSERT( mGlobalTxId != DK_INIT_GTX_ID );
+
         destroyRemoteTx( sRemoteTx );
 
         sNode->mRemoteTx = NULL;

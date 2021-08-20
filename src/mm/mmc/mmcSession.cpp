@@ -919,6 +919,8 @@ void mmcSession::preFinalizeShardSession()
     mmcTxConcurrency    * sConcurrency      = NULL;
     mmcSession          * sDelegatedSession = NULL;
 
+    IDU_FIT_POINT("mmcSession::preFinalizeShardSession");
+
     sTrans = getTransPtr();
 
     if ( mmcTrans::isShareableTrans( sTrans ) == ID_TRUE )
@@ -938,23 +940,26 @@ void mmcSession::preFinalizeShardSession()
 
             IDE_ASSERT( dkiSessionFree( getDatabaseLinkSession() ) == IDE_SUCCESS );
 
-            sDelegatedSession = sTrans->mShareInfo->mTxInfo.mDelegatedSessions;
-            if ( sDelegatedSession != NULL )
+            if ( isGTx() == ID_TRUE )   /* BUG-49124 */
             {
-                if ( dkiIsReadOnly( sDelegatedSession->getDatabaseLinkSession() ) == ID_FALSE )
+                sDelegatedSession = sTrans->mShareInfo->mTxInfo.mDelegatedSessions;
+                if ( sDelegatedSession != NULL )
                 {
-                    mmcTrans::setLocalTransactionBroken( sTrans,
-                                                         getSessionID(),
-                                                         ID_TRUE );
+                    if ( dkiIsReadOnly( sDelegatedSession->getDatabaseLinkSession() ) == ID_FALSE )
+                    {
+                        mmcTrans::setLocalTransactionBroken( sTrans,
+                                                             getSessionID(),
+                                                             ID_TRUE );
+                    }
+
+                    IDE_ASSERT( dkiSessionFree( sDelegatedSession->getDatabaseLinkSession() ) == IDE_SUCCESS );
+
+                    mmcTrans::removeDelegatedSession( sTrans->mShareInfo , sDelegatedSession );
+
+                    MMC_SHARED_TRANS_TRACE( this,
+                                            sTrans,
+                                            "preFinalizeShardSession: remove delegate session");
                 }
-
-                IDE_ASSERT( dkiSessionFree( sDelegatedSession->getDatabaseLinkSession() ) == IDE_SUCCESS );
-
-                mmcTrans::removeDelegatedSession( sTrans->mShareInfo , sDelegatedSession );
-
-                MMC_SHARED_TRANS_TRACE( this,
-                                        sTrans,
-                                        "preFinalizeShardSession: remove delegate session");
             }
 
             IDE_ASSERT( sConcurrency->mMutex.unlock() == IDE_SUCCESS );
@@ -987,6 +992,14 @@ void mmcSession::preFinalizeShardSession()
             IDE_ASSERT( sConcurrency->mMutex.unlock() == IDE_SUCCESS );
         }
     }
+
+    return;
+
+#ifdef ALTIBASE_FIT_CHECK
+    IDE_EXCEPTION_END;
+
+    return;
+#endif
 }
 
 IDE_RC mmcSession::findLanguage()
