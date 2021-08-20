@@ -54,9 +54,8 @@ IDE_RC sda::checkStmtTypeBeforeAnalysis( qcStatement * aStatement )
  *
  ***********************************************************************/
 
-    qciStmtType      sStmtType  = aStatement->myPlan->parseTree->stmtKind;
-    qcShardStmtType  sPrefixType = aStatement->myPlan->parseTree->stmtShard;
-    qcuSqlSourceInfo sqlInfo;
+    qciStmtType     sStmtType   = aStatement->myPlan->parseTree->stmtKind;
+    qcShardStmtType sPrefixType = aStatement->myPlan->parseTree->stmtShard;
 
     /* TASK-7219 Shard Transformer Refactoring */
     switch( qciMisc::getStmtType( sStmtType ) )
@@ -79,10 +78,7 @@ IDE_RC sda::checkStmtTypeBeforeAnalysis( qcStatement * aStatement )
         case QCI_STMT_EXEC_PROC :
             break;
         default :
-            /* TASK-7219 Shard Transformer Refactoring */
-            sqlInfo.setSourceInfo( aStatement, &( aStatement->myPlan->parseTree->stmtPos ) );
-
-            IDE_RAISE( ERR_UNSUPPORTED_STMT_WITH_POS );
+            IDE_RAISE( ERR_UNSUPPORTED_STMT );
             break;
     }
 
@@ -98,16 +94,6 @@ IDE_RC sda::checkStmtTypeBeforeAnalysis( qcStatement * aStatement )
 
     return IDE_SUCCESS;
 
-
-    /* TASK-7219 Shard Transformer Refactoring */
-    IDE_EXCEPTION( ERR_UNSUPPORTED_STMT_WITH_POS )
-    {
-        (void)sqlInfo.init( aStatement->qmeMem );
-        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDA_NOT_SUPPORTED_SQLTEXT_FOR_SHARD,
-                                  "Unsupported statement type",
-                                  sqlInfo.getErrMessage() ) );
-        (void)sqlInfo.fini();
-    }
     IDE_EXCEPTION( ERR_UNSUPPORTED_STMT )
     {
         IDE_SET( ideSetErrorCode( sdERR_ABORT_SDA_NOT_SUPPORTED_SQLTEXT_FOR_SHARD,
