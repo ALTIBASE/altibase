@@ -16,16 +16,36 @@
 static acp_bool_t ulsdIsSupportedStmtAttr( acp_sint32_t  aAttribute,
                                            void         *aValuePtr )
 {
-    acp_bool_t sIsSupported = ACP_TRUE;
-    acp_uint32_t  sValue;
+    acp_bool_t   sIsSupported = ACP_TRUE;
+    acp_uint32_t sValue = (acp_uint32_t)(((acp_ulong_t)aValuePtr) & ACP_UINT32_MAX);
 
-    if ( aAttribute == SQL_ATTR_PARAMSET_SIZE )
+    switch (aAttribute)
     {
-        sValue = (acp_uint32_t)(((acp_ulong_t)aValuePtr) & ACP_UINT32_MAX);
-        if ( sValue > 1 )
-        {
-            sIsSupported = ACP_FALSE;
-        }
+        case SQL_ATTR_PARAMSET_SIZE:
+            if ( sValue > 1 )
+            {
+                sIsSupported = ACP_FALSE;
+            }
+            break;
+
+        /* BUG-49075 샤딩에서는 FAC가 지원되지 않는다. */
+        case SQL_ATTR_CURSOR_HOLD:
+            if (sValue == SQL_CURSOR_HOLD_ON)
+            {
+                sIsSupported = ACP_FALSE;
+            }
+            break;
+
+        /* BUG-47050 */
+        case SQL_ATTR_CURSOR_TYPE:
+            if (sValue == SQL_CURSOR_KEYSET_DRIVEN)
+            {
+                sIsSupported = ACP_FALSE;
+            }
+            break;
+
+        default:
+            break;
     }
 
     return sIsSupported;

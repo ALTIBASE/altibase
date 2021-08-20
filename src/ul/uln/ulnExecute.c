@@ -814,6 +814,10 @@ ACI_RC ulnExecuteCore(ulnFnContext *aFnContext, ulnPtContext *aPtContext)
         ACI_TEST_RAISE(ulnStmtCreate(sStmt->mParentDbc, &sStmt->mRowsetStmt)
                        != ACI_SUCCESS, LABEL_MEMORY_ALLOC_EXCEPTION);
         ulnStmtInitialize(sStmt->mRowsetStmt);
+#ifdef COMPILE_SHARDCLI
+        /* BUG-47050 */
+        ulsdInitalizeNodeStmt(sStmt->mShardStmtCxt.mParentStmt, sStmt->mRowsetStmt);
+#endif
         ulnStmtSetAttrCursorHold(sStmt->mRowsetStmt, SQL_CURSOR_HOLD_OFF);
         ulnDbcAddStmt(sStmt->mParentDbc, sStmt->mRowsetStmt);
         sStmt->mRowsetStmt->mParentStmt = sStmt;

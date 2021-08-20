@@ -297,6 +297,8 @@ IDE_RC mmtServiceThread::prepareProtocol(cmiProtocolContext *aProtocolContext,
     if ( ((sMode & CMP_DB_PREPARE_MODE_HOLD_MASK) == CMP_DB_PREPARE_MODE_HOLD_ON)
      &&  (sSession->getCommitMode() == MMC_COMMITMODE_NONAUTOCOMMIT) )
     {
+        /* BUG-49075 샤딩에서는 FAC가 지원되지 않는다. */
+        IDE_TEST_RAISE(sdi::isShardEnable() == ID_TRUE, NotSupportCursorHold);
         sStatement->setCursorHold(MMC_STMT_CURSOR_HOLD_ON);
     }
     else
@@ -306,6 +308,8 @@ IDE_RC mmtServiceThread::prepareProtocol(cmiProtocolContext *aProtocolContext,
 
     if ( (sMode & CMP_DB_PREPARE_MODE_KEYSET_MASK) == CMP_DB_PREPARE_MODE_KEYSET_ON )
     {
+        /* BUG-47050 샤딩에서는 KEYSET이 지원되지 않는다. */
+        IDE_TEST_RAISE(sdi::isShardEnable() == ID_TRUE, NotSupportKeysetOn);
         sStatement->setKeysetMode(MMC_STMT_KEYSETMODE_ON);
     }
     else
@@ -339,17 +343,29 @@ IDE_RC mmtServiceThread::prepareProtocol(cmiProtocolContext *aProtocolContext,
 
     return IDE_SUCCESS;
 
-    IDE_EXCEPTION(InvalidStatementState);
+    IDE_EXCEPTION(InvalidStatementState)
     {
         IDE_SET(ideSetErrorCode(mmERR_ABORT_INVALID_STATEMENT_STATE_ERROR));
     }
-    IDE_EXCEPTION(NullQuery);
+    IDE_EXCEPTION(NullQuery)
     {
         IDE_SET(ideSetErrorCode(mmERR_ABORT_INSUFFICIENT_QUERY_ERROR));
     }
-    IDE_EXCEPTION(cm_error);
+    IDE_EXCEPTION(cm_error)
     {
         return IDE_FAILURE;
+    }
+    IDE_EXCEPTION(NotSupportCursorHold)
+    {
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDA_NOT_SUPPORTED_SQLTEXT_FOR_SHARD,
+                                  "CURSOR HOLD ON restrictions",
+                                  "" ) );
+    }
+    IDE_EXCEPTION(NotSupportKeysetOn)
+    {
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDA_NOT_SUPPORTED_SQLTEXT_FOR_SHARD,
+                                  "KEYSET ON restrictions",
+                                  "" ) );
     }
     IDE_EXCEPTION_END;
 
@@ -517,6 +533,8 @@ IDE_RC mmtServiceThread::prepareByCIDProtocol(cmiProtocolContext *aProtocolConte
     if ( ((sMode & CMP_DB_PREPARE_MODE_HOLD_MASK) == CMP_DB_PREPARE_MODE_HOLD_ON)
      &&  (sSession->getCommitMode() == MMC_COMMITMODE_NONAUTOCOMMIT) )
     {
+        /* BUG-49075 샤딩에서는 FAC가 지원되지 않는다. */
+        IDE_TEST_RAISE(sdi::isShardEnable() == ID_TRUE, NotSupportCursorHold);
         sStatement->setCursorHold(MMC_STMT_CURSOR_HOLD_ON);
     }
     else
@@ -526,6 +544,8 @@ IDE_RC mmtServiceThread::prepareByCIDProtocol(cmiProtocolContext *aProtocolConte
 
     if ( (sMode & CMP_DB_PREPARE_MODE_KEYSET_MASK) == CMP_DB_PREPARE_MODE_KEYSET_ON )
     {
+        /* BUG-47050 샤딩에서는 KEYSET이 지원되지 않는다. */
+        IDE_TEST_RAISE(sdi::isShardEnable() == ID_TRUE, NotSupportKeysetOn);
         sStatement->setKeysetMode(MMC_STMT_KEYSETMODE_ON);
     }
     else
@@ -545,21 +565,33 @@ IDE_RC mmtServiceThread::prepareByCIDProtocol(cmiProtocolContext *aProtocolConte
 
     return IDE_SUCCESS;
 
-    IDE_EXCEPTION(StmtNotFoundException);
+    IDE_EXCEPTION(StmtNotFoundException)
     {
         IDE_SET(ideSetErrorCode(mmERR_ABORT_STATEMENT_NOT_FOUND));
     }
-    IDE_EXCEPTION(InvalidStatementState);
+    IDE_EXCEPTION(InvalidStatementState)
     {
         IDE_SET(ideSetErrorCode(mmERR_ABORT_INVALID_STATEMENT_STATE_ERROR));
     }
-    IDE_EXCEPTION(NullQuery);
+    IDE_EXCEPTION(NullQuery)
     {
         IDE_SET(ideSetErrorCode(mmERR_ABORT_INSUFFICIENT_QUERY_ERROR));
     }
-    IDE_EXCEPTION(cm_error);
+    IDE_EXCEPTION(cm_error)
     {
         return IDE_FAILURE;
+    }
+    IDE_EXCEPTION(NotSupportCursorHold)
+    {
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDA_NOT_SUPPORTED_SQLTEXT_FOR_SHARD,
+                                  "CURSOR HOLD ON restrictions",
+                                  "" ) );
+    }
+    IDE_EXCEPTION(NotSupportKeysetOn)
+    {
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDA_NOT_SUPPORTED_SQLTEXT_FOR_SHARD,
+                                  "KEYSET ON restrictions",
+                                  "" ) );
     }
     IDE_EXCEPTION_END;
 
