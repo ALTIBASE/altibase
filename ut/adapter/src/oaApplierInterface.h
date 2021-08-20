@@ -51,7 +51,8 @@ void addPlaceHolderToQuery(acp_str_t          * aQuery,
 void prepareInsertQuery( oaLogRecordInsert * aLogRecord,
                          acp_str_t         * aQuery,
                          acp_bool_t          aIsDirectPathMode,
-                         acp_bool_t          aSetUserToTable  );
+                         acp_bool_t          aSetUserToTable,
+                         acp_bool_t          aSetColumnToInsert );
 
 void prepareUpdateQuery( oaLogRecordUpdate * aLogRecord,
                          acp_str_t         * aQuery,

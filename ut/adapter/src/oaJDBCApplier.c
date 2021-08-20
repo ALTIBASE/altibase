@@ -280,6 +280,8 @@ ace_rc_t oaJDBCApplierInitialize( oaContext                     * aContext,
     sHandle->mSkipDelete = ( aConfig->mSkipDelete == 1 ) ? ACP_TRUE : ACP_FALSE;
 
     sHandle->mSetUserToTable = ( aConfig->mSetUserToTable == 1 ) ? ACP_TRUE : ACP_FALSE;
+    
+    sHandle->mSetColumnToInsert = ( aConfig->mSetColumnToInsert == 1 ) ? ACP_TRUE : ACP_FALSE;
         
     sHandle->mErrorRetryCount = aConfig->mErrorRetryCount;
     sHandle->mErrorRetryInterval = aConfig->mErrorRetryInterval;
@@ -708,8 +710,9 @@ static ace_rc_t prepareInsertStatement( oaContext           * aContext,
     prepareInsertQuery( aLogRecord,
                         &sSqlQuery,
                         ACP_FALSE, /* DPath Insert */
-                        aHandle->mSetUserToTable );
-     
+                        aHandle->mSetUserToTable,
+                        aHandle->mSetColumnToInsert );
+    
     ACE_TEST( oaJNIpreparedStatment( aContext,
                                      &(aHandle->mJNIInterfaceHandle),
                                      (acp_char_t *)acpStrGetBuffer(&sSqlQuery),

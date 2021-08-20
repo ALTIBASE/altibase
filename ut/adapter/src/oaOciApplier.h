@@ -81,6 +81,8 @@ struct oaOciApplierHandle
 
     acp_bool_t mSetUserToTable;
     
+    acp_bool_t mSetColumnToInsert;
+    
     acp_bool_t mIsSkipErrorList;
 
     /*

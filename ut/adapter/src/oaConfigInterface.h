@@ -183,6 +183,8 @@ typedef struct oaConfigJDBCConfiguration
     
     acp_uint32_t mSetUserToTable;
     
+    acp_uint32_t mSetColumnToInsert;
+    
     acp_uint32_t mAdapterErrorRestartCount;
     acp_uint32_t mAdapterErrorRestartInterval;
     
@@ -249,6 +251,8 @@ typedef struct oaConfigHandleForJDBC
         acp_uint32_t mErrorRetryInterval;
 
         acp_uint32_t mSetUserToTable;
+
+        acp_uint32_t mSetColumnToInsert;
         
         acp_uint32_t mAdapterErrorRestartCount;
         acp_uint32_t mAdapterErrorRestartInterval;
@@ -313,6 +317,8 @@ typedef struct oaConfigOracleConfiguration
     acp_uint32_t mErrorRetryInterval;
 
     acp_uint32_t mSetUserToTable;
+    
+    acp_uint32_t mSetColumnToInsert;
     
     acp_uint32_t mAdapterErrorRestartCount;
     acp_uint32_t mAdapterErrorRestartInterval;
@@ -384,6 +390,8 @@ typedef struct oaConfigHandleForOracle
     acp_uint32_t mErrorRetryInterval;
 
     acp_uint32_t mSetUserToTable;
+    
+    acp_uint32_t mSetColumnToInsert;
     
     acp_uint32_t mAdapterErrorRestartCount;
     acp_uint32_t mAdapterErrorRestartInterval;
@@ -496,6 +504,8 @@ enum {
     
     OA_CONFIG_OTHER_DATABASE_SET_USER_TO_TABLE,
     
+    OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT,
+    
     OA_CONFIG_OTHER_DATABASE_JDBC_JVM_OPTION,
     
     /* ORACLE */
@@ -526,6 +536,8 @@ enum {
     OA_CONFIG_ORACLE_CONFLICT_LOGGING_LEVEL,
     
     OA_CONFIG_ORACLE_SET_USER_TO_TABLE,
+    
+    OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT,
     
     OA_CONFIG_CONSTRAINT_ALTIBASE_USER,
     OA_CONFIG_CONSTRAINT_ALTIBASE_PASSWORD,

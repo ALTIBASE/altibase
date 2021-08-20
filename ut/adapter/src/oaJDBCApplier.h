@@ -62,6 +62,8 @@ struct oaJDBCApplierHandle
     
     acp_bool_t mSetUserToTable;
  
+    acp_bool_t mSetColumnToInsert;
+    
     acp_sint32_t mTableCount;
     preparedStatement * mPreparedStatement;
     

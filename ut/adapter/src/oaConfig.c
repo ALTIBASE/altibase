@@ -197,6 +197,10 @@
 #define OA_CONFIG_OTHER_DATABASE_SET_USER_TO_TABLE_MIN (0) 
 #define OA_CONFIG_OTHER_DATABASE_SET_USER_TO_TABLE_MAX (1)
 
+#define OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT_DEFAULT (1) 
+#define OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT_MIN (0) 
+#define OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT_MAX (1)
+
 #define OA_CONFIG_OTHER_DATABASE_JDBC_JVM_OPTION_DEFAULT ("")
 
 #else
@@ -245,6 +249,10 @@
 #define OA_CONFIG_ORACLE_SET_USER_TO_TABLE_DEFAULT (1) 
 #define OA_CONFIG_ORACLE_SET_USER_TO_TABLE_MIN (0) 
 #define OA_CONFIG_ORACLE_SET_USER_TO_TABLE_MAX (1)
+
+#define OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT_DEFAULT (1) 
+#define OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT_MIN (0) 
+#define OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT_MAX (1)
 
 #endif
 
@@ -1443,6 +1451,23 @@ static acp_sint32_t oaConfigCallbackSetUserToTable( acp_sint32_t     aDepth,
     return 0;
 }
 
+static acp_sint32_t oaConfigCallbackSetColumnToInsert( acp_sint32_t     aDepth,
+                                                       acl_conf_key_t * aKey,
+                                                       acp_sint32_t     aLineNumber,
+                                                       void           * aValue,
+                                                       void           * aContext )
+{
+    oaConfigHandle *sHandle = (oaConfigHandle *)aContext;
+
+    ACP_UNUSED( aDepth );
+    ACP_UNUSED( aKey );
+    ACP_UNUSED( aLineNumber );
+
+    sHandle->mSetColumnToInsert = *(acp_uint32_t *)aValue;
+
+    return 0;
+}
+
 static acp_sint32_t oaConfigCallbackDefault(acp_sint32_t aDepth,
                                             acl_conf_key_t *aKey,
                                             acp_sint32_t aLineNumber,
@@ -1733,7 +1758,14 @@ static acl_conf_def_t gConfigDefinition[] =
                          OA_CONFIG_OTHER_DATABASE_SET_USER_TO_TABLE_MIN,
                          OA_CONFIG_OTHER_DATABASE_SET_USER_TO_TABLE_MAX,
                          1, oaConfigCallbackSetUserToTable ), 
-                         
+
+    ACL_CONF_DEF_SINT32( "OTHER_DATABASE_SET_COLUMN_TO_INSERT",
+                         OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT,
+                         OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT_DEFAULT,
+                         OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT_MIN,
+                         OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT_MAX,
+                         1, oaConfigCallbackSetColumnToInsert ), 
+                      
     ACL_CONF_DEF_STRING( "OTHER_DATABASE_JDBC_JVM_OPTION",
                           OA_CONFIG_OTHER_DATABASE_JDBC_JVM_OPTION,
                           OA_CONFIG_OTHER_DATABASE_JDBC_JVM_OPTION_DEFAULT,
@@ -1852,7 +1884,13 @@ static acl_conf_def_t gConfigDefinition[] =
                          OA_CONFIG_ORACLE_SET_USER_TO_TABLE_MIN,
                          OA_CONFIG_ORACLE_SET_USER_TO_TABLE_MAX,
                          1, oaConfigCallbackSetUserToTable ), 
-
+    
+    ACL_CONF_DEF_SINT32( "ORACLE_SET_COLUMN_TO_INSERT",
+                         OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT,
+                         OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT_DEFAULT,
+                         OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT_MIN,
+                         OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT_MAX,
+                         1, oaConfigCallbackSetColumnToInsert ),                          
 #endif
 
     ACL_CONF_DEF_SINT32("ALA_XLOG_POOL_SIZE",
@@ -2085,6 +2123,8 @@ static void oaConfigInitializeHandle(oaConfigHandle *aHandle)
 
     aHandle->mSetUserToTable = OA_CONFIG_OTHER_DATABASE_SET_USER_TO_TABLE_DEFAULT;
     
+    aHandle->mSetColumnToInsert = OA_CONFIG_OTHER_DATABASE_SET_COLUMN_TO_INSERT_DEFAULT;
+    
     ACP_STR_INIT_DYNAMIC( aHandle->mJDBCDriverPath, 256, 256 );
     (void)acpStrCpyCString( &(aHandle->mJDBCDriverPath),
                             OA_CONFIG_OTHER_DATABASE_JDBC_DRIVER_PATH_DEFAULT );
@@ -2115,6 +2155,8 @@ static void oaConfigInitializeHandle(oaConfigHandle *aHandle)
     aHandle->mOracleConflictLoggingLevel = OA_CONFIG_ORACLE_CONFLICT_LOGGING_LEVEL_DEFAULT;
 
     aHandle->mSetUserToTable = OA_CONFIG_ORACLE_SET_USER_TO_TABLE_DEFAULT;
+    
+    aHandle->mSetColumnToInsert = OA_CONFIG_ORACLE_SET_COLUMN_TO_INSERT_DEFAULT;
 #endif
 
     ACP_STR_INIT_DYNAMIC( aHandle->mConstraintAltibaseUser, 128, 128 );
@@ -2303,6 +2345,8 @@ void oaConfigGetJDBCConfiguration( oaConfigHandleForJDBC *aHandle,
     
     aConfig->mSetUserToTable = aHandle->mSetUserToTable;
     
+    aConfig->mSetColumnToInsert = aHandle->mSetColumnToInsert;
+    
     aConfig->mDriverPath = &(aHandle->mJDBCDriverPath);
     aConfig->mDriverClass = &(aHandle->mJDBCDriverClass);
     aConfig->mConnectionUrl = &(aHandle->mJDBCConnectionUrl);
@@ -2342,6 +2386,8 @@ void oaConfigGetOracleConfiguration(oaConfigHandleForOracle *aHandle,
     aConfig->mSkipError = aHandle->mSkipError;
 
     aConfig->mSetUserToTable = aHandle->mSetUserToTable;
+    
+    aConfig->mSetColumnToInsert = aHandle->mSetColumnToInsert;
 
     aConfig->mAdapterErrorRestartCount = aHandle->mAdapterErrorRestartCount;
     aConfig->mAdapterErrorRestartInterval = aHandle->mAdapterErrorRestartInterval;

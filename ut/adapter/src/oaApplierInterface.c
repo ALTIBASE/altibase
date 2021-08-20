@@ -128,42 +128,94 @@ void addPlaceHolderToQuery( acp_str_t              * aQuery,
 void prepareInsertQuery( oaLogRecordInsert * aLogRecord,
                          acp_str_t         * aQuery,
                          acp_bool_t          aIsDirectPathMode,
-                         acp_bool_t          aSetUserToTable )
+                         acp_bool_t          aSetUserToTable,
+                         acp_bool_t          aSetColumnToInsert )
 {
     acp_sint32_t i = 0;
     acp_bool_t sIsHiddenColumn = ACP_FALSE;
     acp_uint32_t sBindIndex = 0;
 
-    if ( aIsDirectPathMode == ACP_TRUE )
+    if ( aSetColumnToInsert == ACP_FALSE )
     {
-        /* ~ 10g : APPEND Hint는 INSERT ... SELECT 구문에서만 동작
-         * 11gR1 : INSERT ... VALUES ... 구문에서 APPEND Hint가 동작
-         * 11gR2 : INSERT ... VALUES ... 구문에서 APPEND_VALUES Hint가 동작
-         */
-        if ( aSetUserToTable == ACP_TRUE )
+        if ( aIsDirectPathMode == ACP_TRUE )
         {
-            (void)acpStrCatFormat( aQuery, "INSERT /*+ APPEND APPEND_VALUES */ INTO %.s.%s VALUES (", 
-                                   aLogRecord->mToUser, aLogRecord->mTableName );
+            /* ~ 10g : APPEND Hint는 INSERT ... SELECT 구문에서만 동작
+             * 11gR1 : INSERT ... VALUES ... 구문에서 APPEND Hint가 동작
+             * 11gR2 : INSERT ... VALUES ... 구문에서 APPEND_VALUES Hint가 동작
+             */
+            if ( aSetUserToTable == ACP_TRUE )
+            {
+                (void)acpStrCatFormat( aQuery, "INSERT /*+ APPEND APPEND_VALUES */ INTO %.s.%s VALUES (", 
+                                       aLogRecord->mToUser, aLogRecord->mTableName );
+            }
+            else
+            {
+                (void)acpStrCatFormat( aQuery, "INSERT /*+ APPEND APPEND_VALUES */ INTO %s VALUES (", aLogRecord->mTableName );
+            }
+    
         }
         else
         {
-            (void)acpStrCatFormat( aQuery, "INSERT /*+ APPEND APPEND_VALUES */ INTO %s VALUES (", aLogRecord->mTableName );
+            if ( aSetUserToTable == ACP_TRUE )
+            {
+                (void)acpStrCatFormat( aQuery, "INSERT INTO %s.%s VALUES (", 
+                                       aLogRecord->mToUser, aLogRecord->mTableName );
+            }
+            else
+            {
+                (void)acpStrCatFormat( aQuery, "INSERT INTO %s VALUES (", aLogRecord->mTableName );
+            }
         }
-
     }
     else
     {
-        if ( aSetUserToTable == ACP_TRUE )
+        if ( aIsDirectPathMode == ACP_TRUE )
         {
-            (void)acpStrCatFormat( aQuery, "INSERT INTO %s.%s VALUES (", 
-                                   aLogRecord->mToUser, aLogRecord->mTableName );
+            /* ~ 10g : APPEND Hint는 INSERT ... SELECT 구문에서만 동작
+             * 11gR1 : INSERT ... VALUES ... 구문에서 APPEND Hint가 동작
+             * 11gR2 : INSERT ... VALUES ... 구문에서 APPEND_VALUES Hint가 동작
+             */
+            if ( aSetUserToTable == ACP_TRUE )
+            {
+                (void)acpStrCatFormat( aQuery, "INSERT /*+ APPEND APPEND_VALUES */ INTO %.s.%s ( ", 
+                                       aLogRecord->mToUser, aLogRecord->mTableName );
+            }
+            else
+            {
+                (void)acpStrCatFormat( aQuery, "INSERT /*+ APPEND APPEND_VALUES */ INTO %s ( ", aLogRecord->mTableName );
+            }
+    
         }
         else
         {
-            (void)acpStrCatFormat( aQuery, "INSERT INTO %s VALUES (", aLogRecord->mTableName );
+            if ( aSetUserToTable == ACP_TRUE )
+            {
+                (void)acpStrCatFormat( aQuery, "INSERT INTO %s.%s ( ", 
+                                       aLogRecord->mToUser, aLogRecord->mTableName );
+            }
+            else
+            {
+                (void)acpStrCatFormat( aQuery, "INSERT INTO %s ( ", aLogRecord->mTableName );
+            }
         }
+        
+        for ( i = 0; i < aLogRecord->mColumnCount; i++ )
+        {        
+            sIsHiddenColumn = oaLogRecordColumnIsHiddenColumn( &(aLogRecord->mColumn[i]) );
+            if ( sIsHiddenColumn == ACP_FALSE )
+            {
+                if ( i > 0 ) 
+                {
+                    (void)acpStrCatFormat( aQuery, ", " );
+                }
+                
+                (void)acpStrCatFormat( aQuery, "%s", aLogRecord->mColumn[i].mName );
+            }
+        }
+        
+        acpStrCatFormat( aQuery, " ) VALUES (");
     }
-
+    
     for ( i = 0; i < aLogRecord->mColumnCount; i++ )
     {
         sIsHiddenColumn = oaLogRecordColumnIsHiddenColumn( &(aLogRecord->mColumn[i]) );

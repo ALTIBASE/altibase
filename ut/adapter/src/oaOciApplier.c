@@ -413,6 +413,8 @@ ace_rc_t oaOciApplierInitialize( oaContext                   * aContext,
 
     sHandle->mSetUserToTable = ( aConfig->mSetUserToTable == 1 ) ? ACP_TRUE : ACP_FALSE;
     
+    sHandle->mSetColumnToInsert = ( aConfig->mSetColumnToInsert == 1 ) ? ACP_TRUE : ACP_FALSE;
+    
     sHandle->mIsDirectPathInsert = ( aConfig->mDirectPathInsert == 1 )
                                  ? ACP_TRUE : ACP_FALSE;
 
@@ -1068,7 +1070,8 @@ static ace_rc_t prepareInsertStatement(oaContext *aContext,
     prepareInsertQuery( aLogRecord, 
                         &sSqlQuery, 
                         aHandle->mIsDirectPathInsert,
-                        aHandle->mSetUserToTable );
+                        aHandle->mSetUserToTable,
+                        aHandle->mSetColumnToInsert );
 
     ACE_TEST_RAISE(OCIStmtPrepare(sStatement,
                                   aHandle->mError, 
