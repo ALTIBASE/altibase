@@ -125,6 +125,7 @@ IDE_RC rpcValidate::validateCreate(void * aQcStatement )
     qriReplOptions   * sReplOptions;
 
     sParseTree = (qriParseTree *)QCI_PARSETREE( aQcStatement );
+    QCI_STR_COPY( sReplName, sParseTree->replName );
 
     // check grant
     IDE_TEST(qciMisc::checkDDLReplicationPriv( aQcStatement )
@@ -223,7 +224,6 @@ IDE_RC rpcValidate::validateCreate(void * aQcStatement )
             sIsLocalReplOpt = ID_TRUE;
             sAllSetOptionsFlag |= RP_OPTION_LOCAL_SET;
 
-            QCI_STR_COPY( sReplName, sParseTree->replName );
             QCI_STR_COPY( sPeerReplName, sReplOptions->peerReplName );
 
             IDE_TEST_RAISE( idlOS::strcmp( sReplName, sPeerReplName ) == 0,
@@ -310,7 +310,6 @@ IDE_RC rpcValidate::validateCreate(void * aQcStatement )
     IDE_TEST_RAISE( ( sParseTree->replMode == RP_EAGER_MODE ) &&
                     ( sIsLocalReplOpt == ID_TRUE ),
                     ERR_OPTION_LOCAL_AND_EAGER );
-
 
     /* PROJ-2725 Consistent Replication
      * Parallel Option 외에 어떠한 Role, Options을 허용하지 않는다.
@@ -402,14 +401,15 @@ IDE_RC rpcValidate::validateCreate(void * aQcStatement )
         sReplItemCount += 1;
 
         IDE_TEST(validateOneReplItem(aQcStatement,
+                                     sReplName,
                                      sReplItem,
                                      sParseTree->role,
+                                     sIsDDLReplicateOpt,
                                      sIsRecoveryOpt,
                                      sParseTree->replMode)
                  != IDE_SUCCESS);
     }
 
-    
     if ( qciMisc::getTransactionalDDL( aQcStatement ) == ID_TRUE )
     {
         IDE_TEST( makeTableOIDArray( aQcStatement, 
@@ -557,14 +557,17 @@ IDE_RC rpcValidate::validateCreate(void * aQcStatement )
     {
         IDE_SET( ideSetErrorCode( rpERR_ABORT_RPC_CONSISTENT_DO_NOT_HAVE_ANY_OTHER_OPTIONS ) )
     }
+
     IDE_EXCEPTION_END;
 
     return IDE_FAILURE;
 }
 
 IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
+                                        SChar       * aReplName,
                                         qriReplItem * aReplItem,
                                         SInt          aRole,
+                                        idBool        aIsDDLReplicateOpt,
                                         idBool        aIsRecoveryOpt,
                                         SInt          aReplMode)
 {
@@ -572,9 +575,6 @@ IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
     qcmTableInfo    * sInfo = NULL;
     smSCN             sSCN = SM_SCN_INIT;
     void            * sTableHandle = NULL;
-    SChar             sLocalUserName[QC_MAX_OBJECT_NAME_LEN + 1]      = { 0, };
-    SChar             sLocalTableName[QC_MAX_OBJECT_NAME_LEN + 1]     = { 0, };
-    SChar             sLocalPartitionName[QC_MAX_OBJECT_NAME_LEN + 1] = { 0, };
     mtcColumn       * sColumn = NULL;
     idBool            sIsExist;
     idBool            sIsSalt;
@@ -583,13 +583,19 @@ IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
     smiStatement    * sSmiStmt = QCI_SMI_STMT( aQcStatement );
     UInt              sPartitionCount = 0;
     UInt              sPartitionMatchedIdx = 0;
+    rpdReplItems      sReplItems;
 
     qcmPartitionInfoList * sPartInfoList = NULL;
     qcmPartitionInfoList * sTempPartInfoList = NULL;
 
+    idlOS::memset( &sReplItems,
+                   0x00,
+                   ID_SIZEOF(sReplItems) );
 
-    QCI_STR_COPY( sLocalUserName, sReplItem->localUserName );
-    QCI_STR_COPY( sLocalTableName, sReplItem->localTableName );
+    QCI_STR_COPY( sReplItems.mLocalUsername, sReplItem->localUserName );
+    QCI_STR_COPY( sReplItems.mLocalTablename, sReplItem->localTableName );
+    QCI_STR_COPY( sReplItems.mRemoteUsername, sReplItem->remoteUserName );
+    QCI_STR_COPY( sReplItems.mRemoteTablename, sReplItem->remoteTableName );
 
     // check existence of localUserName
     IDU_FIT_POINT_RAISE( "rpcValidate::validateOneReplItem::Erratic::rpERR_ABORT_RPC_NOT_EXISTS_USER",
@@ -618,7 +624,8 @@ IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
     
     if ( sReplItem->replication_unit == RP_REPLICATION_PARTITION_UNIT )
     {
-        QCI_STR_COPY( sLocalPartitionName, sReplItem->localPartitionName );
+        QCI_STR_COPY( sReplItems.mLocalPartname, sReplItem->localPartitionName );
+        QCI_STR_COPY( sReplItems.mRemotePartname, sReplItem->remotePartitionName );
 
         IDE_TEST_RAISE( sInfo->tablePartitionType != QCM_PARTITIONED_TABLE, ERR_NOT_EXIST_PARTITION );
     }
@@ -658,7 +665,7 @@ IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
                   sTempPartInfoList != NULL;
                   sTempPartInfoList = sTempPartInfoList->next )
             {
-                if ( idlOS::strncmp( sLocalPartitionName,
+                if ( idlOS::strncmp( sReplItems.mLocalPartname,
                                      sTempPartInfoList->partitionInfo->name,
                                      QC_MAX_OBJECT_NAME_LEN )
                      == 0 )
@@ -787,6 +794,19 @@ IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
         }
     }
 
+    if ( aIsDDLReplicateOpt == ID_TRUE )
+    {
+        idlOS::strncpy( sReplItems.mRepName, 
+                        aReplName,
+                        QC_MAX_OBJECT_NAME_LEN + 1 );
+        IDE_TEST( validateCheckLocalRemoteName( &sReplItems,
+                                                RPC_VALIDATE_CHECK_LOCAL_REMOTE_USER_NAME_SET |
+                                                RPC_VALIDATE_CHECK_LOCAL_REMOTE_TABLE_NAME_SET |
+                                                RPC_VALIDATE_CHECK_LOCAL_REMOTE_PARTITION_NAME_SET )
+                  != IDE_SUCCESS );
+    }
+
+
     return IDE_SUCCESS;
 
     IDE_EXCEPTION(ERR_NOT_EXIST_USER)
@@ -795,7 +815,7 @@ IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
         if(ideGetErrorCode() == qpERR_ABORT_QCM_NOT_EXIST_USER)
         {
             IDE_SET(ideSetErrorCode(rpERR_ABORT_RPC_NOT_EXISTS_USER,
-                                    sLocalUserName));
+                                    sReplItems.mLocalUsername));
         }
     }
     IDE_EXCEPTION(ERR_NOT_EXIST_TABLE)
@@ -804,26 +824,26 @@ IDE_RC rpcValidate::validateOneReplItem(void        * aQcStatement,
         if(ideGetErrorCode() == qpERR_ABORT_QCM_NOT_EXIST_TABLE)
         {
             IDE_SET(ideSetErrorCode(rpERR_ABORT_RPC_NOT_EXISTS_TABLE,
-                                    sLocalTableName));
+                                    sReplItems.mLocalTablename));
         }
     }
     IDE_EXCEPTION(ERR_NOT_EXIST_PARTITION)
     {
         IDE_SET(ideSetErrorCode(rpERR_ABORT_RPC_NOT_EXISTS_PARTITION,
-                                sLocalPartitionName));
+                                sReplItems.mLocalPartname));
 
     }
     IDE_EXCEPTION(ERR_CANNOT_REPLICATE_TABLE_WITH_REFERENCE)
     {
         IDE_SET(ideSetErrorCode(rpERR_ABORT_RPC_REPLICATE_TABLE_WITH_REFERENCE,
-                                sLocalUserName,
-                                sLocalTableName));
+                                sReplItems.mLocalUsername,
+                                sReplItems.mLocalTablename));
     }
     IDE_EXCEPTION(ERR_REPLICATED_TABLE_WITHOUT_PRIMARY)
     {
         IDE_SET(ideSetErrorCode(rpERR_ABORT_RPC_NOT_EXISTS_PRIMARY_KEY,
-                                sLocalUserName,
-                                sLocalTableName));
+                                sReplItems.mLocalUsername,
+                                sReplItems.mLocalTablename));
     }
     IDE_EXCEPTION(ERR_RECOVERY_COUNT)
     {
@@ -862,6 +882,7 @@ IDE_RC rpcValidate::validateAlterAddTbl(void * aQcStatement)
     qcmTableInfo    * sInfo = NULL;
     smSCN             sSCN = SM_SCN_INIT;
     void            * sTableHandle = NULL;
+    idBool            sIsDDLReplicate = ID_FALSE;
     SChar             sLocalUserName[QC_MAX_OBJECT_NAME_LEN + 1]      = { 0, };
     SChar             sLocalTableName[QC_MAX_OBJECT_NAME_LEN + 1]     = { 0, };
 
@@ -884,12 +905,20 @@ IDE_RC rpcValidate::validateAlterAddTbl(void * aQcStatement)
     IDE_TEST_RAISE((sReplications.mOptions & RP_OPTION_RECOVERY_MASK) ==
                     RP_OPTION_RECOVERY_SET, ERR_NOT_ALLOW_ADD_TABLE)
 
+    if ( (sReplications.mOptions & RP_OPTION_DDL_REPLICATE_MASK) ==
+         RP_OPTION_DDL_REPLICATE_SET )
+    {
+        sIsDDLReplicate = ID_TRUE;
+    }
+
     // validation of replication item
     sReplItem = sParseTree->replItems;
 
     IDE_TEST(validateOneReplItem(aQcStatement,
+                                 sReplications.mRepName,
                                  sReplItem,
                                  sReplications.mRole,
+                                 sIsDDLReplicate,
                                  ID_FALSE,
                                  sReplications.mReplMode)
              != IDE_SUCCESS);
@@ -2042,8 +2071,10 @@ IDE_RC rpcValidate::validateTempSync(void * aQcStatement)
          sSyncItem = sSyncItem->next)
     {
         IDE_TEST(validateOneReplItem(aQcStatement,
+                                     (SChar*)"Replication temporary sync",
                                      sSyncItem,
                                      sParseTree->role,
+                                     ID_FALSE,
                                      sIsRecoveryOpt,
                                      sParseTree->replMode)
                  != IDE_SUCCESS);
@@ -2667,9 +2698,11 @@ IDE_RC rpcValidate::validateAlterSetGrouping(void * aQcStatement)
 IDE_RC rpcValidate::validateAlterSetDDLReplicate( void * aQcStatement )
 {
     qriParseTree    * sParseTree      = NULL;
+    SInt              sItemIndex      = 0;
     SInt              sDDLReplicateFlag = 0;
     smiStatement    * sSmiStmt = QCI_SMI_STMT(aQcStatement);
     rpdReplications   sReplications;
+    rpdMetaItem     * sReplItems      = NULL;
 
     sParseTree = (qriParseTree *)QCI_PARSETREE( aQcStatement );
     IDE_DASSERT( sParseTree->replOptions != NULL );
@@ -2719,8 +2752,46 @@ IDE_RC rpcValidate::validateAlterSetDDLReplicate( void * aQcStatement )
                     ( sDDLReplicateFlag == RP_OPTION_DDL_REPLICATE_SET ),
                     ERR_OPTION_DDL_REPLICATE_AND_EAGER );
 
+    if ( sReplications.mItemCount > 0 )
+    {
+        IDE_TEST_RAISE( iduMemMgr::calloc( IDU_MEM_RP_RPC,
+                                           sReplications.mItemCount,
+                                           ID_SIZEOF(rpdMetaItem),
+                                           (void **)&sReplItems,
+                                           IDU_MEM_IMMEDIATE )
+                        != IDE_SUCCESS, ERR_MEMORY_ALLOC_ITEMS );
+
+        IDE_TEST( rpdCatalog::selectReplItems( sSmiStmt,
+                                               sReplications.mRepName,
+                                               sReplItems,
+                                               sReplications.mItemCount,
+                                               ID_FALSE )
+                  != IDE_SUCCESS );
+
+        for( sItemIndex = 0;
+             sItemIndex < sReplications.mItemCount;
+             sItemIndex++ )
+        {
+            IDE_TEST( validateCheckLocalRemoteName( &(sReplItems[sItemIndex].mItem), 
+                                                    RPC_VALIDATE_CHECK_LOCAL_REMOTE_USER_NAME_SET |
+                                                    RPC_VALIDATE_CHECK_LOCAL_REMOTE_TABLE_NAME_SET |
+                                                    RPC_VALIDATE_CHECK_LOCAL_REMOTE_PARTITION_NAME_SET )
+                      != IDE_SUCCESS );
+        }
+    }
+
+    (void)iduMemMgr::free( sReplItems );
+    sReplItems = NULL;
+
     return IDE_SUCCESS;
 
+    IDE_EXCEPTION(ERR_MEMORY_ALLOC_ITEMS);
+    {
+        IDE_ERRLOG(IDE_RP_0);
+        IDE_SET(ideSetErrorCode(rpERR_ABORT_MEMORY_ALLOC,
+                "rpcValidate::validateAlterSetDDLReplicate",
+                "sReplItems"));
+    }
     IDE_EXCEPTION( ERR_COMPATIBLE_CONSISTENT )
     {
         IDE_SET( ideSetErrorCode( rpERR_ABORT_RPC_CONSISTENT_DO_NOT_HAVE_ANY_OTHER_OPTIONS ) );
@@ -2761,6 +2832,12 @@ IDE_RC rpcValidate::validateAlterSetDDLReplicate( void * aQcStatement )
                                "DDL replication option not supported in this role." ) )
     }
     IDE_EXCEPTION_END;
+
+    if ( sReplItems != NULL )
+    {
+        (void)iduMemMgr::free( sReplItems );
+        sReplItems = NULL;
+    }
 
     return IDE_FAILURE;
 }
@@ -2823,62 +2900,31 @@ IDE_RC rpcValidate::validateAlterPartition( void         * aQcStatement,
         
         if ( sSrcReplItem != NULL )
         {
-            IDE_TEST_RAISE( idlOS::strncmp( sSrcReplItem->mLocalTablename,
-                                            sSrcReplItem->mRemoteTablename,
-                                            QC_MAX_OBJECT_NAME_LEN + 1 ) 
-                            != 0, ERR_TABLE_NAME_DIFF );
-            IDE_TEST_RAISE( idlOS::strncmp( sSrcReplItem->mLocalPartname,
-                                            sSrcReplItem->mRemotePartname,
-                                            QC_MAX_OBJECT_NAME_LEN + 1 ) 
-                            != 0, ERR_PARTITION_NAME_DIFF );
+            IDE_TEST( validateCheckLocalRemoteName( sSrcReplItem, 
+                                                    RPC_VALIDATE_CHECK_LOCAL_REMOTE_PARTITION_NAME_SET )
+                      != IDE_SUCCESS );
 
             if ( ( sReplications[i].mOptions & RP_OPTION_DDL_REPLICATE_MASK )
                  == RP_OPTION_DDL_REPLICATE_SET )
             {
-                IDE_TEST_RAISE( idlOS::strncmp( sSrcReplItem->mLocalUsername,
-                                                sSrcReplItem->mRemoteUsername,
-                                                QC_MAX_OBJECT_NAME_LEN + 1 ) 
-                                != 0, ERR_USER_NAME_DIFF );
+                IDE_TEST( validateCheckLocalRemoteName( sSrcReplItem, 
+                                                        RPC_VALIDATE_CHECK_LOCAL_REMOTE_USER_NAME_SET |
+                                                        RPC_VALIDATE_CHECK_LOCAL_REMOTE_TABLE_NAME_SET )
+                          != IDE_SUCCESS );
             }
-
+            
+            sIsAlloced = ID_FALSE;
+            (void)iduMemMgr::free( sReplMetaItems );
+            sReplMetaItems = NULL;
         }
         else
         {
             /* Nothing to do */
         }
-
-        sIsAlloced = ID_FALSE;
-        (void)iduMemMgr::free( sReplMetaItems );
-        sReplMetaItems = NULL;
     }   
 
     return IDE_SUCCESS;
 
-    IDE_EXCEPTION( ERR_TABLE_NAME_DIFF )
-    {
-        IDE_SET( ideSetErrorCode( rpERR_ABORT_TABLE_NAME_DIFF, sSrcReplItem->mRepName,
-                                                               sSrcReplItem->mLocalUsername,
-                                                               sSrcReplItem->mLocalTablename,
-                                                               sSrcReplItem->mLocalPartname,
-                                                               sSrcReplItem->mRemoteUsername,
-                                                               sSrcReplItem->mRemoteTablename,
-                                                               sSrcReplItem->mRemotePartname ) );
-    }
-    IDE_EXCEPTION( ERR_PARTITION_NAME_DIFF )
-    {
-        IDE_SET( ideSetErrorCode( rpERR_ABORT_PARTITION_NAME_DIFF, sSrcReplItem->mRepName,
-                                                                   sSrcReplItem->mLocalUsername,
-                                                                   sSrcReplItem->mLocalTablename,
-                                                                   sSrcReplItem->mLocalPartname,
-                                                                   sSrcReplItem->mRemoteUsername,
-                                                                   sSrcReplItem->mRemoteTablename,
-                                                                   sSrcReplItem->mRemotePartname ) );
-    }
-    IDE_EXCEPTION( ERR_USER_NAME_DIFF )
-    {
-        IDE_SET( ideSetErrorCode( rpERR_ABORT_RP_INTERNAL_ARG,
-                                  "DDL replication must have the same user name with remote." ) )
-    } 
     IDE_EXCEPTION_END;
 
     if ( sIsAlloced == ID_TRUE )
@@ -3147,6 +3193,70 @@ IDE_RC rpcValidate::validateFailback(void * aQcStatement)
         IDE_SET( ideSetErrorCode( rpERR_ABORT_RPC_NOT_SUPPORT_FAILBACK_THIS_MODE ) );
     }
 
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+}
+
+IDE_RC rpcValidate::validateCheckLocalRemoteName( void * aReplItem, UInt aCheckMask )
+{
+    rpdReplItems * sReplItem = (rpdReplItems*)aReplItem;
+
+    if ( ( aCheckMask & RPC_VALIDATE_CHECK_LOCAL_REMOTE_USER_NAME_MASK ) 
+         == RPC_VALIDATE_CHECK_LOCAL_REMOTE_USER_NAME_SET )
+    {
+        IDE_TEST_RAISE( idlOS::strncmp( sReplItem->mLocalUsername,
+                                        sReplItem->mRemoteUsername,
+                                        QC_MAX_OBJECT_NAME_LEN + 1 ) 
+                        != 0, ERR_USER_NAME_DIFF );
+
+    }
+
+    if ( ( aCheckMask & RPC_VALIDATE_CHECK_LOCAL_REMOTE_TABLE_NAME_MASK )
+         == RPC_VALIDATE_CHECK_LOCAL_REMOTE_TABLE_NAME_SET )
+    {
+        IDE_TEST_RAISE( idlOS::strncmp( sReplItem->mLocalTablename,
+                                        sReplItem->mRemoteTablename,
+                                        QC_MAX_OBJECT_NAME_LEN + 1 ) 
+                        != 0, ERR_TABLE_NAME_DIFF );
+    }
+
+    if ( ( aCheckMask & RPC_VALIDATE_CHECK_LOCAL_REMOTE_PARTITION_NAME_MASK )
+         == RPC_VALIDATE_CHECK_LOCAL_REMOTE_PARTITION_NAME_SET )
+    {
+        IDE_TEST_RAISE( idlOS::strncmp( sReplItem->mLocalPartname,
+                                        sReplItem->mRemotePartname,
+                                        QC_MAX_OBJECT_NAME_LEN + 1 ) 
+                        != 0, ERR_PARTITION_NAME_DIFF );
+    }
+    
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( ERR_TABLE_NAME_DIFF )
+    {
+        IDE_SET( ideSetErrorCode( rpERR_ABORT_TABLE_NAME_DIFF, sReplItem->mRepName,
+                                                               sReplItem->mLocalUsername,
+                                                               sReplItem->mLocalTablename,
+                                                               sReplItem->mLocalPartname,
+                                                               sReplItem->mRemoteUsername,
+                                                               sReplItem->mRemoteTablename,
+                                                               sReplItem->mRemotePartname ) );
+    }
+    IDE_EXCEPTION( ERR_PARTITION_NAME_DIFF )
+    {
+        IDE_SET( ideSetErrorCode( rpERR_ABORT_PARTITION_NAME_DIFF, sReplItem->mRepName,
+                                                                   sReplItem->mLocalUsername,
+                                                                   sReplItem->mLocalTablename,
+                                                                   sReplItem->mLocalPartname,
+                                                                   sReplItem->mRemoteUsername,
+                                                                   sReplItem->mRemoteTablename,
+                                                                   sReplItem->mRemotePartname ) );
+    }
+    IDE_EXCEPTION( ERR_USER_NAME_DIFF )
+    {
+        IDE_SET( ideSetErrorCode( rpERR_ABORT_RP_INTERNAL_ARG,
+                                  "DDL replication must have the same user name with remote." ) )
+    } 
     IDE_EXCEPTION_END;
 
     return IDE_FAILURE;

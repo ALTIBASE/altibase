@@ -25,6 +25,7 @@
 #include <ulaXLogLinkedList.h>
 #include <ulaTransTbl.h>
 #include <ulaMeta.h>
+#include <ulaLog.h>
 
 #define ULA_MAX_AUTH_INFO_SIZE              (32)
 

@@ -320,8 +320,16 @@ mmtInternalSql::prepare( void * aUserContext )
                                  MMC_STMT_EXEC_DIRECT :
                                  MMC_STMT_EXEC_PREPARED );
 
-    /* PROJ-1381 FAC : InternalSql은 항상 HOLD_ON으로 실행한다. */
-    sStatement->setCursorHold(MMC_STMT_CURSOR_HOLD_ON);
+    if (sdi::isShardEnable() == ID_TRUE)
+    {
+        /* BUG-49075 샤딩에서는 FAC가 지원되지 않아 HOLD_OFF로 설정한다. */
+        sStatement->setCursorHold(MMC_STMT_CURSOR_HOLD_OFF);
+    }
+    else
+    {
+        /* PROJ-1381 FAC : InternalSql은 항상 HOLD_ON으로 실행한다. */
+        sStatement->setCursorHold(MMC_STMT_CURSOR_HOLD_ON);
+    }
 
     // BUG-41030 Set called by PSM Flag
     qciMisc::setPSMFlag( ((void*)&(sQciStmt->statement)), ID_TRUE );

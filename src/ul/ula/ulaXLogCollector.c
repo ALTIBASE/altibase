@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: ulaXLogCollector.c 91310 2021-07-22 05:10:54Z donghyun1 $
+ * $Id: ulaXLogCollector.c 91487 2021-08-18 01:51:15Z yoonhee.kim $
  **********************************************************************/
 
 #include <aclMem.h>
@@ -1560,9 +1560,9 @@ ACI_RC ulaWakeupPeerSender( ulaXLogCollector * aCollector,
 
     ACI_TEST( ulaXLogCollectorCheckRemoteVersion( &sProtocolContext,
                                                   sTimeout,
+                                                  aErrorMgr,
                                                   sMsg,
-                                                  &sMsgLen,
-                                                  aErrorMgr )
+                                                  &sMsgLen ) 
               != ACI_SUCCESS );
     
     ulaXLogCollectorGetVersionFromAck( sMsg,

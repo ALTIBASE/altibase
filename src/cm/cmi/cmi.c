@@ -2454,7 +2454,7 @@ static ACI_RC cmiCompressCmBlock( cmpHeader          * aHeader,
 
     ACI_EXCEPTION( InvalidCompressType )
     {
-        ACI_SET( aciSetErrorCode( CM_TRC_COMPRESS_TYPE_ERROR, aCtx->mCompressType ) );
+        ACI_SET( aciSetErrorCode( cmERR_ABORT_COMPRESS_DATA_ERROR_WITH_TYPE, aCtx->mCompressType ) );
     }
     ACI_EXCEPTION_END;
 
@@ -2523,7 +2523,7 @@ static ACI_RC cmiDecompressCmBlock( cmiProtocolContext  *aCtx,
 
     ACI_EXCEPTION( InvalidDecompressType )
     {
-        ACI_SET( aciSetErrorCode( CM_TRC_DECOMPRESS_TYPE_ERROR, aCtx->mDecompressType ) );
+        ACI_SET( aciSetErrorCode( cmERR_ABORT_DECOMPRESS_DATA_ERROR_WITH_TYPE, aCtx->mDecompressType ) );
     }
     ACI_EXCEPTION_END;
 

@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qrc.cpp 90824 2021-05-13 05:35:21Z minku.kang $
+ * $Id: qrc.cpp 91331 2021-07-23 08:00:11Z minku.kang $
  **********************************************************************/
 
 #include <idl.h>
@@ -49,8 +49,10 @@ IDE_RC qrc::validateOneReplItem(qcStatement  * aStatement,
                                 SInt           aReplMode)
 {
         return qci::mValidateReplicationCallback.mValidateOneReplItem( aStatement,
+                                                                       NULL,
                                                                        aReplItem,
                                                                        aRole,
+                                                                       ID_FALSE,
                                                                        aIsRecoveryOpt,
                                                                        aReplMode );
 }

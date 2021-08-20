@@ -19,7 +19,7 @@
 # 브랜치에서 에러코드를 할당받으시면 안됩니다.
 # 반드시 main trunk에서 번호를 할당받은 후 브랜치에서 사용하셔야 합니다.
 # 의문 사항이 있으시면 AK팀 혹은 QP(품질본부)팀에 문의 부탁드립니다.
-# Last Number = 194
+# Last Number = 196
 
 SECTION = 7
 
@@ -542,6 +542,15 @@ SECTION = 7
 194, cmERR_ABORT_IB_RPOLL_INVALID_DIRECTION = Invalid direction: <0%d>
 # *Cause: Internal error.
 # *Action: Contact Altibase's Support Center (http://support.altibase.com).
+
+195, cmERR_ABORT_COMPRESS_DATA_ERROR_WITH_TYPE = Failed to compress data in a packet. (compress type : <0%d>)
+# *Cause: Failed to compress packet data.
+# *Action: Contact Altibase's Support Center (http://support.altibase.com).
+
+196, cmERR_ABORT_DECOMPRESS_DATA_ERROR_WITH_TYPE = Failed to decompress data in a packet. (decompress type : <0%d>)
+# *Cause: Failed to decompress packet data.
+# *Action: Contact Altibase's Support Center (http://support.altibase.com).
+
 
 ###############################################################################
 #  Server Internal Message

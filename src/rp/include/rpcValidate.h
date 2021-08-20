@@ -24,6 +24,20 @@
 
 #include <qci.h>
 
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_USER_NAME_MASK       (0x00000001)
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_USER_NAME_SET        (0x00000001)
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_USER_NAME_UNSET      (0x00000000)
+
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_TABLE_NAME_MASK      (0x00000002)
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_TABLE_NAME_SET       (0x00000002)
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_TABLE_NAME_UNSET     (0x00000000)
+
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_PARTITION_NAME_MASK  (0x00000004)
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_PARTITION_NAME_SET   (0x00000004)
+#define RPC_VALIDATE_CHECK_LOCAL_REMOTE_PARTITION_NAME_UNSET (0x00000000)
+
+
+
 class rpcValidate
 {
 public:
@@ -31,8 +45,10 @@ public:
 
     static IDE_RC validateCreate(void * aQcStatement);
     static IDE_RC validateOneReplItem(void * aQcStatement,
+                                      SChar        * aReplName,
                                       qriReplItem  * aReplItem,
                                       SInt          aRole,
+                                      idBool        aIsDDLReplicateOpt,
                                       idBool        aIsRecoveryOpt,
                                       SInt          aReplMode);
     static IDE_RC validateAlterAddTbl(void * aQcStatement);
@@ -91,6 +107,9 @@ private:
                                           SChar                * aRepName,
                                           RP_META_BUILD_TYPE     aMetaBuildType,
                                           void                ** aLockTable );
+
+    static IDE_RC validateCheckLocalRemoteName( void * aReplItem, UInt aCheckMask );
+
 };
 
 #endif  // _O_RPC_VALIDATE_H_
