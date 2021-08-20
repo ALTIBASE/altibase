@@ -789,4 +789,8 @@ IDE_RC dkiNotifierAddUnCompleteGlobalTxList( iduList * aGlobalTxList )
     return sNotifier->addUnCompleteGlobalTxList( aGlobalTxList );
 }
 
+dkmSession * dkiSessionGetDkmSessionWithoutCreate( dkiSession * aSession )
+{
+    return aSession->mSession;
+}
 

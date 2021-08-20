@@ -34,6 +34,7 @@
 typedef struct dkiSession dkiSession;
 
 extern dkmSession * dkiSessionGetDkmSession( dkiSession * aSession );
+extern dkmSession * dkiSessionGetDkmSessionWithoutCreate( dkiSession * aSession );
 extern void dkiSessionSetDkmSessionNull( dkiSession * aSession );
 extern IDE_RC dkiSessionCheckAndInitialize( dkiSession * aSession );
 

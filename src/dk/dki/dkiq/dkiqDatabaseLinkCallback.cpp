@@ -287,7 +287,7 @@ static IDE_RC dkiOpenShardConnection( void * aDataNode )
     IDE_DASSERT( sDataNode != NULL );
     IDE_DASSERT( sDataNode->mDkiSession != NULL );
 
-    sSession = dkiSessionGetDkmSession( (dkiSession*)sDataNode->mDkiSession );
+    sSession = dkiSessionGetDkmSessionWithoutCreate( (dkiSession*)sDataNode->mDkiSession );
 
     IDE_TEST( dkmOpenShardConnection( sSession, sDataNode )
               != IDE_SUCCESS );
@@ -321,7 +321,7 @@ static IDE_RC dkiAddShardTransaction( idvSQL        * aStatistics,
     IDE_DASSERT( sDataNode != NULL );
     IDE_DASSERT( sDataNode->mDkiSession != NULL );
 
-    sSession = dkiSessionGetDkmSession( (dkiSession*)sDataNode->mDkiSession );
+    sSession = dkiSessionGetDkmSessionWithoutCreate( (dkiSession*)sDataNode->mDkiSession );
 
     IDE_TEST( dkmAddShardTransaction( aStatistics,
                                       sSession,
@@ -347,7 +347,7 @@ static void dkiDelShardTransaction( void * aDataNode )
     IDE_DASSERT( sDataNode != NULL );
     IDE_DASSERT( sDataNode->mDkiSession != NULL );
 
-    sSession = dkiSessionGetDkmSession( (dkiSession*)sDataNode->mDkiSession );
+    sSession = dkiSessionGetDkmSessionWithoutCreate( (dkiSession*)sDataNode->mDkiSession );
 
     dkmDelShardTransaction( sSession, sDataNode );
 }
@@ -359,7 +359,7 @@ static IDE_RC dkiSetTransactionBrokenOnGlobalCoordinator( void  * aDkiSession,
 
     IDE_DASSERT( aDkiSession != NULL );
 
-    sSession = dkiSessionGetDkmSession( (dkiSession*)aDkiSession );
+    sSession = dkiSessionGetDkmSessionWithoutCreate( (dkiSession*)aDkiSession );
 
     IDE_TEST( dkmSetTransactionBrokenOnGlobalCoordinator( sSession, aTransID )
               != IDE_SUCCESS );
@@ -381,7 +381,7 @@ static IDE_RC dkiCheckGloablTransactionStatus( void          * aDataNode )
     IDE_DASSERT( sDataNode != NULL );
     IDE_DASSERT( sDataNode->mDkiSession != NULL );
 
-    sSession = dkiSessionGetDkmSession( (dkiSession*)sDataNode->mDkiSession );
+    sSession = dkiSessionGetDkmSessionWithoutCreate( (dkiSession*)sDataNode->mDkiSession );
 
     IDE_TEST( dkmCheckGlobalTransactionStatus( sSession ) != IDE_SUCCESS );
 

@@ -6537,7 +6537,6 @@ IDE_RC dkmSetTransactionBrokenOnGlobalCoordinator( dkmSession * aSession,
 
     sSession = (dksDataSession *)aSession;
 
-    IDE_DASSERT( sSession != NULL );
     IDE_TEST_RAISE( sSession == NULL, ERR_SESSION_NOT_EXIST );
 
     IDE_TEST( dktGlobalTxMgr::findGlobalCoordinator( sSession->mGlobalTxId,
