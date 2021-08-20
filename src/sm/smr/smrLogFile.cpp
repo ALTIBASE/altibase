@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smrLogFile.cpp 89697 2021-01-05 10:29:13Z et16 $
+ * $Id: smrLogFile.cpp 91389 2021-08-01 23:36:10Z emlee $
  **********************************************************************/
 
 #include <smErrorCode.h>
@@ -194,7 +194,7 @@ IDE_RC smrLogFile::destroy()
  *               생성 완료된 경우에 logfile name으로 변경한다.
  *
  * aLogFileName  [IN] - 생성하려는 logfile의 name
- * aTempFileName [IN] - 임시 파일명, LFG 마다 동일하다.
+ * aTempFileName [IN] - 임시 파일명
  * aInitBuffer   [IN] - logfile 초기화 데이터가 있는 버퍼
  * aSize         [IN] - logFile의 크기
  * ----------------------------------------------*/
@@ -209,6 +209,11 @@ IDE_RC smrLogFile::prepare(SChar   * aLogFileName,
     if ( idf::access( aTempFileName, F_OK ) == 0 )
     {
         (void)idf::unlink( aTempFileName );
+    }
+    /* BUG-49202 target LogFile 이 있으면 삭제 합니다. */ 
+    if ( idf::access( aLogFileName, F_OK ) == 0 )
+    {
+        (void)idf::unlink( aLogFileName );
     }
 
     IDE_TEST( create( aTempFileName,
