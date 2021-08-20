@@ -29,6 +29,11 @@ SQLRETURN getObjModeTableQuery( FILE   *aTblFp,
                                 SChar  *aUserName,
                                 SChar  *aObjName );
 
+/* BUG-49242 Queue object mode */
+SQLRETURN getObjModeQueueQuery( FILE   *aQueueFp,
+                                SChar  *aUserName,
+                                SChar  *aObjName );
+
 SQLRETURN getObjModeMViewQuery( FILE  * aMViewFp,
                                 SChar * aUserName,
                                 SChar * aObjectName );

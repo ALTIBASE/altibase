@@ -15,7 +15,7 @@
  */
  
 /***********************************************************************
- * $Id: utmDef.h 88494 2020-09-04 04:29:31Z chkim $
+ * $Id: utmDef.h 91504 2021-08-19 23:38:48Z chkim $
  **********************************************************************/
 
 #ifndef _O_UTM_DEF_H_
@@ -61,6 +61,8 @@
 #define UTM_PACKAGE_SPEC       (7)
 #define UTM_PACKAGE_BODY       (8)
 #define UTM_LIBRARY            (9)
+/* BUG-49242 Queue object mode */
+#define UTM_QUEUE              (10)
 
 //BUG-22769
 #define UTM_PRIV_COUNT (10)   //사용자 계정 생성시 기본적으로 생성되는 권한의 수
