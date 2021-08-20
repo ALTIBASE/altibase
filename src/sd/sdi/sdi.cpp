@@ -1356,7 +1356,10 @@ IDE_RC sdi::checkShardLinker( qcStatement * aStatement )
         else
         {
             /* PROJ-2745 rebuild coordinator 없어졌다. */
-            IDE_TEST_RAISE( sdi::getShardStatus() != 1, ERR_ABORT_SDI_SHARD_NOT_JOIN );
+            if ( QCG_GET_SESSION_IS_SHARD_INTERNAL_LOCAL_OPERATION( aStatement ) != ID_TRUE ) 
+            {
+                IDE_TEST_RAISE( sdi::getShardStatus() != 1, ERR_ABORT_SDI_SHARD_NOT_JOIN );
+            }
 
             // rebuildCoordinator using dataSMN
             sSMN = sdi::getSMNForDataNode();
@@ -12773,7 +12776,6 @@ IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
             sDropParseTree = (qdDropParseTree*)aQcStmt->myPlan->parseTree;
             sUserNamePos = &(sDropParseTree->userName);
             sObjectNamePos = &(sDropParseTree->objectName);
-            sObjectNamePos->size = -1;
             break;
 
         default:
@@ -12846,30 +12848,31 @@ IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement    * aQcStmt,
     }
 
     /* set ObjectName */
-    if ( (sObjectNamePos->size > 0) && (sObjectNamePos->size <= QC_MAX_OBJECT_NAME_LEN ) )
+    if( aObjectName != NULL )
     {
-        if ( idlOS::strncmp( sObjectNamePos->stmtText + sObjectNamePos->offset,
-                             SDI_BACKUP_TABLE_PREFIX,
-                             idlOS::strlen( SDI_BACKUP_TABLE_PREFIX ) ) == 0 )
-        {
-            /* _BAK_ 테이블처리 */
-            sBakObjectNamePos = *sObjectNamePos;
-            sBakObjectNamePos.offset += 5;
-            sBakObjectNamePos.size -= 5;
-
-            QC_STR_COPY( sObjectName, sBakObjectNamePos );
-        }
-        else
-        {
-            QC_STR_COPY( sObjectName, *sObjectNamePos );
-        }
+        idlOS::strncpy( sObjectName, aObjectName, QC_MAX_OBJECT_NAME_LEN + 1 );
     }
     else
     {
-        if( aObjectName != NULL )
+        if ( (sObjectNamePos->size > 0) && (sObjectNamePos->size <= QC_MAX_OBJECT_NAME_LEN ) )
         {
-            idlOS::strncpy( sObjectName, aObjectName, QC_MAX_OBJECT_NAME_LEN + 1 );
+            if ( idlOS::strncmp( sObjectNamePos->stmtText + sObjectNamePos->offset,
+                                 SDI_BACKUP_TABLE_PREFIX,
+                                 idlOS::strlen( SDI_BACKUP_TABLE_PREFIX ) ) == 0 )
+            {
+                /* _BAK_ 테이블처리 */
+                sBakObjectNamePos = *sObjectNamePos;
+                sBakObjectNamePos.offset += 5;
+                sBakObjectNamePos.size -= 5;
+
+                QC_STR_COPY( sObjectName, sBakObjectNamePos );
+            }
+            else
+            {
+                QC_STR_COPY( sObjectName, *sObjectNamePos );
+            }
         }
+
     }
 
     IDE_TEST( sSmiTrans.initialize() != IDE_SUCCESS );
@@ -14052,6 +14055,68 @@ IDE_RC sdi::systemPropertyForShard( qcStatement * aStatement,
     
     IDE_POP();
     
+    return IDE_FAILURE;
+}
+
+IDE_RC sdi::checkFailoverHistoryOverSMN( ULong         aSMN,
+                                         idBool      * aIsExist )
+{
+    smiTrans       sTrans;
+    smiStatement   sSmiStmt;
+    smiStatement * sDummySmiStmt;
+    UInt           sStage = 0;
+
+    /* PROJ-2446 ONE SOURCE MM 에서 statistics정보를 넘겨 받아야 한다.
+     * 추후 작업 */
+    IDE_TEST( sTrans.initialize() != IDE_SUCCESS );
+    sStage = 1;
+
+    IDE_TEST( sTrans.begin( &sDummySmiStmt, NULL )
+              != IDE_SUCCESS );
+    sStage = 2;
+
+    IDE_TEST( sSmiStmt.begin( NULL,
+                              sDummySmiStmt,
+                              (SMI_STATEMENT_UNTOUCHABLE |
+                               SMI_STATEMENT_MEMORY_CURSOR) )
+              != IDE_SUCCESS );
+    sStage = 3;
+
+    IDE_TEST( sdm::checkFailoverHistoryOverSMN( &sSmiStmt,
+                                                aSMN,
+                                                aIsExist ) != IDE_SUCCESS );
+
+    IDE_TEST( sSmiStmt.end( SMI_STATEMENT_RESULT_SUCCESS ) != IDE_SUCCESS );
+    sStage = 2;
+
+    IDE_TEST( sTrans.commit() != IDE_SUCCESS );
+    sStage = 1;
+
+    sStage = 0;
+    IDE_TEST( sTrans.destroy( NULL ) != IDE_SUCCESS );
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION_END;
+
+    switch ( sStage )
+    {
+        case 3:
+            ( void )sSmiStmt.end( SMI_STATEMENT_RESULT_FAILURE );
+            /* fall through */
+        case 2:
+            ( void )sTrans.rollback();
+            /* fall through */
+        case 1:
+            ( void )sTrans.destroy( NULL );
+            /* fall through */
+        default:
+            break;
+    }
+
+    ideLog::log( IDE_SD_1, "[SHARD_META_ERROR] Failure. errorcode 0x%05"ID_XINT32_FMT" %s\n",
+                           E_ERROR_CODE(ideGetErrorCode()),
+                           ideGetErrorMsg(ideGetErrorCode()));
     return IDE_FAILURE;
 }
 
