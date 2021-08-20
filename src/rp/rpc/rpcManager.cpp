@@ -17,7 +17,7 @@
 
 /***********************************************************************
 
-* $Id: rpcManager.cpp 91258 2021-07-19 06:52:13Z minku.kang $
+* $Id: rpcManager.cpp 91413 2021-08-03 05:01:56Z lswhh $
 
 ***********************************************************************/
 
@@ -22037,6 +22037,9 @@ IDE_RC rpcManager::executeStartReceiverThread( cmiProtocolContext   * aProtocolC
         IDE_SET( ideSetErrorCode( rpERR_ABORT_RP_RECEIVER_INITIALIZE_FAIL, sRepName ) );
     }
     IDE_EXCEPTION_END;
+    
+    IDE_ERRLOG(IDE_RP_0);
+    rpcManager::printTcpInfo(aProtocolContext, aRemoteMeta->mReplication.mRepName);
 
     IDE_PUSH();
 

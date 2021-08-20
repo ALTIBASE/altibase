@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpcManagerMisc.cpp 90112 2021-03-03 09:37:19Z yoonhee.kim $
+ * $Id: rpcManagerMisc.cpp 91413 2021-08-03 05:01:56Z lswhh $
  **********************************************************************/
 
 #include <idl.h>
@@ -141,6 +141,40 @@ void rpcManager::removeSNEntry( iduMemPool * aSNPool,
     IDU_LIST_REMOVE( &aSNEntry->mNode );
     (void)aSNPool->memfree( aSNEntry );
 
+    return;
+}
+
+/*
+ *
+ */
+void rpcManager::printTcpInfo( cmiProtocolContext   * aProtocolContext,
+                               SChar * aRepName )
+{
+    cmiLink * sLink = NULL;
+
+    SChar sPeerIP[RP_IP_ADDR_LEN] = {0,};
+    SInt  sPeerPort = 0;
+    SChar sPeerPortStr[RP_PORT_LEN] = {0,};
+
+    IDE_TEST(cmiGetLinkForProtocolContext(aProtocolContext, &sLink) != IDE_SUCCESS);
+    IDE_TEST(rpnComm::isConnected( sLink ) != ID_TRUE);
+
+    IDE_TEST(cmiGetLinkInfo(sLink,
+                            sPeerIP,
+                            RP_IP_ADDR_LEN,
+                            CMI_LINK_INFO_REMOTE_IP_ADDRESS) != IDE_SUCCESS);
+    IDE_TEST(cmiGetLinkInfo(sLink,
+                            sPeerPortStr,
+                            RP_PORT_LEN,
+                            CMI_LINK_INFO_REMOTE_PORT) != IDE_SUCCESS);
+    sPeerPort = idlOS::atoi(sPeerPortStr);
+
+    ideLog::log( IDE_RP_0, RP_TRC_R_PEER_IP_PORT_NAME, sPeerIP, sPeerPort, aRepName );
+
+    return;
+    IDE_EXCEPTION_END;
+
+    ideLog::log( IDE_RP_0, RP_TRC_R_PEER_IP_PORT_NAME, "Disconnected Link", 0, aRepName );
     return;
 }
 

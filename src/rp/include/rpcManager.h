@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpcManager.h 91258 2021-07-19 06:52:13Z minku.kang $
+ * $Id: rpcManager.h 91413 2021-08-03 05:01:56Z lswhh $
  **********************************************************************/
 
 #ifndef _O_RPC_MANAGER_H_
@@ -1012,6 +1012,8 @@ public:
                                   iduList    * aSNList );
     static rpxSNEntry * searchSNEntry( iduList * aSNList, smSN aSN );
     static void removeSNEntry( iduMemPool * aSNPool, rpxSNEntry * aSNEntry );
+    static void printTcpInfo( cmiProtocolContext   * aProtocolContext,
+                              SChar * aRepName );
 
 private:
     rpcDDLSyncManager   mDDLSyncManager;
