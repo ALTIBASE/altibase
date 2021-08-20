@@ -7,7 +7,6 @@ assignees: ''
 
 ---
 
-
 **Overview**
  - Incident ID: INC-
  - Incident Type:
@@ -46,4 +45,3 @@ Please describe the incident from support reqeusts
 ** Timesheet **
 (Author) (Date)
 (Content)
- 
