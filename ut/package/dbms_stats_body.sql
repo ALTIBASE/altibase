@@ -391,12 +391,12 @@ begin
         TAB_REC C1%ROWTYPE;
 
         CURSOR C2 IS select v.column_name as column_name,
-                           (select regexp_substr(partition_max_value,'[^,]+',1,v.rnum) from SYSTEM_.SYS_TABLE_PARTITIONS_ p where table_id=v.table_id and partition_name=up_srcpartname)+0 as minvalue,
-                           (select regexp_substr(partition_max_value,'[^,]+',1,v.rnum) from SYSTEM_.SYS_TABLE_PARTITIONS_ p where table_id=v.table_id and partition_name=up_dstpartname)+0 as maxvalue
+                           (select regexp_substr(partition_max_value,'[^,]+',1,v.pc_order+1) from SYSTEM_.SYS_TABLE_PARTITIONS_ p where table_id=v.table_id and partition_name=up_srcpartname)+0 as minvalue,
+                           (select regexp_substr(partition_max_value,'[^,]+',1,v.pc_order+1) from SYSTEM_.SYS_TABLE_PARTITIONS_ p where table_id=v.table_id and partition_name=up_dstpartname)+0 as maxvalue
                         from
                             (select c.column_name as column_name,
                                     t.table_id as table_id,
-                                    rownum as rnum
+                                    k.part_col_order as pc_order
                                 from SYSTEM_.SYS_USERS_ u,
                                      SYSTEM_.SYS_PART_KEY_COLUMNS_ k,
                                      SYSTEM_.SYS_TABLES_ t,
