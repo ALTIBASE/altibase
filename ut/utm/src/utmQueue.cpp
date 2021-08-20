@@ -52,15 +52,15 @@ SQLRETURN getQueueInfo( SChar *a_user,
     SQLLEN    s_user_ind;
     SQLLEN    s_table_ind;
 
-    idBool sNeedQuote4User   = ID_FALSE;
-    idBool sNeedQuote4Pwd = ID_FALSE;
-    idBool sNeedQuote4Tbl    = ID_FALSE;
-    SInt   sNeedQuote4File          = 0;
+    idBool    sNeedQuote4User  = ID_FALSE;
+    idBool    sNeedQuote4Pwd   = ID_FALSE;
+    idBool    sNeedQuote4Tbl   = ID_FALSE;
+    SInt      sNeedQuote4File  = 0;
 
-    SChar       sTBSName[UTM_NAME_LEN+1];
-    SQLLEN      sTBSName_ind;
-    SInt        sTbsType  = 0;
-    SQLLEN      sTbsType_ind;
+    SChar     sTBSName[UTM_NAME_LEN+1];
+    SQLLEN    sTBSName_ind;
+    SInt      sTbsType  = 0;
+    SQLLEN    sTbsType_ind;
 
     s_puser_name[0] = '\0';
     idlOS::fprintf(stdout, "\n##### QUEUE #####\n");
@@ -139,10 +139,10 @@ SQLRETURN getQueueInfo( SChar *a_user,
         i++;
 
         /* BUG-34502: handling quoted identifiers */
-        sNeedQuote4User   = utString::needQuotationMarksForObject(s_user_name);
-        sNeedQuote4Pwd = utString::needQuotationMarksForFile(s_passwd);
-        sNeedQuote4Tbl    = utString::needQuotationMarksForObject(s_table_name, ID_TRUE);
-        sNeedQuote4File          = utString::needQuotationMarksForFile(s_user_name) ||
+        sNeedQuote4User = utString::needQuotationMarksForObject(s_user_name);
+        sNeedQuote4Pwd  = utString::needQuotationMarksForFile(s_passwd);
+        sNeedQuote4Tbl  = utString::needQuotationMarksForObject(s_table_name, ID_TRUE);
+        sNeedQuote4File = utString::needQuotationMarksForFile(s_user_name) ||
                                   utString::needQuotationMarksForFile(s_table_name);
 
         /* formout in run_il_out.sh */

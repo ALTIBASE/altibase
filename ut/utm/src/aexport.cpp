@@ -15,7 +15,7 @@
  */
  
 /***********************************************************************
- * $Id: aexport.cpp 88494 2020-09-04 04:29:31Z chkim $
+ * $Id: aexport.cpp 91504 2021-08-19 23:38:48Z chkim $
  **********************************************************************/
 
 #include <idl.h>
@@ -761,6 +761,24 @@ static IDE_RC doObjModeExport()
                 {
                     IDE_TEST_RAISE( close_file( sExecStatsFp ) != SQL_SUCCESS, closeError);
                 }
+
+                break;
+
+            /* BUG-49242 Queue object mode */
+            case UTM_QUEUE:
+                idlOS::sprintf( sCreateFileName,"%s_%s_CRT.sql",  
+                                          gObjectModeInfo[i].mObjUserName,
+                                          gObjectModeInfo[i].mObjObjectName );
+
+                IDE_TEST_RAISE( open_file( sCreateFileName, &sCreateFp ) 
+                                           != SQL_SUCCESS,openError );
+
+                IDE_TEST_RAISE( getObjModeQueueQuery( sCreateFp,
+                                                      gObjectModeInfo[i].mObjUserName,
+                                                      gObjectModeInfo[i].mObjObjectName )
+                                                      != SQL_SUCCESS, init_error );
+
+                IDE_TEST_RAISE( close_file( sCreateFp ) != SQL_SUCCESS, closeError );
 
                 break;
 

@@ -61,7 +61,8 @@
     "case2( table_type = 'V', '2', "                                    \
     "       table_type = 'S', '3', "                                    \
     "       table_type = 'T', '4', "                                    \
-    "       table_type = 'M', '6' ) "                                   \
+    "       table_type = 'M', '6', "                                    \
+    "       table_type = 'Q', '10' ) "                                  \
     "as type "                                                          \
     "from ( "                                                           \
     "select user_id, table_id,table_type "                              \
@@ -96,6 +97,26 @@
     "b.TBS_ID = c.ID and "                                              \
     "b.TABLE_OID = d.TABLE_OID and "                                    \
     "b.TABLE_TYPE = 'T' "                                               \
+    "and a.user_name='%s' "                                             \
+    "and b.table_name='%s' "
+
+/* BUG-49242 Queue object mode */
+#define GET_OBJMODE_QUEUE_QUERY                                         \
+    "select /*+ USE_HASH(B, C) USE_HASH(B, D) NO_PLAN_CACHE */ "        \
+    "(SELECT DB_NAME FROM V$DATABASE LIMIT 1) AS TABLE_CAT, "           \
+    "a.USER_NAME as TABLE_SCHEM, "                                      \
+    "b.TABLE_NAME as TABLE_NAME, "                                      \
+    "c.NAME as TABLESPACE_NAME, "                                       \
+    "c.TYPE as TABLESPACE_TYPE "                                        \
+    "from "                                                             \
+    "SYSTEM_.SYS_USERS_ a, "                                            \
+    "SYSTEM_.SYS_TABLES_ b, "                                           \
+    "X$TABLESPACES_HEADER c "                                           \
+    "where "                                                            \
+    "a.USER_ID = b.USER_ID and "                                        \
+    "a.USER_NAME <> 'SYSTEM_' and "                                     \
+    "b.TBS_ID = c.ID and "                                              \
+    "b.TABLE_TYPE = 'Q' "                                               \
     "and a.user_name='%s' "                                             \
     "and b.table_name='%s' "
 
@@ -398,6 +419,89 @@ SQLRETURN getObjModeTableQuery( FILE   *aTblFp,
     if ( sStmt != SQL_NULL_HSTMT )
     {
         // BUG-33995 aexport have wrong free handle code
+        FreeStmt( &sStmt );
+    }
+
+    return SQL_ERROR;
+#undef IDE_FN
+}
+
+/* BUG-49242 Queue object mode */
+SQLRETURN getObjModeQueueQuery( FILE   *aQueueFp,
+                                SChar  *aUserName,
+                                SChar  *aObjName )
+{
+#define IDE_FN "getObjModeQueueeQuery()"
+    IDE_MSGLOG_FUNC(IDE_MSGLOG_BODY(""));
+    SQLHSTMT    sStmt = SQL_NULL_HSTMT;
+    SQLRETURN   sRet;
+    SChar       sQuery[QUERY_LEN];
+    SChar       sUserName[UTM_NAME_LEN+1];
+    SQLLEN      sUserName_ind;
+    SChar       sTableName[UTM_NAME_LEN+1];
+    SQLLEN      sTableName_ind;
+    SChar       sTbsName[UTM_NAME_LEN+1];
+    SQLLEN      sTbsName_ind;
+    SInt        sTbsType  = 0;
+    SQLLEN      sTbsType_ind;
+
+    idlOS::fprintf( stdout, "\n##### QUEUE #####\n" );
+
+    IDE_TEST_RAISE( SQLAllocStmt(m_hdbc, &sStmt) != SQL_SUCCESS,
+            alloc_error );
+
+    idlOS::sprintf( sQuery, GET_OBJMODE_QUEUE_QUERY,
+                    aUserName, aObjName );
+
+    IDE_TEST_RAISE( SQLExecDirect( sStmt, (SQLCHAR *)sQuery, SQL_NTS )
+                                   != SQL_SUCCESS, sStmtError );
+    IDE_TEST_RAISE(
+        SQLBindCol( sStmt, 2, SQL_C_CHAR, (SQLPOINTER)sUserName,
+                    (SQLLEN)ID_SIZEOF(sUserName), &sUserName_ind)
+        != SQL_SUCCESS, sStmtError );
+    IDE_TEST_RAISE(    
+        SQLBindCol( sStmt, 3, SQL_C_CHAR, (SQLPOINTER)sTableName,
+                    (SQLLEN)ID_SIZEOF(sTableName), &sTableName_ind)
+        != SQL_SUCCESS, sStmtError );
+    IDE_TEST_RAISE(    
+        SQLBindCol( sStmt, 4, SQL_C_CHAR, (SQLPOINTER)sTbsName,
+                    (SQLLEN)ID_SIZEOF(sTbsName), &sTbsName_ind)
+        != SQL_SUCCESS, sStmtError );
+    IDE_TEST_RAISE(    
+        SQLBindCol( sStmt, 5, SQL_C_SLONG, (SQLPOINTER)&sTbsType,
+                    0, &sTbsType_ind)
+        != SQL_SUCCESS, sStmtError );
+
+    sRet = SQLFetch(sStmt);
+
+    if ( sRet != SQL_NO_DATA )
+    {
+        IDE_TEST_RAISE( sRet != SQL_SUCCESS, sStmtError );
+    }
+
+    IDE_TEST( getQueueQuery( sUserName,
+                             sTableName,
+                             aQueueFp )
+              != SQL_SUCCESS );
+
+    idlOS::fprintf(aQueueFp,"\n");
+
+    FreeStmt( &sStmt );
+
+    return SQL_SUCCESS;
+
+    IDE_EXCEPTION( alloc_error );
+    {
+        utmSetErrorMsgWithHandle( SQL_HANDLE_DBC, (SQLHANDLE)m_hdbc );
+    }
+    IDE_EXCEPTION( sStmtError );
+    {
+        utmSetErrorMsgWithHandle( SQL_HANDLE_STMT, (SQLHANDLE)sStmt );
+    }
+    IDE_EXCEPTION_END;
+
+    if ( sStmt != SQL_NULL_HSTMT )
+    {
         FreeStmt( &sStmt );
     }
 
