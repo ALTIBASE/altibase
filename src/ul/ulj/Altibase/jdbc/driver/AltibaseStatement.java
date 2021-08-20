@@ -37,7 +37,6 @@ import Altibase.jdbc.driver.util.AltiSqlProcessor;
 import Altibase.jdbc.driver.util.AltibaseProperties;
 import Altibase.jdbc.driver.util.DynamicArray;
 import Altibase.jdbc.driver.util.StringUtils;
-import Altibase.jdbc.driver.sharding.core.GlobalTransactionLevel;
 
 import static Altibase.jdbc.driver.sharding.core.AltibaseShardingFailover.*;
 
@@ -298,30 +297,165 @@ public class AltibaseStatement extends WrapperAdapter implements Statement
     
     private void setProperty4Nodes()  throws SQLException
     {
-        // BUGBUG : alter session set global_transaction_level ~ && shardjdbc인 경우
-        if (mMetaConn == null)
+        /* alter session set ~
+         * 필요 시 클라이언트 속성변수 세팅
+         * shardJDBC일 때, nodeConn에 전파
+         */
+
+        // BUGBUG : CmGetPropertyResult를 사용하는게 더 나을 지 확인해보기...
+        short sPropID = mExecutionResult.getSessionPropID();
+        String sPropValue = mExecutionResult.getSessionPropValueStr();
+
+        if (sPropID >= AltibaseProperties.PROP_CODE_MAX)
         {
             return;
         }
         
-        // BUGBUG : CmGetPropertyResult를 사용하는게 더 나을 지 확인해보기...
-        short sPropID = mExecutionResult.getSessionPropID();
-        String sPropValue = mExecutionResult.getSessionPropValueStr();
+        // 1. metaConn이 null이면 리턴 
+        if (mMetaConn == null)
+        {
+            // 클라이언트 속성변수에 set 할 거 있으면 하고 리턴.
+            switch (sPropID)
+            {
+                case (AltibaseProperties.PROP_CODE_EXPLAIN_PLAN):
+                    mConnection.setExplainPlanInternal(Byte.parseByte(sPropValue));
+                    break;
+                case (AltibaseProperties.PROP_CODE_TIME_ZONE):
+                    mConnection.setSessionTimeZoneInternal(sPropValue);
+                    break;
+            }
+            return;
+        }
         
-        // Node Connections에 대해 sendProperties 전송
+        // 2. nodeConn에 전파하지 않는 속성들.. 그냥 리턴한다. 
+        if (sPropID == (AltibaseProperties.PROP_CODE_GLOBAL_DDL) || 
+            sPropID == (AltibaseProperties.PROP_CODE_TRCLOG_DETAIL_PREDICATE) ||
+            sPropID == (AltibaseProperties.PROP_CODE_TRCLOG_DETAIL_SHARD))
+        {
+            return;
+        }
+
+        AltibaseConnection sNodeConn;
+           
+        // 3. NodeConn에 대해 sendProperties 전송
         switch (sPropID)
         {
             case (AltibaseProperties.PROP_CODE_GLOBAL_TRANSACTION_LEVEL):
-                mMetaConn.sendGlobalTransactionLevel(GlobalTransactionLevel.get(Short.parseShort(sPropValue)));
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    sNodeConn = (AltibaseConnection)sEach;
+                    sNodeConn.sendByteProperty((byte)sPropID, Byte.parseByte(sPropValue));
+                    //sNodeConn.getProp().setProperty(AltibaseProperties.PROP_GLOBAL_TRANSACTION_LEVEL, sPropValue);
+                }
+                mMetaConn.setGlobalTransactionLevel(GlobalTransactionLevel.get(Short.parseShort(sPropValue)));
+                //mConnection.getProp().setProperty(AltibaseProperties.PROP_GLOBAL_TRANSACTION_LEVEL, sPropValue);
+                mMetaConn.getMetaConnection().getDistTxInfo().initDistTxInfo();
+                mMetaConn.getMetaConnection().setDistTxInfoForVerify();
                 break;
             case (AltibaseProperties.PROP_CODE_SHARD_STATEMENT_RETRY):
-                mMetaConn.sendShardStatementRetry(Short.parseShort(sPropValue));
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    sNodeConn = (AltibaseConnection)sEach;
+                    sNodeConn.sendByteProperty((byte)sPropID, Byte.parseByte(sPropValue));
+                }
+                mMetaConn.setShardStatementRetry(Short.parseShort(sPropValue));
                 break;
+            case (AltibaseProperties.PROP_CODE_EXPLAIN_PLAN):
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    ((AltibaseConnection)sEach).setExplainPlan(Byte.parseByte(sPropValue));
+                }
+                mMetaConn.getMetaConnection().setExplainPlanInternal(Byte.parseByte(sPropValue));
+                break;
+            case (AltibaseProperties.PROP_CODE_TIME_ZONE):
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    ((AltibaseConnection)sEach).setSessionTimeZone(sPropValue);
+                }
+                mMetaConn.getMetaConnection().setSessionTimeZoneInternal(sPropValue);
+                break;
+            case (AltibaseProperties.PROP_CODE_UTRANS_TIMEOUT):  
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    ((AltibaseConnection)sEach).setTransTimeout(Integer.parseInt(sPropValue));
+                }
+                mMetaConn.getMetaConnection().setTransTimeoutInternal(Integer.parseInt(sPropValue));
+                break;
+            case (AltibaseProperties.PROP_CODE_AUTOCOMMIT):
+                // sharding에서는 non_autocommit만 지원하므로 autocommit mode 변경 불가.
+                break;
+            case (AltibaseProperties.PROP_CODE_MESSAGE_CALLBACK):
+                // alter session에 없음.
+                break;
+            case (AltibaseProperties.PROP_CODE___OPTIMIZER_BUCKET_COUNT_MAX):
+            case (AltibaseProperties.PROP_CODE___OPTIMIZER_DEFAULT_TEMP_TBS_TYPE):
+            case (AltibaseProperties.PROP_CODE___OPTIMIZER_ELIMINATE_COMMON_SUBEXPRESSION):
+            case (AltibaseProperties.PROP_CODE___OPTIMIZER_PLAN_HASH_OR_SORT_METHOD):
+            case (AltibaseProperties.PROP_CODE___OPTIMIZER_TRANSITIVITY_OLD_RULE):
+            case (AltibaseProperties.PROP_CODE___PRINT_OUT_ENABLE):
+            case (AltibaseProperties.PROP_CODE___REDUCE_PARTITION_PREPARE_MEMORY):
+            case (AltibaseProperties.PROP_CODE___USE_OLD_SORT):
+            case (AltibaseProperties.PROP_CODE_ARITHMETIC_OPERATION_MODE):
+            case (AltibaseProperties.PROP_CODE_AUTO_REMOTE_EXEC):
+            case (AltibaseProperties.PROP_CODE_COMMIT_WRITE_WAIT_MODE):
+            case (AltibaseProperties.PROP_CODE_DBLINK_REMOTE_STATEMENT_AUTOCOMMIT):
+            case (AltibaseProperties.PROP_CODE_DDL_LOCK_TIMEOUT):
+            case (AltibaseProperties.PROP_CODE_DDL_TIMEOUT):
+            case (AltibaseProperties.PROP_CODE_FETCH_TIMEOUT):
+            case (AltibaseProperties.PROP_CODE_HEADER_DISPLAY_MODE):
+            case (AltibaseProperties.PROP_CODE_IDLE_TIMEOUT):
+            case (AltibaseProperties.PROP_CODE_LOB_CACHE_THRESHOLD):
+            case (AltibaseProperties.PROP_CODE_MAX_STATEMENTS_PER_SESSION):
+            case (AltibaseProperties.PROP_CODE_NORMALFORM_MAXIMUM):
+            case (AltibaseProperties.PROP_CODE_NLS_NCHAR_CONV_EXCP):
+            case (AltibaseProperties.PROP_CODE_OPTIMIZER_AUTO_STATS):
+            case (AltibaseProperties.PROP_CODE_OPTIMIZER_DISK_INDEX_COST_ADJ):
+            case (AltibaseProperties.PROP_CODE_OPTIMIZER_MEMORY_INDEX_COST_ADJ):
+            case (AltibaseProperties.PROP_CODE_OPTIMIZER_MODE):
+            case (AltibaseProperties.PROP_CODE_OPTIMIZER_PERFORMANCE_VIEW):
+            case (AltibaseProperties.PROP_CODE_PARALLEL_DML_MODE):
+            case (AltibaseProperties.PROP_CODE_QUERY_REWRITE_ENABLE):
+            case (AltibaseProperties.PROP_CODE_QUERY_TIMEOUT):
+            case (AltibaseProperties.PROP_CODE_RECYCLEBIN_ENABLE):
+            case (AltibaseProperties.PROP_CODE_REPLICATION_DDL_SYNC):
+            case (AltibaseProperties.PROP_CODE_REPLICATION_DDL_SYNC_TIMEOUT):
+            case (AltibaseProperties.PROP_CODE_RESULT_CACHE_ENABLE):
+            case (AltibaseProperties.PROP_CODE_SERIAL_EXECUTE_MODE):
+            case (AltibaseProperties.PROP_CODE_ST_OBJECT_BUFFER_SIZE):
+            case (AltibaseProperties.PROP_CODE_TOP_RESULT_CACHE_MODE):
+            case (AltibaseProperties.PROP_CODE_TRANSACTIONAL_DDL):
+            case (AltibaseProperties.PROP_CODE_TRCLOG_DETAIL_INFORMATION):
             case (AltibaseProperties.PROP_CODE_INDOUBT_FETCH_TIMEOUT):
-                mMetaConn.sendIndoubtFetchTimeout(Integer.parseInt(sPropValue));
+                // Property type : integer
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    ((AltibaseConnection)sEach).sendIntProperty((byte)sPropID, Integer.parseInt(sPropValue));
+                }
+                break;
+            case (AltibaseProperties.PROP_CODE_DATE_FORMAT):
+            case (AltibaseProperties.PROP_CODE_NLS_CURRENCY):
+            case (AltibaseProperties.PROP_CODE_NLS_ISO_CURRENCY):
+            case (AltibaseProperties.PROP_CODE_NLS_NUMERIC_CHARACTERS):
+            case (AltibaseProperties.PROP_CODE_NLS_TERRITORY):
+                // Property type : string
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    ((AltibaseConnection)sEach).sendStringProperty((byte)sPropID, sPropValue);
+                }
+                break;
+            case (AltibaseProperties.PROP_CODE_TRX_UPDATE_MAX_LOGSIZE):
+                // Property type : long
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    ((AltibaseConnection)sEach).sendLongProperty((byte)sPropID, Long.parseLong(sPropValue));
+                }
                 break;
             case (AltibaseProperties.PROP_CODE_INDOUBT_FETCH_METHOD):
-                mMetaConn.sendIndoubtFetchMethod(Short.parseShort(sPropValue));
+                // Property type : byte
+                for (Connection sEach : mMetaConn.getCachedConnections().values())
+                {
+                    ((AltibaseConnection)sEach).sendByteProperty((byte)sPropID, Byte.parseByte(sPropValue));
+                }
                 break;
             default:
                 break;
@@ -1142,7 +1276,7 @@ public class AltibaseStatement extends WrapperAdapter implements Statement
 
     public void setCursorName(String aName) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "cursor name and positioned update");
+        throw Error.createSQLFeatureNotSupportedException("cursor name and positioned update");
     }
 
     public void setEscapeProcessing(boolean aEnable) throws SQLException

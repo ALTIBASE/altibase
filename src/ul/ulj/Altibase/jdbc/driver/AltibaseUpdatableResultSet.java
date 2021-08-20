@@ -405,11 +405,6 @@ public class AltibaseUpdatableResultSet extends AltibaseResultSet
         return mUpdateRow.rowUpdated();
     }
 
-    public void updateArray(int aColumnIndex, Array aValue) throws SQLException
-    {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Array type");
-    }
-
     public void updateAsciiStream(int aColumnIndex, InputStream aValue, long aLength) throws SQLException
     {
         throwErrorForClosed();
@@ -532,11 +527,6 @@ public class AltibaseUpdatableResultSet extends AltibaseResultSet
         {
             mUpdated[aColumnIndex - 1] = UPDATED_FOR_NORMAL;
         }
-    }
-
-    public void updateRef(int aColumnIndex, Ref aValue) throws SQLException
-    {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Ref type");
     }
 
     public void updateShort(int aColumnIndex, short aValue) throws SQLException

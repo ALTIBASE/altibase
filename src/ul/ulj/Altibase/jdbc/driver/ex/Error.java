@@ -781,6 +781,15 @@ public final class Error
 
     public static SQLException createSQLFeatureNotSupportedException()
     {
-        return new SQLFeatureNotSupportedException();
+        return new SQLFeatureNotSupportedException("",
+                                                   ErrorDef.getErrorState(ErrorDef.UNSUPPORTED_FEATURE),
+                                                   ErrorDef.UNSUPPORTED_FEATURE);
+    }
+
+    public static SQLException createSQLFeatureNotSupportedException(String aReason)
+    {
+        return new SQLFeatureNotSupportedException(aReason,
+                                                   ErrorDef.getErrorState(ErrorDef.UNSUPPORTED_FEATURE),
+                                                   ErrorDef.UNSUPPORTED_FEATURE);
     }
 }

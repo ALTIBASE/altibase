@@ -104,8 +104,6 @@ public class CmProtocol
                 }
                 CmOperation.writeGetProperty(aContext.channel(), AltibaseProperties.PROP_CODE_NLS_CHARACTERSET);
                 CmOperation.writeGetProperty(aContext.channel(), AltibaseProperties.PROP_CODE_NLS_NCHAR_CHARACTERSET);
-                CmOperation.writeGetProperty(aContext.channel(), AltibaseProperties.PROP_CODE_EXPLAIN_PLAN);
-                CmOperation.writeGetProperty(aContext.channel(), AltibaseProperties.PROP_CODE_AUTOCOMMIT);
                 /* BUG-39817 */
                 if (!aContext.isSetProperty(AltibaseProperties.PROP_CODE_ISOLATION_LEVEL))
                 {
@@ -120,13 +118,9 @@ public class CmProtocol
                 {
                     CmOperation.writeGetProperty(aContext.channel(), AltibaseProperties.PROP_CODE_SHARD_STATEMENT_RETRY);
                 }
-                if (!aContext.isSetProperty(AltibaseProperties.PROP_CODE_INDOUBT_FETCH_TIMEOUT))
+                if (!aContext.isSetProperty(AltibaseProperties.PROP_CODE_UTRANS_TIMEOUT))
                 {
-                    CmOperation.writeGetProperty(aContext.channel(), AltibaseProperties.PROP_CODE_INDOUBT_FETCH_TIMEOUT);
-                }
-                if (!aContext.isSetProperty(AltibaseProperties.PROP_CODE_INDOUBT_FETCH_METHOD))
-                {
-                    CmOperation.writeGetProperty(aContext.channel(), AltibaseProperties.PROP_CODE_INDOUBT_FETCH_METHOD);
+                    CmOperation.writeGetProperty(aContext.channel(), AltibaseProperties.PROP_CODE_UTRANS_TIMEOUT);
                 }
                 aContext.channel().sendAndReceive();
                 readProtocolResult(aContext);

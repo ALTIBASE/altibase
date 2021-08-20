@@ -191,9 +191,8 @@ public class AltibaseDatabaseMetaData extends WrapperAdapter implements Database
     }
 
     public ResultSet getColumnPrivileges(String aCatalog, String aSchema, String aTable, String aColumnNamePattern) throws SQLException    
-    {	 
-    	Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "To get a description of the access rights for a table's columns.");
-        return null;
+    {
+        throw Error.createSQLFeatureNotSupportedException("To get a description of the access rights for a table's columns.");
     }
 
     public synchronized ResultSet getColumns(String aCatalog, String aSchemaPattern, String aTableNamePattern, String aColumnNamePattern) throws SQLException
@@ -1001,8 +1000,7 @@ public class AltibaseDatabaseMetaData extends WrapperAdapter implements Database
 
     public ResultSet getUDTs(String aCatalog, String aSchemaPattern, String aTypeNamePattern, int[] aTypes) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "User defined type");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("User defined type");
     }
 
     public String getURL() throws SQLException

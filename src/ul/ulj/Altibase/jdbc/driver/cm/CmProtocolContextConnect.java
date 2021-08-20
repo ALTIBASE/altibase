@@ -189,14 +189,9 @@ public class CmProtocolContextConnect extends CmProtocolContext
         return Short.parseShort(getPropertyResult().getProperty(AltibaseProperties.PROP_CODE_SHARD_STATEMENT_RETRY));
     }
 
-    public int getIndoubtFetchTimeout() throws NumberFormatException, SQLException
+    public int getUtransTimeout() throws NumberFormatException, SQLException
     {
-        return Integer.parseInt(getPropertyResult().getProperty(AltibaseProperties.PROP_CODE_INDOUBT_FETCH_TIMEOUT));
-    }
-
-    public short getIndoubtFetchMethod() throws NumberFormatException, SQLException
-    {
-        return Short.parseShort(getPropertyResult().getProperty(AltibaseProperties.PROP_CODE_INDOUBT_FETCH_METHOD));
+        return Integer.parseInt(getPropertyResult().getProperty(AltibaseProperties.PROP_CODE_UTRANS_TIMEOUT));
     }
 
     int getPropertyCount()

@@ -193,49 +193,100 @@ public class AltibaseProperties extends CaseInsensitiveProperties
     public static final boolean DEFAULT_NCHAR_LITERAL_REPLACE        = false;
     public static final boolean DEFAULT_FAILOVER_USE_STF             = false;
 
-    public static final byte    PROP_CODE_CLIENT_PACKAGE_VERSION          = 0;
-    public static final byte    PROP_CODE_CLIENT_PROTOCOL_VERSION         = 1;
-    public static final byte    PROP_CODE_CLIENT_PID                      = 2;
-    public static final byte    PROP_CODE_CLIENT_TYPE                     = 3;
-    public static final byte    PROP_CODE_APP_INFO                        = 4;
-    public static final byte    PROP_CODE_NLS                             = 5;
-    public static final byte    PROP_CODE_AUTOCOMMIT                      = 6;
-    public static final byte    PROP_CODE_EXPLAIN_PLAN                    = 7;
-    public static final byte    PROP_CODE_ISOLATION_LEVEL                 = 8;
-    public static final byte    PROP_CODE_OPTIMIZER_MODE                  = 9;
-    public static final byte    PROP_CODE_HEADER_DISPLAY_MODE             = 10;
-    public static final byte    PROP_CODE_STACK_SIZE                      = 11;
-    public static final byte    PROP_CODE_IDLE_TIMEOUT                    = 12;
-    public static final byte    PROP_CODE_QUERY_TIMEOUT                   = 13;
-    public static final byte    PROP_CODE_FETCH_TIMEOUT                   = 14;
-    public static final byte    PROP_CODE_UTRANS_TIMEOUT                  = 15;
-    public static final byte    PROP_CODE_DATE_FORMAT                     = 16;
-    public static final byte    PROP_CODE_NORMALFORM_MAXIMUM              = 17;
-    public static final byte    PROP_CODE_SERVER_PACKAGE_VERSION          = 18;
-    public static final byte    PROP_CODE_NLS_NCHAR_LITERAL_REPLACE       = 19;
-    public static final byte    PROP_CODE_NLS_CHARACTERSET                = 20;
-    public static final byte    PROP_CODE_NLS_NCHAR_CHARACTERSET          = 21;
-    public static final byte    PROP_CODE_ENDIAN                          = 22;
-    public static final byte    PROP_CODE_MAX_STATEMENTS_PER_SESSION      = 23; /* BUG-31144 */
-    public static final byte    PROP_CODE_FAILOVER_SOURCE                 = 24; /* BUG-31390 */
-    public static final byte    PROP_CODE_DDL_TIMEOUT                     = 25; /* BUG-32885 */
-    public static final byte    PROP_CODE_TIME_ZONE                       = 26; /* PROJ-2209 */
-    public static final byte    PROP_CODE_FETCH_PROTOCOL_TYPE             = 27;
-    public static final byte    PROP_CODE_REMOVE_REDUNDANT_TRANSMISSION   = 28;
-    public static final byte    PROP_CODE_LOB_CACHE_THRESHOLD             = 29; /* PROJ-2047 */
-    public static final byte    PROP_CODE_SHARD_NODE_NAME                 = 32; /* PROJ-2690 ShardJDBC */
-    public static final byte    PROP_CODE_SHARD_PIN                       = 33; /* PROJ-2690 ShardJDBC */
-    public static final byte    PROP_CODE_GLOBAL_TRANSACTION_LEVEL        = 34; /* PROJ-2690 ShardJDBC */
-    public static final byte    PROP_CODE_SHARD_META_NUMBER               = 35; /* PROJ-2690 ShardJDBC */
-    public static final byte    PROP_CODE_SHARD_CLIENT                    = 36; /* PROJ-2690 ShardJDBC */
-    public static final byte    PROP_CODE_SHARD_SESSION_TYPE              = 37; /* BUG-46790 internal인지 external인지 구분하는 용도 */
-    public static final byte    PROP_CODE_SHARD_CLIENT_CONNECTION_REPORT  = 38; /* BUG-46790 shardfailover report를 위한 속성값. => BUG-46785 Deprecated */
-    public static final byte    PROP_CODE_MESSAGE_CALLBACK                = 39; /* BUG-46019 */
-    public static final byte    PROP_CODE_SHARD_STATEMENT_RETRY           = 75; /* PROJ-2733 */
-    public static final byte    PROP_CODE_INDOUBT_FETCH_TIMEOUT           = 76; /* PROJ-2733 */
-    public static final byte    PROP_CODE_INDOUBT_FETCH_METHOD            = 77; /* PROJ-2733 */
-    public static final byte    PROP_CODE_MAX                             = 78;
-
+    /* PROJ-2727 Global property handling 
+     * connStr에 올 수 있는 속성 추가 
+     */
+    public static final String  PROP_HEADER_DISPLAY_MODE             = "select_header_display";
+    public static final String  PROP_DDL_LOCK_TIMEOUT                = "ddl_lock_timeout";
+    public static final String  PROP_GLOBAL_DDL                      = "global_ddl";
+    public static final String  PROP_OPTIMIZER_MODE                  = "optimizer_mode";
+    public static final String  PROP_STACK_SIZE                      = "stack_size";
+    public static final String  PROP_TRANSACTIONAL_DDL               = "transactional_ddl";
+    public static final String  PROP_EXPLAIN_PLAN                    = "explain_plan";
+    public static final byte    DEFAULT_EXPLAIN_PLAN                 = 0;
+    
+    public static final byte    PROP_CODE_CLIENT_PACKAGE_VERSION                     = 0;
+    public static final byte    PROP_CODE_CLIENT_PROTOCOL_VERSION                    = 1;
+    public static final byte    PROP_CODE_CLIENT_PID                                 = 2;
+    public static final byte    PROP_CODE_CLIENT_TYPE                                = 3;
+    public static final byte    PROP_CODE_APP_INFO                                   = 4;
+    public static final byte    PROP_CODE_NLS                                        = 5;
+    public static final byte    PROP_CODE_AUTOCOMMIT                                 = 6;
+    public static final byte    PROP_CODE_EXPLAIN_PLAN                               = 7;
+    public static final byte    PROP_CODE_ISOLATION_LEVEL                            = 8;
+    public static final byte    PROP_CODE_OPTIMIZER_MODE                             = 9;
+    public static final byte    PROP_CODE_HEADER_DISPLAY_MODE                        = 10;
+    public static final byte    PROP_CODE_STACK_SIZE                                 = 11;
+    public static final byte    PROP_CODE_IDLE_TIMEOUT                               = 12;
+    public static final byte    PROP_CODE_QUERY_TIMEOUT                              = 13;
+    public static final byte    PROP_CODE_FETCH_TIMEOUT                              = 14;
+    public static final byte    PROP_CODE_UTRANS_TIMEOUT                             = 15;
+    public static final byte    PROP_CODE_DATE_FORMAT                                = 16;
+    public static final byte    PROP_CODE_NORMALFORM_MAXIMUM                         = 17;
+    public static final byte    PROP_CODE_SERVER_PACKAGE_VERSION                     = 18;
+    public static final byte    PROP_CODE_NLS_NCHAR_LITERAL_REPLACE                  = 19;
+    public static final byte    PROP_CODE_NLS_CHARACTERSET                           = 20;
+    public static final byte    PROP_CODE_NLS_NCHAR_CHARACTERSET                     = 21;
+    public static final byte    PROP_CODE_ENDIAN                                     = 22;
+    public static final byte    PROP_CODE_MAX_STATEMENTS_PER_SESSION                 = 23; /* BUG-31144 */
+    public static final byte    PROP_CODE_FAILOVER_SOURCE                            = 24; /* BUG-31390 */
+    public static final byte    PROP_CODE_DDL_TIMEOUT                                = 25; /* BUG-32885 */
+    public static final byte    PROP_CODE_TIME_ZONE                                  = 26; /* PROJ-2209 */
+    public static final byte    PROP_CODE_FETCH_PROTOCOL_TYPE                        = 27;
+    public static final byte    PROP_CODE_REMOVE_REDUNDANT_TRANSMISSION              = 28;
+    public static final byte    PROP_CODE_LOB_CACHE_THRESHOLD                        = 29; /* PROJ-2047 */
+    public static final byte    PROP_CODE_SHARD_NODE_NAME                            = 32; /* PROJ-2690 ShardJDBC */
+    public static final byte    PROP_CODE_SHARD_PIN                                  = 33; /* PROJ-2690 ShardJDBC */
+    public static final byte    PROP_CODE_GLOBAL_TRANSACTION_LEVEL                   = 34; /* PROJ-2690 ShardJDBC */
+    public static final byte    PROP_CODE_SHARD_META_NUMBER                          = 35; /* PROJ-2690 ShardJDBC */
+    public static final byte    PROP_CODE_SHARD_CLIENT                               = 36; /* PROJ-2690 ShardJDBC */
+    public static final byte    PROP_CODE_SHARD_SESSION_TYPE                         = 37; /* BUG-46790 internal인지 external인지 구분하는 용도 */
+    public static final byte    PROP_CODE_SHARD_CLIENT_CONNECTION_REPORT             = 38; /* BUG-46790 shardfailover report를 위한 속성값. => BUG-46785 Deprecated */
+    public static final byte    PROP_CODE_MESSAGE_CALLBACK                           = 39; /* BUG-46019 */
+    public static final byte    PROP_CODE_COMMIT_WRITE_WAIT_MODE                     = 40;
+    public static final byte    PROP_CODE_ST_OBJECT_BUFFER_SIZE                      = 41;
+    public static final byte    PROP_CODE_TRX_UPDATE_MAX_LOGSIZE                     = 42;
+    public static final byte    PROP_CODE_PARALLEL_DML_MODE                          = 43;
+    public static final byte    PROP_CODE_NLS_NCHAR_CONV_EXCP                        = 44;
+    public static final byte    PROP_CODE_AUTO_REMOTE_EXEC                           = 45;
+    public static final byte    PROP_CODE_TRCLOG_DETAIL_PREDICATE                    = 46;
+    public static final byte    PROP_CODE_OPTIMIZER_DISK_INDEX_COST_ADJ              = 47;
+    public static final byte    PROP_CODE_OPTIMIZER_MEMORY_INDEX_COST_ADJ            = 48;
+    public static final byte    PROP_CODE_NLS_TERRITORY                              = 49;
+    public static final byte    PROP_CODE_NLS_ISO_CURRENCY                           = 50;
+    public static final byte    PROP_CODE_NLS_CURRENCY                               = 51;
+    public static final byte    PROP_CODE_NLS_NUMERIC_CHARACTERS                     = 52;
+    public static final byte    PROP_CODE_QUERY_REWRITE_ENABLE                       = 53;
+    public static final byte    PROP_CODE_DBLINK_REMOTE_STATEMENT_AUTOCOMMIT         = 54;
+    public static final byte    PROP_CODE_RECYCLEBIN_ENABLE                          = 55;
+    public static final byte    PROP_CODE___USE_OLD_SORT                             = 56;
+    public static final byte    PROP_CODE_ARITHMETIC_OPERATION_MODE                  = 57;
+    public static final byte    PROP_CODE_RESULT_CACHE_ENABLE                        = 58;
+    public static final byte    PROP_CODE_TOP_RESULT_CACHE_MODE                      = 59;
+    public static final byte    PROP_CODE_OPTIMIZER_AUTO_STATS                       = 60;
+    public static final byte    PROP_CODE___OPTIMIZER_TRANSITIVITY_OLD_RULE          = 61;
+    public static final byte    PROP_CODE_OPTIMIZER_PERFORMANCE_VIEW                 = 62;
+    public static final byte    PROP_CODE_REPLICATION_DDL_SYNC                       = 63;
+    public static final byte    PROP_CODE_REPLICATION_DDL_SYNC_TIMEOUT               = 64;
+    public static final byte    PROP_CODE___PRINT_OUT_ENABLE                         = 65;
+    public static final byte    PROP_CODE_TRCLOG_DETAIL_SHARD                        = 66;
+    public static final byte    PROP_CODE_SERIAL_EXECUTE_MODE                        = 67;
+    public static final byte    PROP_CODE_TRCLOG_DETAIL_INFORMATION                  = 68;
+    public static final byte    PROP_CODE___OPTIMIZER_DEFAULT_TEMP_TBS_TYPE          = 69;
+    public static final byte    PROP_CODE___REDUCE_PARTITION_PREPARE_MEMORY          = 70;
+    public static final byte    PROP_CODE_TRANSACTIONAL_DDL                          = 71;
+    public static final byte    PROP_CODE_SHARD_INTERNAL_LOCAL_OPERATION             = 72;
+    public static final byte    PROP_CODE_INVOKE_USER                                = 73;
+    public static final byte    PROP_CODE_GLOBAL_DDL                                 = 74;
+    public static final byte    PROP_CODE_SHARD_STATEMENT_RETRY                      = 75; /* PROJ-2733 */
+    public static final byte    PROP_CODE_INDOUBT_FETCH_TIMEOUT                      = 76; /* PROJ-2733 */
+    public static final byte    PROP_CODE_INDOUBT_FETCH_METHOD                       = 77; /* PROJ-2733 */
+    public static final byte    PROP_CODE___OPTIMIZER_PLAN_HASH_OR_SORT_METHOD       = 78;
+    public static final byte    PROP_CODE___OPTIMIZER_BUCKET_COUNT_MAX               = 79; 
+    public static final byte    PROP_CODE_DDL_LOCK_TIMEOUT                           = 80;
+    public static final byte    PROP_CODE___OPTIMIZER_ELIMINATE_COMMON_SUBEXPRESSION = 81;
+    public static final byte    PROP_CODE_REBUILD_SHARD_META_NUMBER                  = 82;
+    public static final byte    PROP_CODE_MAX                                        = 83;
 
     public AltibaseProperties()
     {
@@ -779,7 +830,7 @@ public class AltibaseProperties extends CaseInsensitiveProperties
         return getIntProperty(PROP_CTF_RETRY_COUNT);
     }
 
-    public void getConnectionRetryCount(int aConnectionRetryCount)
+    public void setConnectionRetryCount(int aConnectionRetryCount)
     {
         setProperty(PROP_CTF_RETRY_COUNT, aConnectionRetryCount);
     }
@@ -845,7 +896,7 @@ public class AltibaseProperties extends CaseInsensitiveProperties
         return getShortProperty(PROP_SHARD_STATEMENT_RETRY, DEFAULT_SHARD_STATEMENT_RETRY);
     }
 
-    public void setShardStatementRetry(short aShardStatementRetry)
+    public void setShardStatementRetry(String aShardStatementRetry)
     {
         setProperty(PROP_SHARD_STATEMENT_RETRY, aShardStatementRetry);
     }
@@ -855,7 +906,7 @@ public class AltibaseProperties extends CaseInsensitiveProperties
         return getIntProperty(PROP_INDOUBT_FETCH_TIMEOUT);
     }
 
-    public void setIndoubtFetchTimeout(int aIndoubtFetchTimeout)
+    public void setIndoubtFetchTimeout(String aIndoubtFetchTimeout)
     {
         setProperty(PROP_INDOUBT_FETCH_TIMEOUT, aIndoubtFetchTimeout);
     }
@@ -865,7 +916,7 @@ public class AltibaseProperties extends CaseInsensitiveProperties
         return getShortProperty(PROP_INDOUBT_FETCH_METHOD);
     }
 
-    public void setIndoubtFetchMethod(short aIndoubtFetchMethod)
+    public void setIndoubtFetchMethod(String aIndoubtFetchMethod)
     {
         setProperty(PROP_INDOUBT_FETCH_METHOD, aIndoubtFetchMethod);
     }
@@ -1025,6 +1076,17 @@ public class AltibaseProperties extends CaseInsensitiveProperties
     public int getIBConChkSpin()
     {
         return getIntProperty(PROP_IB_CONCHKSPIN, DEFAULT_IB_CONCHKSPIN);
+    }
+
+    public byte getExplainPlan()
+    {
+        String sValue = getProperty(PROP_EXPLAIN_PLAN);
+        if (sValue != null)
+        {
+            return Byte.parseByte(sValue);
+        }
+
+        return DEFAULT_EXPLAIN_PLAN;
     }
 
     private static final String  PROP_PAIR_PATTERN_STR = "([a-zA-Z_][\\w]*\\s*)=(\\s*(?:\\([^\\)]*\\)|[^,\\{\\}\\(\\)]*))";

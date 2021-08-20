@@ -228,22 +228,12 @@ abstract class AltibaseReadableResultSet extends AltibaseResultSet
         throwErrorForReadOnly();
     }
 
-    public void updateRef(int columnIndex, Ref x) throws SQLException
-    {
-        throwErrorForReadOnly();
-    }
-
     public void updateBlob(int columnIndex, Blob x) throws SQLException
     {
         throwErrorForReadOnly();
     }
 
     public void updateClob(int columnIndex, Clob x) throws SQLException
-    {
-        throwErrorForReadOnly();
-    }
-
-    public void updateArray(int columnIndex, Array x) throws SQLException
     {
         throwErrorForReadOnly();
     }

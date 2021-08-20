@@ -216,8 +216,7 @@ public abstract class AltibaseResultSet extends AbstractResultSet
 
     public final String getCursorName() throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Cursor name and positioned update");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("Cursor name and positioned update");
     }
 
     /**
@@ -467,7 +466,7 @@ public abstract class AltibaseResultSet extends AbstractResultSet
 
     public final Array getArray(int aColumnIndex) throws SQLException
     {
-        throw Error.createSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Array type");
+        throw Error.createSQLFeatureNotSupportedException("Array type");
     }
 
     public final Array getArray(String aColumnName) throws SQLException
@@ -784,8 +783,7 @@ public abstract class AltibaseResultSet extends AbstractResultSet
 
     public final Object getObject(int aColumnIndex, Map aMap) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "User defined type");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("User defined type");
     }
 
     public final Object getObject(int aColumnIndex) throws SQLException
@@ -811,8 +809,7 @@ public abstract class AltibaseResultSet extends AbstractResultSet
 
     public final Ref getRef(int aColumnIndex) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Ref type");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("Ref type");
     }
 
     public final Ref getRef(String aColumnName) throws SQLException
@@ -907,8 +904,7 @@ public abstract class AltibaseResultSet extends AbstractResultSet
 
     public final URL getURL(int aColumnIndex) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "URL type");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("URL type");
     }
 
     public final URL getURL(String aColumnName) throws SQLException
@@ -918,8 +914,7 @@ public abstract class AltibaseResultSet extends AbstractResultSet
 
     public final InputStream getUnicodeStream(int aColumnIndex) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Deprecated: getUnicodeStream");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("Deprecated: getUnicodeStream");
     }
 
     public final InputStream getUnicodeStream(String aColumnName) throws SQLException
@@ -942,6 +937,14 @@ public abstract class AltibaseResultSet extends AbstractResultSet
 
 
     // #region updatable interface 공통 구현
+
+    public void updateArray(int aColumnIndex, Array aValue) throws SQLException
+    {
+        /* BUG-49233 기존에는 AltibaseReadableResultSet에서는 readonly에러가,
+           AltibaseUpdatableResultSet에서는 Not Supported 에러가 발생했지만 어짜피 지원되지 않는 기능이기 때문에
+           상위 클래스인 AltibaseResultSet에서 SQLFeatureNotSupportedException으로 처리한다.  */
+        throw Error.createSQLFeatureNotSupportedException("Array type");
+    }
 
     public void updateArray(String aColumnName, Array aValue) throws SQLException
     {
@@ -1092,6 +1095,11 @@ public abstract class AltibaseResultSet extends AbstractResultSet
     public void updateObject(String aColumnName, Object aValue) throws SQLException
     {
         updateObject(findColumn(aColumnName), aValue);
+    }
+
+    public void updateRef(int aColumnIndex, Ref aValue) throws SQLException
+    {
+        throw Error.createSQLFeatureNotSupportedException("Ref type");
     }
 
     public void updateRef(String aColumnName, Ref aValue) throws SQLException

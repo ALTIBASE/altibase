@@ -91,8 +91,7 @@ public class AltibaseCallableStatement extends AbstractCallableStatement
 
     public Array getArray(int aIndex) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Array type");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("Array type");
     }
 
     public Array getArray(String aParamName) throws SQLException
@@ -234,8 +233,7 @@ public class AltibaseCallableStatement extends AbstractCallableStatement
 
     public Object getObject(int aIndex, Map aMap) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "User defined type");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("User defined type");
     }
 
     public Object getObject(int aIndex) throws SQLException
@@ -255,8 +253,7 @@ public class AltibaseCallableStatement extends AbstractCallableStatement
 
     public Ref getRef(int aIndex) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Ref type");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("Ref type");
     }
 
     public Ref getRef(String aParamName) throws SQLException
@@ -326,8 +323,7 @@ public class AltibaseCallableStatement extends AbstractCallableStatement
 
     public URL getURL(int aIndex) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "URL type");
-        return null;
+        throw Error.createSQLFeatureNotSupportedException("URL type");
     }
 
     public URL getURL(String aParamName) throws SQLException

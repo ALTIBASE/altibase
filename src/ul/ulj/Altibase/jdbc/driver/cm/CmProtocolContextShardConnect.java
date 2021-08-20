@@ -29,7 +29,6 @@ import java.util.*;
 
 import static Altibase.jdbc.driver.sharding.util.ShardingTraceLogger.shard_log;
 import static Altibase.jdbc.driver.util.AltibaseProperties.*;
-import static Altibase.jdbc.driver.util.AltibaseProperties.PROP_SHARD_META_NUMBER;
 
 public class CmProtocolContextShardConnect extends CmProtocolContextConnect
 {
@@ -318,6 +317,13 @@ public class CmProtocolContextShardConnect extends CmProtocolContextConnect
         aProp.remove(AltibaseProperties.PROP_SERVER);
         aProp.remove(AltibaseProperties.PROP_DBNAME);
         aProp.remove(AltibaseProperties.PROP_LOAD_BALANCE);
+        /* PROJ-2727 Global property handling 
+         * nodeConn에 전파하지 않는 속성 추가 
+         */
+        aProp.remove(AltibaseProperties.PROP_DEFERRED_PREPARE);
+        aProp.remove(AltibaseProperties.PROP_GLOBAL_DDL);
+        aProp.remove(AltibaseProperties.PROP_CONNECT_MODE);
+        aProp.remove(AltibaseProperties.PROP_SOCK_BIND_ADDR);
     }
 
     public void setShardConnType(CmConnType aShardConnType)

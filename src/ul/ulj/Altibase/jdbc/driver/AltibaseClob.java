@@ -101,14 +101,12 @@ public class AltibaseClob extends AltibaseLob implements Clob
 
     public long position(Clob aPattern, long aStartPos) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "searching clob data");
-        return 0;
+        throw Error.createSQLFeatureNotSupportedException("searching clob data");
     }
 
     public long position(String aPattern, long aStartPos) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "searching clob data");
-        return 0;
+        throw Error.createSQLFeatureNotSupportedException("searching clob data");
     }
 
     public OutputStream setAsciiStream(long aStartPos) throws SQLException

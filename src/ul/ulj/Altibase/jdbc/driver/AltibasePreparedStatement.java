@@ -259,7 +259,7 @@ public class AltibasePreparedStatement extends AbstractPreparedStatement
         ColumnInfo sColumnInfo = sContext.getBindParamResult().getColumnInfo(aIndex);
         if (sColumnInfo == null)
         {
-            Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "DataType: " + String.valueOf(aSqlType));    
+            Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "DataType: " + String.valueOf(aSqlType));
         }
         if (aSqlType == Types.NULL)
         {
@@ -887,7 +887,7 @@ public class AltibasePreparedStatement extends AbstractPreparedStatement
 
     public void setArray(int aParameterIndex, Array aValue) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Array type");
+        throw Error.createSQLFeatureNotSupportedException("Array type");
     }
 
     public void setAsciiStream(int aParameterIndex, InputStream aValue) throws SQLException
@@ -1373,7 +1373,7 @@ public class AltibasePreparedStatement extends AbstractPreparedStatement
 
     public void setRef(int i, Ref aValue) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Ref type");
+        throw Error.createSQLFeatureNotSupportedException("Ref type");
     }
 
     public void setShort(int aParameterIndex, short aValue) throws SQLException
@@ -1413,13 +1413,13 @@ public class AltibasePreparedStatement extends AbstractPreparedStatement
 
     public void setURL(int aParameterIndex, URL aValue) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "URL type");
+        throw Error.createSQLFeatureNotSupportedException("URL type");
     }
 
     @SuppressWarnings("deprecation")
     public void setUnicodeStream(int aParameterIndex, InputStream aValue, int aLength) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "Deprecated: setUnicodeStream");
+        throw Error.createSQLFeatureNotSupportedException("Deprecated: setUnicodeStream");
     }
 
     public void addBatch(String aSql) throws SQLException

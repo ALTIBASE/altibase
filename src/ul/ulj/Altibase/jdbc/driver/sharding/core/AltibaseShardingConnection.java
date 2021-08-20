@@ -83,6 +83,7 @@ public class AltibaseShardingConnection extends AbstractConnection
         // mMetaConnection.mDistTxInfo를 mShardContextConnect.mDistTxInfo에 주입한다.
         // mShardContextConnect 생성 시점에 아직 mMetaConnection이 생성되지 않아서 이후에 setDistTxInfo를 별도로 수행해준다.
         mShardContextConnect.setDistTxInfo(mMetaConnection.getDistTxInfo());
+        mMetaConnection.setDistTxInfoForVerify();
         // TCP, SSL, IB
         mShardContextConnect.setShardConnType(mProps.isSet(PROP_SHARD_CONNTYPE) ?
                                               CmConnType.toConnType(mProps.getShardConnType()) :
@@ -137,110 +138,16 @@ public class AltibaseShardingConnection extends AbstractConnection
 
     public void setAutoCommit(boolean aAutoCommit) throws SQLException
     {
-        mAutoCommit = aAutoCommit;
-        mShardContextConnect.setAutoCommit(aAutoCommit);
-        mJdbcMethodInvoker.recordMethodInvocation(Connection.class, "setAutoCommit",
-                                                  new Class[] {boolean.class},
-                                                  new Object[] {aAutoCommit});
-        for (Connection sEach : mCachedConnections.values())
+        // sharding에서는 non_autocommit만 허용된다.
+        // 따라서 사용자가 false를 설정하면 아무일도 안하고 리턴하고, true를 설정하면 에러를 리턴한다.
+        if (aAutoCommit == mAutoCommit)
         {
-            sEach.setAutoCommit(aAutoCommit);
+            return;
         }
-        mMetaConnection.setAutoCommit(mAutoCommit);
-    }
-
-    public void sendGlobalTransactionLevel(GlobalTransactionLevel aGlobalTransactionLevel) throws SQLException
-    {
-        AltibaseConnection sNodeConn;
-        CmProtocolContextConnect sContext; 
-        
-        setGlobalTransactionLevel(aGlobalTransactionLevel);
-
-        // alter session set을 서버로 전송했으므로 metaConn은 sendProperties 불필요. nodeConn에 대해서만 처리.
-        for (Connection sEach : mCachedConnections.values())
+        else
         {
-            sNodeConn = (AltibaseConnection)sEach;
-            sContext = sNodeConn.getContext();
-            sContext.clearProperties();
-            sContext.addProperty(PROP_CODE_GLOBAL_TRANSACTION_LEVEL, aGlobalTransactionLevel.getValue());
-            CmProtocol.sendProperties(sContext);
-            if (sContext.getError() != null) 
-            {
-                mWarning = Error.processServerError(mWarning, sContext.getError());
-            }
-            sNodeConn.getProp().setProperty(AltibaseProperties.PROP_GLOBAL_TRANSACTION_LEVEL, aGlobalTransactionLevel.getValue());
-        }
-        
-        getMetaConnection().getDistTxInfo().initDistTxInfo();
-        getMetaConnection().setDistTxInfoForVerify();
-    }
-
-    public void sendShardStatementRetry(short aShardStatementRetry) throws SQLException
-    {
-        AltibaseConnection sNodeConn;
-        CmProtocolContextConnect sContext; 
-        
-        setShardStatementRetry(aShardStatementRetry);
-
-        // alter session set을 서버로 전송했으므로 metaConn은 sendProperties 불필요. nodeConn에 대해서만 처리.
-        for (Connection sEach : mCachedConnections.values())
-        {
-            sNodeConn = (AltibaseConnection)sEach;
-            sContext = sNodeConn.getContext();
-            sContext.clearProperties();
-            sContext.addProperty(PROP_CODE_SHARD_STATEMENT_RETRY, (byte)aShardStatementRetry);
-            CmProtocol.sendProperties(sContext);
-            if (sContext.getError() != null) 
-            {
-                mWarning = Error.processServerError(mWarning, sContext.getError());
-            }
-            sNodeConn.getProp().setProperty(AltibaseProperties.PROP_SHARD_STATEMENT_RETRY, aShardStatementRetry);
-        }
-    }
-
-    public void sendIndoubtFetchTimeout(int aIndoubtFetchTimeout) throws SQLException
-    {
-        AltibaseConnection sNodeConn;
-        CmProtocolContextConnect sContext; 
-        
-        setIndoubtFetchTimeout(aIndoubtFetchTimeout);
-
-        // alter session set을 서버로 전송했으므로 metaConn은 sendProperties 불필요. nodeConn에 대해서만 처리.
-        for (Connection sEach : mCachedConnections.values())
-        {
-            sNodeConn = (AltibaseConnection)sEach;
-            sContext = sNodeConn.getContext();
-            sContext.clearProperties();
-            sContext.addProperty(PROP_CODE_INDOUBT_FETCH_TIMEOUT, aIndoubtFetchTimeout);
-            CmProtocol.sendProperties(sContext);
-            if (sContext.getError() != null) 
-            {
-                mWarning = Error.processServerError(mWarning, sContext.getError());
-            }
-            sNodeConn.getProp().setProperty(AltibaseProperties.PROP_INDOUBT_FETCH_TIMEOUT, aIndoubtFetchTimeout);
-        }
-    }
-
-    public void sendIndoubtFetchMethod(short aIndoubtFetchMethod) throws SQLException
-    {
-        AltibaseConnection sNodeConn;
-        CmProtocolContextConnect sContext; 
-        
-        setIndoubtFetchMethod(aIndoubtFetchMethod);
-
-        // alter session set을 서버로 전송했으므로 metaConn은 sendProperties 불필요. nodeConn에 대해서만 처리.
-        for (Connection sEach : mCachedConnections.values())
-        {
-            sNodeConn = (AltibaseConnection)sEach;
-            sContext = sNodeConn.getContext();
-            sContext.clearProperties();
-            sContext.addProperty(PROP_CODE_INDOUBT_FETCH_METHOD, (byte)aIndoubtFetchMethod);
-            CmProtocol.sendProperties(sContext);
-            if (sContext.getError() != null) 
-            {
-                mWarning = Error.processServerError(mWarning, sContext.getError());
-            }
-            sNodeConn.getProp().setProperty(AltibaseProperties.PROP_INDOUBT_FETCH_METHOD, aIndoubtFetchMethod);
+            Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE,
+                    "setAutoCommit is not supported in sharding");
         }
     }
 
@@ -503,44 +410,46 @@ public class AltibaseShardingConnection extends AbstractConnection
         {
             Error.throwSQLException(ErrorDef.CLOSED_CONNECTION);
         }
+        
+        if (mMetaConnection.isServerSideAutoCommit())
+        {
+            return;
+        }
 
-        if (!mAutoCommit)
+        try
+        {
+            shard_log("(SEND SHARD TRANSACTION COMMIT REQUEST) {0}", aTouchedNodeList);
+            
+            /* sendShardTransactionCommitRequest이  실패 한 경우
+               rollback을 수행할 때 meta connection으로도 rollback을 보내기 위해
+             */   
+            mShardContextConnect.setTouched(true);  
+
+            mCmShardProtocol.sendShardTransactionCommitRequest(aTouchedNodeList);
+        }
+        catch (SQLException aEx)
+        {
+            AltibaseFailover.trySTF(mMetaConnection.failoverContext(), aEx);
+        }
+        if (mShardContextConnect.getError() != null)
         {
             try
             {
-                shard_log("(SEND SHARD TRANSACTION COMMIT REQUEST) {0}", aTouchedNodeList);
-                
-                /* sendShardTransactionCommitRequest이  실패 한 경우
-                   rollback을 수행할 때 meta connection으로도 rollback을 보내기 위해
-                 */   
-                mShardContextConnect.setTouched(true);  
-
-                mCmShardProtocol.sendShardTransactionCommitRequest(aTouchedNodeList);
+                mWarning = Error.processServerError(mWarning, mShardContextConnect.getError());
             }
-            catch (SQLException aEx)
+            finally
             {
-                AltibaseFailover.trySTF(mMetaConnection.failoverContext(), aEx);
+                // BUG-46790 Exception이 발생하더라도 shard align작업을 수행해야 한다.
+                ShardError.processShardError(this, mShardContextConnect.getError());
             }
-            if (mShardContextConnect.getError() != null)
-            {
-                try
-                {
-                    mWarning = Error.processServerError(mWarning, mShardContextConnect.getError());
-                }
-                finally
-                {
-                    // BUG-46790 Exception이 발생하더라도 shard align작업을 수행해야 한다.
-                    ShardError.processShardError(this, mShardContextConnect.getError());
-                }
-            }
-
-            // BUG-46790 global transaction 프로토콜 전송이 성공적으로 끝나면 노드터치를 clear 해준다.
-            for (DataNode sEach : getShardNodeConfig().getDataNodes())
-            {
-                sEach.setTouched(false);
-            }
-            mShardContextConnect.setTouched(false);
         }
+
+        // BUG-46790 global transaction 프로토콜 전송이 성공적으로 끝나면 노드터치를 clear 해준다.
+        for (DataNode sEach : getShardNodeConfig().getDataNodes())
+        {
+            sEach.setTouched(false);
+        }
+        mShardContextConnect.setTouched(false);
     }
 
     private List<Connection> getTouchedNodeConnections()
@@ -665,7 +574,6 @@ public class AltibaseShardingConnection extends AbstractConnection
 
     public void setTransactionIsolation(int aLevel) throws SQLException
     {
-        mTransactionIsolation = aLevel;
         mJdbcMethodInvoker.recordMethodInvocation(Connection.class, "setTransactionIsolation",
                                                   new Class[] {int.class},
                                                   new Object[] {aLevel});
@@ -673,11 +581,68 @@ public class AltibaseShardingConnection extends AbstractConnection
         {
             sEach.setTransactionIsolation(aLevel);
         }
+        mMetaConnection.setTransactionIsolation(aLevel);
     }
 
-    public int getTransactionIsolation()
+    public int getTransactionIsolation() throws SQLException
     {
-        return mTransactionIsolation;
+        return mMetaConnection.getTransactionIsolation();
+    }
+
+    public void setTransTimeout(int aTimeoutSec) throws SQLException
+    {
+        mJdbcMethodInvoker.recordMethodInvocation(AltibaseConnection.class, "setTransTimeout",
+                new Class[] {int.class},
+                new Object[] {aTimeoutSec});
+        for (Connection sEach : mCachedConnections.values())
+        {
+            ((AltibaseConnection)sEach).setTransTimeout(aTimeoutSec);
+        }
+        mMetaConnection.setTransTimeout(aTimeoutSec);
+    }
+
+    public int getTransTimeout() throws SQLException
+    {
+        return mMetaConnection.getTransTimeout();
+    }
+
+    public void setSessionTimeZone(String aTimeZone) throws SQLException
+    {
+        mJdbcMethodInvoker.recordMethodInvocation(AltibaseConnection.class, "setSessionTimeZone",
+                                                  new Class[] {String.class},
+                                                  new Object[] {aTimeZone});
+        for (Connection sEach : mCachedConnections.values())
+        {
+            ((AltibaseConnection)sEach).setSessionTimeZone(aTimeZone);
+        }
+        mMetaConnection.setSessionTimeZone(aTimeZone);
+    }
+
+    public String getSessionTimeZone() throws SQLException
+    {
+        return mMetaConnection.getSessionTimeZone();
+    }
+
+    public String getDbTimeZone() throws SQLException
+    {
+        return mMetaConnection.getDbTimeZone();
+    }
+    
+    public void setExplainPlan(byte aExplainPlanMode) throws SQLException
+    {
+        mJdbcMethodInvoker.recordMethodInvocation(AltibaseConnection.class, "setExplainPlan",
+                                                  new Class[] {byte.class},
+                                                  new Object[] {aExplainPlanMode});
+        for (Connection sEach : mCachedConnections.values())
+        {
+            ((AltibaseConnection)sEach).setExplainPlan(aExplainPlanMode);
+        }
+        mMetaConnection.setExplainPlan(aExplainPlanMode);
+    }
+
+    public void registerMessageCallback(AltibaseMessageCallback aMessageCallback) throws SQLException
+    {
+        mMetaConnection.registerMessageCallback(aMessageCallback);
     }
 
     public SQLWarning getWarnings()

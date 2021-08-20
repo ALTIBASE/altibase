@@ -79,14 +79,12 @@ public class AltibaseBlob extends AltibaseLob implements Blob
 
     public long position(Blob aPattern, long aStartPos) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "searching blob data");
-        return 0;
+        throw Error.createSQLFeatureNotSupportedException("searching blob data");
     }
 
     public long position(byte[] aPattern, long aStartPos) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "searching blob data");
-        return 0;
+        throw Error.createSQLFeatureNotSupportedException("searching blob data");
     }
 
     public OutputStream setBinaryStream(long aStartPos) throws SQLException

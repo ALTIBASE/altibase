@@ -41,8 +41,6 @@ import Altibase.jdbc.driver.sharding.util.DistTxInfoForVerify;
 import Altibase.jdbc.driver.util.*;
 
 import static Altibase.jdbc.driver.AutoCommitMode.*;
-import static Altibase.jdbc.driver.util.AltibaseProperties.PROP_CODE_GLOBAL_TRANSACTION_LEVEL;
-import static Altibase.jdbc.driver.util.AltibaseProperties.PROP_CODE_SHARD_STATEMENT_RETRY;
 
 public final class AltibaseConnection extends AbstractConnection
 {
@@ -100,7 +98,7 @@ public final class AltibaseConnection extends AbstractConnection
     private AltibaseDataSource            mDataSource;
     private AltibaseDatabaseMetaData      mMetaData;
     private AltibaseFailoverContext       mFailoverContext;
-    private byte                          mExplainPlanMode;
+    private byte                          mExplainPlanMode                          = EXPLAIN_PLAN_OFF;
     private String                        mSessionTimeZone;
     private String                        mDbTimeZone;
     private String                        mDBPkgVerStr;
@@ -126,6 +124,10 @@ public final class AltibaseConnection extends AbstractConnection
     // BUG-48892 DatabaseMetaData.getProcedures()에서 function이 리턴될 수 있는지 여부
     private boolean                       mGetProceduresReturnFunctions;
 
+    // PROJ-2727 Global property handling 
+    private int                           mTransTimeout;
+    
+    
     static
     {
         // BUG-46325 LobObjectFactory의 초기화를 AltibaseDriver대신 AltibaseConnection에서 수행한다.
@@ -169,8 +171,8 @@ public final class AltibaseConnection extends AbstractConnection
                              ShardConnType.NODE_CONNECTION;
         }
         loadProperties(aProp);
-
-        if (mFailoverContext != null && mProp.useLoadBalance())
+        
+        if (mFailoverContext != null && mProp.useLoadBalance() && mShardConnType != ShardConnType.NODE_CONNECTION)
         {
             AltibaseFailoverServerInfo sServerInfo = mFailoverContext.getFailoverServerList().getRandom();
             mServer = sServerInfo.getServer();
@@ -487,7 +489,7 @@ public final class AltibaseConnection extends AbstractConnection
         if (aProp.isSet(AltibaseProperties.PROP_CONNECT_MODE))
         {
             String sMode = aProp.getPrivilege();
-            if (PROP_VALUE_PRIVILEGE_SYSDBA.equalsIgnoreCase(sMode))
+            if (PROP_VALUE_PRIVILEGE_SYSDBA.equalsIgnoreCase(sMode) && mShardConnType != ShardConnType.NODE_CONNECTION)
             {
                 sModeInt = CmOperation.CONNECT_MODE_SYSDBA;
             }
@@ -509,7 +511,6 @@ public final class AltibaseConnection extends AbstractConnection
         }
 
         mContext.addProperty(AltibaseProperties.PROP_CODE_NLS, PROP_VALUE_NLS);
-        mContext.addProperty(AltibaseProperties.PROP_CODE_HEADER_DISPLAY_MODE, PROP_VALUE_HEADER_DISPLAY_MODE); // 없앨 수도 있음. BUG-33625
 
         /* BUG-46019 JDBC는 Connection 전에 MESSAGE_CALLBACK을 등록할 수 없다. */
         mContext.addProperty(AltibaseProperties.PROP_CODE_MESSAGE_CALLBACK, false);
@@ -550,20 +551,13 @@ public final class AltibaseConnection extends AbstractConnection
         }
         mChannel.setCharset(sCharset, sNCharset);
         mChannel.setLobCacheThreshold(aProp.getLobCacheThreshold());
-        mExplainPlanMode = mContext.getExplainPlanMode();
-        if (isValidExplainPlanMode(mExplainPlanMode) == false)
-        {
-            mWarning = Error.createWarning(mWarning, ErrorDef.INVALID_PROPERTY_VALUE,
-                                           "EXPLAIN_PLAN_OFF | EXPLAIN_PLAN_ON | EXPLAIN_PLAN_ONLY",
-                                           String.valueOf(mExplainPlanMode));
-        }
 
         /* BUG-39817 */
         if (mContext.isSetPropertyResult(AltibaseProperties.PROP_CODE_ISOLATION_LEVEL))
         {
             int sServerIsolationLevel = mContext.getIsolationLevel();
             mTxILevel = getPropIsolationLevel(sServerIsolationLevel);
-            mProp.setIsolationLevel(sServerIsolationLevel);
+            //mProp.setIsolationLevel(sServerIsolationLevel);
         }
         if (mContext.isSetPropertyResult(AltibaseProperties.PROP_CODE_GLOBAL_TRANSACTION_LEVEL))
         {
@@ -573,8 +567,7 @@ public final class AltibaseConnection extends AbstractConnection
             {
                 mMetaConnection.setGlobalTransactionLevel(sGlobalTransactionLevel);
             }
-            // BUGBUG : failover 등 reconnect가 필요할 때... 서버에서 받아온 프로퍼티 정보는 reconnect 시 다시 받아오기?
-            //          아니면 나의 마지막 정보를 저장했다가 connect 시 사용? 그렇다면 어디다 저장할 것인가??
+            // 사용자가 설정하지 않은 경우, metaNode의 GlobalTransactionLevel을 nodeConn에 사용한다.
             mProp.setProperty(AltibaseProperties.PROP_GLOBAL_TRANSACTION_LEVEL, sGlobalTransactionLevel.getValue());
         }
         if (mContext.isSetPropertyResult(AltibaseProperties.PROP_CODE_SHARD_STATEMENT_RETRY))
@@ -584,25 +577,11 @@ public final class AltibaseConnection extends AbstractConnection
             {
                 mMetaConnection.setShardStatementRetry(sShardStatementRetry);
             }
-            mProp.setProperty(AltibaseProperties.PROP_SHARD_STATEMENT_RETRY, sShardStatementRetry);
+            //mProp.setProperty(AltibaseProperties.PROP_SHARD_STATEMENT_RETRY, sShardStatementRetry);
         }
-        if (mContext.isSetPropertyResult(AltibaseProperties.PROP_CODE_INDOUBT_FETCH_TIMEOUT))
+        if (mContext.isSetPropertyResult(AltibaseProperties.PROP_CODE_UTRANS_TIMEOUT))
         {
-            int sIndoubtFetchTimeout = mContext.getIndoubtFetchTimeout();
-            if (mMetaConnection != null)
-            {
-                mMetaConnection.setIndoubtFetchTimeout(sIndoubtFetchTimeout);
-            }
-            mProp.setProperty(AltibaseProperties.PROP_INDOUBT_FETCH_TIMEOUT, sIndoubtFetchTimeout);
-        }
-        if (mContext.isSetPropertyResult(AltibaseProperties.PROP_CODE_INDOUBT_FETCH_METHOD))
-        {
-            short sIndoubtFetchMethod = mContext.getIndoubtFetchMethod();
-            if (mMetaConnection != null)
-            {
-                mMetaConnection.setIndoubtFetchMethod(sIndoubtFetchMethod);
-            }
-            mProp.setProperty(AltibaseProperties.PROP_INDOUBT_FETCH_METHOD, sIndoubtFetchMethod);
+            mTransTimeout = mContext.getUtransTimeout();
         }
     }
 
@@ -645,7 +624,7 @@ public final class AltibaseConnection extends AbstractConnection
         if (aProp.isSet(AltibaseProperties.PROP_GLOBAL_TRANSACTION_LEVEL))
         {
             GlobalTransactionLevel sGlobalTransactionLevel = aProp.getGlobalTransactionLevel();
-            mContext.addProperty( PROP_CODE_GLOBAL_TRANSACTION_LEVEL,
+            mContext.addProperty( AltibaseProperties.PROP_CODE_GLOBAL_TRANSACTION_LEVEL,
                                   sGlobalTransactionLevel.getValue() );
             if (mMetaConnection != null)
             {
@@ -679,6 +658,17 @@ public final class AltibaseConnection extends AbstractConnection
         else
         {
             // 디폴트가 false이므로 서버에 굳이 알릴 필요없다.
+        }
+
+        sValue = aProp.getProperty(AltibaseProperties.PROP_HEADER_DISPLAY_MODE);
+        if (sValue != null)
+        {
+            setOptionalIntProperty(AltibaseProperties.PROP_CODE_HEADER_DISPLAY_MODE, 
+                       aProp.getProperty(AltibaseProperties.PROP_HEADER_DISPLAY_MODE)); 
+        }
+        else
+        {
+            mContext.addProperty(AltibaseProperties.PROP_CODE_HEADER_DISPLAY_MODE, PROP_VALUE_HEADER_DISPLAY_MODE); 
         }
 
         setOptionalIntProperty(AltibaseProperties.PROP_CODE_MAX_STATEMENTS_PER_SESSION,
@@ -737,6 +727,20 @@ public final class AltibaseConnection extends AbstractConnection
                                aProp.getProperty(AltibaseProperties.PROP_LOB_CACHE_THRESHOLD));
         setOptionalIntProperty(AltibaseProperties.PROP_CODE_REMOVE_REDUNDANT_TRANSMISSION,
                                aProp.getProperty(AltibaseProperties.PROP_REMOVE_REDUNDANT_TRANSMISSION));
+        /* PROJ-2727 Global property handling 
+         * connStr에 올 수 있는 속성 추가 
+         */
+        setOptionalIntProperty(AltibaseProperties.PROP_CODE_DDL_LOCK_TIMEOUT,
+                               aProp.getProperty(AltibaseProperties.PROP_DDL_LOCK_TIMEOUT));
+        setOptionalIntProperty(AltibaseProperties.PROP_CODE_GLOBAL_DDL,
+                               aProp.getProperty(AltibaseProperties.PROP_GLOBAL_DDL));
+        setOptionalIntProperty(AltibaseProperties.PROP_CODE_OPTIMIZER_MODE,
+                               aProp.getProperty(AltibaseProperties.PROP_OPTIMIZER_MODE));
+        setOptionalIntProperty(AltibaseProperties.PROP_CODE_STACK_SIZE,
+                               aProp.getProperty(AltibaseProperties.PROP_STACK_SIZE));
+        setOptionalIntProperty(AltibaseProperties.PROP_CODE_TRANSACTIONAL_DDL,
+                               aProp.getProperty(AltibaseProperties.PROP_TRANSACTIONAL_DDL));
+
         /* BUG-39817 */
         setOptionalIsolationLevelProperty(AltibaseProperties.PROP_CODE_ISOLATION_LEVEL,
                                           aProp.getProperty(AltibaseProperties.PROP_TXI_LEVEL));
@@ -755,17 +759,18 @@ public final class AltibaseConnection extends AbstractConnection
         if (aProp.isSet(AltibaseProperties.PROP_INDOUBT_FETCH_TIMEOUT))
         {
             mContext.addProperty( AltibaseProperties.PROP_CODE_INDOUBT_FETCH_TIMEOUT, aProp.getIndoubtFetchTimeout());
-            if (mMetaConnection != null)
-            {
-                mMetaConnection.setIndoubtFetchTimeout(aProp.getIndoubtFetchTimeout());
-            }
         }
         if (aProp.isSet(AltibaseProperties.PROP_INDOUBT_FETCH_METHOD))
         {
             mContext.addProperty( AltibaseProperties.PROP_CODE_INDOUBT_FETCH_METHOD, (byte)aProp.getIndoubtFetchMethod());
-            if (mMetaConnection != null)
+        }
+        if (aProp.isSet(AltibaseProperties.PROP_EXPLAIN_PLAN))
+        {
+            byte sExplainPlanMode = aProp.getExplainPlan();
+            if (isValidExplainPlanMode(sExplainPlanMode))
             {
-                mMetaConnection.setIndoubtFetchMethod(aProp.getIndoubtFetchMethod());
+                mContext.addProperty( AltibaseProperties.PROP_CODE_EXPLAIN_PLAN, sExplainPlanMode);
+                mExplainPlanMode = sExplainPlanMode;
             }
         }
     }
@@ -810,7 +815,7 @@ public final class AltibaseConnection extends AbstractConnection
         }
     }
 
-    private boolean isServerSideAutoCommit()
+    public boolean isServerSideAutoCommit()
     {
         return mAutoCommit == SERVER_SIDE_AUTOCOMMIT_ON;
     }
@@ -864,7 +869,6 @@ public final class AltibaseConnection extends AbstractConnection
             if (sServerIsolationLevel != PROP_VALUE_SERVER_ISOLATION_LEVEL_UNKNOWN)
             {
                 mTxILevel = getPropIsolationLevel(sServerIsolationLevel);
-
                 mContext.addProperty(aPropCode, sServerIsolationLevel);
             }
             else
@@ -1725,7 +1729,7 @@ public final class AltibaseConnection extends AbstractConnection
 
     public void setTypeMap(Map map) throws SQLException
     {
-        Error.throwSQLException(ErrorDef.UNSUPPORTED_FEATURE, "User defined type");
+        throw Error.createSQLFeatureNotSupportedException("User defined type");
     }
     
     public boolean isClientSideAutoCommit()
@@ -1781,29 +1785,7 @@ public final class AltibaseConnection extends AbstractConnection
      */
     public int getTransTimeout() throws SQLException
     {
-        throwErrorForClosed();
-
-        try
-        {
-            CmProtocol.getProperty(mContext, AltibaseProperties.PROP_CODE_UTRANS_TIMEOUT);
-        }
-        catch (SQLException ex)
-        {
-            AltibaseFailover.trySTF(mFailoverContext, ex);
-        }
-        if (mContext.getError() != null)
-        {
-            try
-            {
-                mWarning = Error.processServerError(mWarning, mContext.getError());
-            }
-            finally
-            {
-                // BUG-46790 Exception이 발생하더라도 shard align작업을 수행해야 한다.
-                ShardError.processShardError(mMetaConnection, mContext.getError());
-            }
-        }
-        return Integer.parseInt(mContext.getPropertyResult().getProperty(AltibaseProperties.PROP_CODE_UTRANS_TIMEOUT));
+        return mTransTimeout;
     }
 
     public void setTransTimeout(int aTimeoutSec) throws SQLException
@@ -1824,6 +1806,12 @@ public final class AltibaseConnection extends AbstractConnection
         {
             mWarning = Error.processServerError(mWarning, mContext.getError());
         }
+        mTransTimeout = aTimeoutSec;
+    }
+
+    public void setTransTimeoutInternal(int aTimeoutSec) throws SQLException
+    {
+        mTransTimeout = aTimeoutSec;
     }
 
     // #region TimeZone
@@ -1910,6 +1898,19 @@ public final class AltibaseConnection extends AbstractConnection
         mSessionTimeZone = aTimeZone.equalsIgnoreCase(AltibaseProperties.DB_TIME_ZONE) ? getDbTimeZone() : aTimeZone;
     }
 
+    public void setSessionTimeZoneInternal(String aTimeZone) throws SQLException
+    {
+        if (aTimeZone.equalsIgnoreCase(mSessionTimeZone))
+        {
+            return;
+        }
+        if (aTimeZone.equalsIgnoreCase(AltibaseProperties.LOCAL_TIME_ZONE))
+        {
+            aTimeZone = Calendar.getInstance().getTimeZone().getID();
+        }
+        mSessionTimeZone = aTimeZone.equalsIgnoreCase(AltibaseProperties.DB_TIME_ZONE) ? getDbTimeZone() : aTimeZone;
+    }
+    
     // #endregion
 
     // #region Explain Plan
@@ -1978,6 +1979,18 @@ public final class AltibaseConnection extends AbstractConnection
         mExplainPlanMode = aExplainPlanMode;
     }
 
+    public void setExplainPlanInternal(byte aExplainPlanMode) throws SQLException
+    {
+        if (isValidExplainPlanMode(aExplainPlanMode) == false)
+        {
+            Error.throwSQLException(ErrorDef.INVALID_ARGUMENT,
+                                    "Explain plan mode",
+                                    "EXPLAIN_PLAN_OFF | EXPLAIN_PLAN_ON | EXPLAIN_PLAN_ONLY",
+                                    String.valueOf(aExplainPlanMode));
+        }
+        mExplainPlanMode = aExplainPlanMode;
+    }
+    
     /**
      * Explain Plan을 사용할지 여부를 설정한다.
      *
@@ -2547,5 +2560,60 @@ public final class AltibaseConnection extends AbstractConnection
     public boolean getProceduresReturnFunctions()
     {
         return mGetProceduresReturnFunctions;
+    }
+    
+    public void sendStringProperty(byte aPropID, String aPropValue) throws SQLException
+    {
+        mContext.clearProperties();
+        mContext.addProperty(aPropID, aPropValue);
+        CmProtocol.sendProperties(mContext);
+        if (mContext.getError() != null)
+        {
+            mWarning = Error.processServerError(mWarning, mContext.getError());
+        }
+    }
+    
+    public void sendIntProperty(byte aPropID, int aPropValue) throws SQLException
+    {
+        mContext.clearProperties();
+        mContext.addProperty(aPropID, aPropValue);
+        CmProtocol.sendProperties(mContext);
+        if (mContext.getError() != null)
+        {
+            mWarning = Error.processServerError(mWarning, mContext.getError());
+        }
+    }
+    
+    public void sendLongProperty(byte aPropID, long aPropValue) throws SQLException
+    {
+        mContext.clearProperties();
+        mContext.addProperty(aPropID, aPropValue);
+        CmProtocol.sendProperties(mContext);
+        if (mContext.getError() != null)
+        {
+            mWarning = Error.processServerError(mWarning, mContext.getError());
+        }
+    }
+    
+    public void sendByteProperty(byte aPropID, byte aPropValue) throws SQLException
+    {
+        mContext.clearProperties();
+        mContext.addProperty(aPropID, aPropValue);
+        CmProtocol.sendProperties(mContext);
+        if (mContext.getError() != null)
+        {
+            mWarning = Error.processServerError(mWarning, mContext.getError());
+        }
+    }
+    
+    public void sendBooleanProperty(byte aPropID, boolean aPropValue) throws SQLException
+    {
+        mContext.clearProperties();
+        mContext.addProperty(aPropID, aPropValue);
+        CmProtocol.sendProperties(mContext);
+        if (mContext.getError() != null)
+        {
+            mWarning = Error.processServerError(mWarning, mContext.getError());
+        }
     }
 }
