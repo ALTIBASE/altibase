@@ -51,7 +51,7 @@ volatile SInt   iduStack::mCallStackCriticalSection;
 IDTHREAD SInt   iduStack::mCallDepth;
 IDTHREAD void*  iduStack::mCallStack[IDU_MAX_CALL_DEPTH];
 
-#define IDU_DUMP_BUFSIZE_MAX                      8192
+#define IDU_DUMP_BUFSIZE_MAX            2048 //BUG-49243
 
 SChar gSigIllMsgs[][64] = 
 {
@@ -213,15 +213,18 @@ void iduStack::writeHexPtr(SChar* aBuff,UInt *aOffset,void* aValue)
 
 void iduStack::copyToBuff(SChar* aBuff,UInt *aOffset,const void* aStr, size_t aLen)
 {
-    // if the buffer is about to overflow, write to disk first!
-    if( (*aOffset + aLen) >= IDU_DUMP_BUFSIZE_MAX )// > is ok. but just in case...
+    // if the buffer is about to overflow, write buffer & aStr to disk first!
+    if( (*aOffset + aLen) >= IDU_DUMP_BUFSIZE_MAX )
     {
         idlOS::write(mFD ,aBuff ,*aOffset);// write buffer to disk
         *aOffset = 0;
+        idlOS::write(mFD ,aStr ,aLen);//write to disk directly(BUG-49243)
     }
-
-    idlOS::memcpy(aBuff + *aOffset ,aStr ,aLen);
-    *aOffset = *aOffset + aLen;
+    else
+    {
+        idlOS::memcpy(aBuff + *aOffset ,aStr ,aLen);
+        *aOffset = *aOffset + aLen;
+    }
 }
 
 void iduStack::writeString(SChar* aBuff,UInt *aOffset,const void* aStr, size_t aLen)
