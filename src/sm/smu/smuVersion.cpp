@@ -16,7 +16,7 @@
  
 
 /*****************************************************************************
- * $Id: smuVersion.cpp 85721 2019-06-25 06:08:07Z jiwon.kim $
+ * $Id: smuVersion.cpp 91457 2021-08-11 23:46:14Z emlee $
  ****************************************************************************/
 
 #include <iduCheckLicense.h>
@@ -43,15 +43,11 @@
 /* ------------------------------------------------
  *  For Altibase - 4
  * ----------------------------------------------*/
-#define SM_MAJOR_VERSION   (6)
-// PROJ-1557 32K memmory varchar
-// PROJ-1362 LOB
-// PROJ-1923, BUG-37022
-#define SM_MINOR_VERSION   (7)
-// BUG-46854 
-#define SM_PATCH_LEVEL     (1)
-// PRJ-1497
-const SChar *smVersionString = SM_VERSION_STRING(6, 7, 1);
+#define SM_MAJOR_VERSION   (7)
+#define SM_MINOR_VERSION   (3)
+#define SM_PATCH_LEVEL     (0)
+
+const SChar *smVersionString = SM_VERSION_STRING(7, 3, 0);
 
 #if defined(SPARC_SOLARIS) && (OS_MAJORVER == 2) && (OS_MINORVER == 5)
 UInt __SM_MAJOR_VERSION__  = MKHEX2(SM_MAJOR_VERSION) << 24;
