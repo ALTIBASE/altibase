@@ -15,7 +15,7 @@
  */
  
 /***********************************************************************
- * $Id: sduProperty.cpp 90651 2021-04-20 04:24:52Z seulki $
+ * $Id: sduProperty.cpp 91426 2021-08-04 04:40:23Z jake.jang $
  **********************************************************************/
 
 #include <idl.h>
@@ -145,6 +145,8 @@ IDE_RC sduProperty::load()
     IDE_ASSERT( idp::read( "__DISABLE_FAILOVER_FOR_WATCHER",
                            & SDU_PROPERTY(mDisableFailoverForWatcher) ) == IDE_SUCCESS );
 
+    IDE_ASSERT( idp::read( "SHARD_INTERNAL_REPLICATION_PARALLEL_COUNT",
+                           & SDU_PROPERTY(mShardInternalReplicationParallelCount) ) == IDE_SUCCESS );
     
     return IDE_SUCCESS;
 }
@@ -243,6 +245,9 @@ IDE_RC sduProperty::setupUpdateCallback()
                                             sduProperty::changeDISABLE_FAILOVER_FOR_WATCHER)
               != IDE_SUCCESS );
 
+    IDE_TEST( idp::setupAfterUpdateCallback("SHARD_INTERNAL_REPLICATION_PARALLEL_COUNT",
+                                            sduProperty::changeSHARD_INTERNAL_REPLICATION_PARALLEL_COUNT)
+              != IDE_SUCCESS );
 
     return IDE_SUCCESS;
 
@@ -504,4 +509,19 @@ IDE_RC sduProperty::changeDISABLE_FAILOVER_FOR_WATCHER( idvSQL* /* aStatistics *
 
     return IDE_SUCCESS;
 }
+
+IDE_RC sduProperty::changeSHARD_INTERNAL_REPLICATION_PARALLEL_COUNT( idvSQL* /* aStatistics */,
+                                                                     SChar * /* aName */,
+                                                                     void  * /* aOldValue */,
+                                                                     void  * aNewValue,
+                                                                     void  * /* aArg */)
+{
+    idlOS::memcpy( &SDU_PROPERTY( mShardInternalReplicationParallelCount ),
+                   aNewValue,
+                   ID_SIZEOF( UInt ) );
+
+    return IDE_SUCCESS;
+}
+
+
 

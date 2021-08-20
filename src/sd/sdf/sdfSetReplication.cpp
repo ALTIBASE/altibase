@@ -234,7 +234,7 @@ IDE_RC sdfCalculate_SetReplication( mtcNode*     aNode,
             }
             else
             {
-                sParallelCount = 1;
+                sParallelCount = SDU_SHARD_INTERNAL_REPLICATION_PARALLEL_COUNT;
             }
         }
         else

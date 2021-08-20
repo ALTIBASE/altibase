@@ -15,7 +15,7 @@
  */
  
 /***********************************************************************
- * $Id: sduProperty.h 90651 2021-04-20 04:24:52Z seulki $
+ * $Id: sduProperty.h 91426 2021-08-04 04:40:23Z jake.jang $
  **********************************************************************/
 
 #ifndef _O_SDU_PROPERTY_H_
@@ -75,7 +75,7 @@
 #define SDU_SHARD_DDL_LOCK_TRY_COUNT   ( SDU_PROPERTY( mShardDDLLockTryCount ) )
 
 #define SDU_DISABLE_FAILOVER_FOR_WATCHER   ( SDU_PROPERTY( mDisableFailoverForWatcher ) )
-
+#define SDU_SHARD_INTERNAL_REPLICATION_PARALLEL_COUNT   ( SDU_PROPERTY( mShardInternalReplicationParallelCount ) )
 
 // ÂüÁ¶ : mmuPropertyArgument
 typedef struct sduPropertyArgument
@@ -129,6 +129,7 @@ typedef struct sduProperties
     UInt   mShardDDLLockTimeout;
     UInt   mShardDDLLockTryCount;
     UInt   mDisableFailoverForWatcher;
+    UInt   mShardInternalReplicationParallelCount;
 } sduProperties;
 
 class sduProperty
@@ -278,6 +279,12 @@ public:
                                                       void  * /* aOldValue */,
                                                       void  * aNewValue,
                                                       void  * /* aArg */);
+
+    static IDE_RC changeSHARD_INTERNAL_REPLICATION_PARALLEL_COUNT( idvSQL* /* aStatistics */,
+                                                                   SChar * /* aName */,
+                                                                   void  * /* aOldValue */,
+                                                                   void  * aNewValue,
+                                                                   void  * /* aArg */);
 
 };
 

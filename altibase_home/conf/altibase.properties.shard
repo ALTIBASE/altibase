@@ -738,6 +738,9 @@ SHARD_DDL_LOCK_TRY_COUNT = 200  # default : 200
 
 ZOOKEEPER_LOCK_WAIT_TIMEOUT = 3600 # default : 3600 = 1hour
 
+SHARD_INTERNAL_REPLICATION_PARALLEL_COUNT = 1 # default : 1
+                                              # 1 ~ 512
+
 #=================================================================
 # loadbalancer logging Properties
 #=================================================================

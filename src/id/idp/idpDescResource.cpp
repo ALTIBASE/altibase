@@ -4,7 +4,7 @@
  **********************************************************************/
 
 /***********************************************************************
- * $Id: idpDescResource.cpp 91200 2021-07-12 02:29:48Z hykim $
+ * $Id: idpDescResource.cpp 91426 2021-08-04 04:40:23Z jake.jang $
  *
  * Description:
  *
@@ -9810,6 +9810,17 @@ IDE_RC registProperties()
             IDP_ATTR_ML_JUSTONE  |
             IDP_ATTR_CK_CHECK,
             0, 1, 0 );
+
+    IDP_DEF(UInt,  "SHARD_INTERNAL_REPLICATION_PARALLEL_COUNT",
+            IDP_ATTR_SL_ALL |
+            IDP_ATTR_SH_ALL |
+            IDP_ATTR_IU_ANY |
+            IDP_ATTR_MS_ANY |
+            IDP_ATTR_LC_EXTERNAL |
+            IDP_ATTR_RD_WRITABLE |
+            IDP_ATTR_ML_JUSTONE  |
+            IDP_ATTR_CK_CHECK,
+            1, 512, 1 );
     
     /* ------------------------------------------------------------------
      *   Cluster Related
