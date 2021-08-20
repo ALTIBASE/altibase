@@ -2217,6 +2217,11 @@ SQLRETURN  SQL_API SQLExecute(SQLHSTMT StatementHandle)
     acp_bool_t   sNeedToExecute = ACP_TRUE;
     acp_uint32_t sStmtType = ULN_STMT_MASK_MAX; 
 
+    ulsdDbc      *sShard = NULL;
+    ulnStmt      *sNodeStmt = NULL;
+    acp_sint16_t  sState = 0;
+    acp_uint32_t  i = 0;
+
     ULN_TRACE(SQLExecute);
 
     ULN_INIT_FUNCTION_CONTEXT( sFnContext, ULN_FID_EXECUTE, sStmt, ULN_OBJ_TYPE_STMT );
@@ -2227,9 +2232,33 @@ SQLRETURN  SQL_API SQLExecute(SQLHSTMT StatementHandle)
     ULN_FNCONTEXT_GET_DBC( &sFnContext, sDbc );
     ACI_TEST_RAISE( sDbc == NULL, InvalidHandleException );
 
+    ulsdGetShardFromDbc(sStmt->mParentDbc, &sShard);
+
     /* BUG-48216 Commit, Rollback인 경우 ulsdEndTranDbc()로 변환한다.
                  ulsdEnter()에 Lock이 없으므로 바로 호출해도 된다. */
     sStmtType = ulnStmtGetStatementType( sStmt );
+
+    /* BUG-49135 Node Statement의 ODBC STATE를 체크해 진행여부를 결정한다. */
+    switch ( sStmtType )
+    {
+        case ULN_STMT_COMMIT:
+        case ULN_STMT_ROLLBACK:
+            for ( i = 0; i < sShard->mNodeCount; i++ )
+            {
+                sNodeStmt = sStmt->mShardStmtCxt.mShardNodeStmt[i];
+
+                sState = ULN_OBJ_GET_STATE(sNodeStmt);
+
+                ACI_TEST_RAISE( (sState >= ULN_S_S5) && (sState <= ULN_S_S7), LABEL_INVALID_CURSOR_STATE);
+                ACI_TEST_RAISE( (sState >= ULN_S_S8) && (sState <= ULN_S_S10), LABEL_FUNCTION_SEQUENCE_ERR);
+                /* odbccli와 동일. SQLSetPos(), SQLBulkOperation() */
+                ACI_TEST( sState == ULN_S_S11 );  
+            }
+            break;
+
+        default:
+            break;
+    }
 
     switch ( sStmtType )
     {
@@ -2275,6 +2304,16 @@ SQLRETURN  SQL_API SQLExecute(SQLHSTMT StatementHandle)
     ACI_EXCEPTION( InvalidHandleException )
     {
         sRet = SQL_INVALID_HANDLE;
+    }
+    ACI_EXCEPTION(LABEL_INVALID_CURSOR_STATE)
+    {
+        sRet = SQL_ERROR;
+        ulnError(&sFnContext, ulERR_ABORT_INVALID_CURSOR_STATE);
+    }
+    ACI_EXCEPTION(LABEL_FUNCTION_SEQUENCE_ERR)
+    {
+        sRet = SQL_ERROR;
+        ulnError(&sFnContext, ulERR_ABORT_FUNCTION_SEQUENCE_ERR);
     }
     ACI_EXCEPTION_END;
 
