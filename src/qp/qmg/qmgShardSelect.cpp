@@ -2426,16 +2426,13 @@ IDE_RC qmgShardSelect::setShardTupleColumn( qmgTransformInfo * aInfo )
 {
 /****************************************************************************************
  *
- * Description : Push Projecion으로 Column이 제거되는 상황을 고려해서 Tuple Column를
- *               조정하는 함수이다.
+ * Description : Push Projecion으로 Column 이 제거되는 상황을 고려해서 Tuple Column 에
+ *               Flag 하는 함수이다.
  *
  *               Target이 제거된 형태의 Shard Query로 인해서, DATA NODE 부터 받아올
  *               Tuple 는 필요한 Target Column 만 연이어서 기록한다.
  *
- *               COORD NODE 에는 이 형태에 적합하게, 필요한 Target Column의 Offset을
- *               Tuple 앞으로 조정한다.
- *
- *               반대로 불필요한 Target Column은 Tuple 뒤로 조정하고, 이후에
+ *               불필요한 Target Column은  Tuple Column 에 Flag 하고, 이후에
  *               Column Type Null 처리를 수행해야 한다.
  *
  *
@@ -2445,17 +2442,10 @@ IDE_RC qmgShardSelect::setShardTupleColumn( qmgTransformInfo * aInfo )
  *
  *  DATA      /                SHARD( SELECT     C2,     C4 FROM T1 )
  *   RESULT   /                     |- C2 -|- C4 -|
- *                                      \______\___________________________________
- *                                                                                 |
- *  COORD     / SELECT C2 FROM      ( SELECT C1, C2, C3, C4 FROM T1 ) ORDER BY C4  |
- *   BEFORE   /                     |- C1 -|- C2 -|- C3 -|- C4 -|                  |
- *   AFTER    /                     |- C2 -|- C4 -|- C1 -|- C3 -|                  |
- *                                      \______\___________________________________|
  *
  *
  * Implementation : 1. Push Projection 을 수행하는 경우만, 조정한다.
  *                  2. 사용중인 Target은 Tuple의 앞부분을 사용하도록 Offset를 조정한다.
- *                  3. 사용하지 않는 Target은 Tuple의 뒷부분을 사용하도록 Offset를 조정한다.
  *
  ****************************************************************************************/
 
@@ -2488,31 +2478,6 @@ IDE_RC qmgShardSelect::setShardTupleColumn( qmgTransformInfo * aInfo )
         {
             sColumn->flag &= ~MTC_COLUMN_NULL_TYPE_MASK;
             sColumn->flag |= MTC_COLUMN_NULL_TYPE_TRUE;
-        }
-        else
-        {
-            sOffset = idlOS::align( sOffset,
-                                    sColumn->module->align );
-
-            sColumn->column.offset = sOffset;
-
-            sOffset += sColumn->column.size;
-        }
-    }
-
-    /* 3. 사용하지 않는 Target은 Tuple의 뒷부분을 사용하도록 Offset를 조정한다. */
-    for ( sIdx = 0, sColumn = sTuple->columns;
-          sIdx < sColumnCount;
-          sIdx++, sColumn++ )
-    {
-        if ( ( sColumn->flag & MTC_COLUMN_NULL_TYPE_MASK ) == MTC_COLUMN_NULL_TYPE_TRUE )
-        {
-            sOffset = idlOS::align( sOffset,
-                                    sColumn->module->align );
-
-            sColumn->column.offset = sOffset;
-
-            sOffset += sColumn->column.size;
         }
         else
         {

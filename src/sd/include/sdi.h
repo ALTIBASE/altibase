@@ -147,6 +147,9 @@ typedef struct sdiNode
     UShort          mConnectType;
 } sdiNode;
 
+#define SDI_NODE_DEALLOC_NAME ((SChar*)"$DEALLOC")
+#define SDI_NODE_DEALLOC_ID (10000)
+
 #define SDI_NODE_NULL_ID (ID_UINT_MAX)
 #define SDI_NODE_NULL_IDX (SDI_NODE_MAX_COUNT)
 #define SDI_IS_NULL_NAME( _name_ )                \
@@ -594,6 +597,8 @@ typedef struct sdiDataNode
     UChar           mState;               // date node state
 
     sdiSVPStep      mSVPStep;             // for shard stmt partial rollback
+
+    void          * mRowForTransformed; /* BUG-49154 */
 } sdiDataNode;
 
 #define SDI_NODE_STATE_NONE               0    // 초기상태
@@ -1827,6 +1832,9 @@ public:
     // TASK-7219 Non-shard DML
     static IDE_RC getParseTreeAnalysis( qcParseTree       * aParseTree,
                                         sdiShardAnalysis ** aAnalysis );
+
+    static IDE_RC checkFailoverHistoryOverSMN( ULong         aSMN,
+                                               idBool      * aIsExist );
 
 };
 

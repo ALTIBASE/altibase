@@ -96,6 +96,8 @@ typedef struct qmncSDSE
     qcShardParamInfo * mShardParamInfo; /* TASK-7219 Non-shard DML */
     UShort           mShardParamCount;
 
+    UInt             mRowForTransformed; /* BUG-49154 */
+
 } qmncSDSE;
 
 typedef struct qmndSDSE
@@ -203,6 +205,11 @@ private:
 
     static IDE_RC setLobInfo( qcTemplate   * aTemplate,
                               qmncSDSE     * aCodePlan );
+
+    /* BUG-49154 */
+    static IDE_RC makeNullColumn( qcTemplate * aTemplate,
+                                  qmndSDSE   * aDataPlan,
+                                  void       * aRow );
 };
 
 #endif /* _O_QMN_SDSE_H_ */

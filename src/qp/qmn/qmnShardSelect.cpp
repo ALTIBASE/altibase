@@ -147,6 +147,9 @@ IDE_RC qmnSDSE::firstInit( qcTemplate * aTemplate,
     mtcColumn * sColumn = NULL;
     UInt        sCount  = 0;
 
+    /* BUG-49154 */
+    UInt        sOffset = 0;
+
     // Tuple 위치의 결정
     sTupleID = aCodePlan->tupleRowID;
     aDataPlan->plan.myTuple = &aTemplate->tmplate.rows[sTupleID];
@@ -190,6 +193,7 @@ IDE_RC qmnSDSE::firstInit( qcTemplate * aTemplate,
             // 초기화
             idlOS::memset( sDataNodeArg.mBuffer[i], 0x00, sDataNodeArg.mBufferLength );
         }
+
         sDataNodeArg.mOffset = (UInt*)( aTemplate->shardExecData.data + aCodePlan->mOffset );
         sDataNodeArg.mMaxByteSize =
             (UInt*)( aTemplate->shardExecData.data + aCodePlan->mMaxByteSize );
@@ -219,8 +223,14 @@ IDE_RC qmnSDSE::firstInit( qcTemplate * aTemplate,
             }
             else
             {
-                sDataNodeArg.mOffset[ sCount ]      = sColumn->column.offset;
+                /* BUG-49154 */
+                sOffset = idlOS::align( sOffset,
+                                        sColumn->module->align );
+
+                sDataNodeArg.mOffset[ sCount ]      = sOffset;
                 sDataNodeArg.mMaxByteSize[ sCount ] = sColumn->column.size;
+
+                sOffset += sColumn->column.size;
 
                 sCount++;
             }
@@ -250,6 +260,22 @@ IDE_RC qmnSDSE::firstInit( qcTemplate * aTemplate,
         sDataNodeArg.mRemoteStmt = NULL;
 
         sDataNodeArg.mSVPStep = SDI_SVP_STEP_DO_NOT_NEED_SAVEPOINT;
+
+        /* BUG-49154 */
+        if ( aCodePlan->mRowForTransformed != 0 )
+        {
+            sDataNodeArg.mRowForTransformed = (void*)( aTemplate->shardExecData.data
+                                                       + aCodePlan->mRowForTransformed );
+
+            IDE_TEST( makeNullColumn( aTemplate,
+                                      aDataPlan,
+                                      sDataNodeArg.mRowForTransformed )
+                      != IDE_SUCCESS );
+        }
+        else
+        {
+            /* Nothing to do */
+        }
 
         IDE_TEST( sdi::initShardDataInfo( aTemplate,
                                           aCodePlan->mShardAnalysis,
@@ -623,6 +649,10 @@ IDE_RC qmnSDSE::doItNext( qcTemplate * aTemplate,
     smLobLocator     sRemoteLobLocator;
     smLobLocator     sShardLobLocator;
 
+    /* BUG-49154 */
+    UChar          * sRemote = NULL;
+    UInt             sCount  = 0;
+
     sMmSessId = qci::mSessionCallback.mGetSessionID(
             aTemplate->stmt->session->mMmSession );
     sMmStmtId = qci::mSessionCallback.mGetStmtId(
@@ -658,17 +688,44 @@ IDE_RC qmnSDSE::doItNext( qcTemplate * aTemplate,
                 IDE_TEST( sdi::fetch( sConnectInfo, sDataNode, &sExist )
                           != IDE_SUCCESS );
 
-                sRow = (UChar*)sDataNode->mBuffer[sDataPlan->mCurrScanNode];
+                /* BUG-49154 */
+                if ( sDataNode->mRowForTransformed != NULL )
+                {
+                    sRow    = (UChar*)sDataNode->mRowForTransformed;
+                    sRemote = (UChar*)sDataNode->mBuffer[sDataPlan->mCurrScanNode];
+                }
+                else
+                {
+                    sRow = (UChar*)sDataNode->mBuffer[sDataPlan->mCurrScanNode];
+                }
 
                 // 잘못된 데이터가 fetch되는 경우를 방어한다.
                 sColumn = sDataPlan->plan.myTuple->columns;
-                for ( i = 0; i < sDataPlan->plan.myTuple->columnCount; i++, sColumn++ )
+                for ( i = 0, sCount = 0; i < sDataPlan->plan.myTuple->columnCount; i++, sColumn++ )
                 {
-                    /* TASK-7219 */
+                    /* BUG-49154 */
                     if ( ( sColumn->flag & MTC_COLUMN_NULL_TYPE_MASK ) == MTC_COLUMN_NULL_TYPE_TRUE )
                     {
-                        sColumn->module->null( sColumn,
-                                               (UChar *)sRow + sColumn->column.offset );
+                        continue;
+                    }
+                    else
+                    {
+                        /* Nothing to do */
+                    }
+
+                    if ( sRemote != NULL )
+                    {
+                        IDE_TEST_RAISE( sColumn->module->actualSize(
+                                            sColumn,
+                                            sRemote + sDataNode->mOffset[ sCount ] ) >
+                                        sColumn->column.size,
+                                        ERR_INVALID_DATA_FETCHED );
+
+                        idlOS::memcpy( (SChar *)( sRow + sColumn->column.offset ),
+                                       (SChar *)( sRemote + sDataNode->mOffset[ sCount ] ),
+                                       sColumn->column.size );
+
+                        sCount++;
                     }
                     else
                     {
@@ -713,8 +770,17 @@ IDE_RC qmnSDSE::doItNext( qcTemplate * aTemplate,
 
                 if ( sExist == ID_TRUE )
                 {
-                    sDataPlan->plan.myTuple->row =
-                        sDataNode->mBuffer[sDataPlan->mCurrScanNode];
+                    /* BUG-49154 */
+                    if ( sDataNode->mRowForTransformed != NULL )
+                    {
+                        sDataPlan->plan.myTuple->row =
+                            sDataNode->mRowForTransformed;
+                    }
+                    else
+                    {
+                        sDataPlan->plan.myTuple->row =
+                            sDataNode->mBuffer[sDataPlan->mCurrScanNode];
+                    }
 
                     // BUGBUG nullRID
                     SMI_MAKE_VIRTUAL_NULL_GRID( sDataPlan->plan.myTuple->rid );
@@ -784,8 +850,17 @@ IDE_RC qmnSDSE::doItNext( qcTemplate * aTemplate,
                 }
                 else
                 {
-                    sDataPlan->plan.myTuple->row =
-                        sDataNode->mBuffer[sDataPlan->mCurrScanNode];
+                    /* BUG-49154 */
+                    if ( sDataNode->mRowForTransformed != NULL )
+                    {
+                        sDataPlan->plan.myTuple->row =
+                            sDataNode->mRowForTransformed;
+                    }
+                    else
+                    {
+                        sDataPlan->plan.myTuple->row =
+                            sDataNode->mBuffer[sDataPlan->mCurrScanNode];
+                    }
 
                     // a data node fetch complete
                     sDataNode->mState = SDI_NODE_STATE_FETCHED;
@@ -1245,4 +1320,85 @@ IDE_RC qmnSDSE::setTransformedOutRefBindValue( qcTemplate * aTemplate,
     }
 
     return IDE_SUCCESS;
+}
+
+IDE_RC qmnSDSE::makeNullColumn( qcTemplate * aTemplate,
+                                qmndSDSE   * aDataPlan,
+                                void       * aRow )
+{
+/***********************************************************************
+ *
+ * Description :
+ *
+ * Implementation :
+ *
+ ***********************************************************************/
+
+    UShort           sColumnCnt   = 0;
+    mtcColumn      * sColumn      = NULL;
+    UChar          * sColumnPtr   = NULL;
+    smcTableHeader * sTableHeader = NULL;
+    mtcTuple       * sTuple       = NULL;
+
+    IDE_TEST_RAISE( aTemplate == NULL, ERR_NULL_TMPL );
+    IDE_TEST_RAISE( aDataPlan == NULL, ERR_NULL_PLAN );
+
+    sTuple = aDataPlan->plan.myTuple;
+
+    for ( sColumnCnt = 0;
+          sColumnCnt < sTuple->columnCount;
+          sColumnCnt++ )
+    {
+        sColumn = &( sTuple->columns[ sColumnCnt ] );
+
+        if ( ( sColumn->flag & MTC_COLUMN_NULL_TYPE_MASK )
+             == MTC_COLUMN_NULL_TYPE_TRUE )
+        {
+            if ( ( sColumn->column.flag & SMI_COLUMN_COMPRESSION_MASK )
+                 == SMI_COLUMN_COMPRESSION_TRUE )
+            {
+                sColumnPtr = (UChar *)( aRow ) + sColumn->column.offset;
+
+                sTableHeader =
+                    (smcTableHeader *)SMI_MISC_TABLE_HEADER( smiGetTable( sColumn->column.mDictionaryTableOID ) );
+
+                IDE_DASSERT( sTableHeader->mNullOID != SM_NULL_OID );
+
+                idlOS::memcpy( sColumnPtr,
+                               &( sTableHeader->mNullOID ),
+                               ID_SIZEOF( smOID ) );
+            }
+            else
+            {
+                sColumnPtr = (UChar *)mtc::value( sColumn,
+                                                  aRow,
+                                                  MTD_OFFSET_USE );
+
+                sColumn->module->null( sColumn,
+                                       sColumnPtr );
+            }
+        }
+        else
+        {
+            /* Nothing to do */
+        }
+    }
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( ERR_NULL_TMPL )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QMC_UNEXPECTED_ERROR,
+                                  "qmnSDSE::makeNullColumn",
+                                  "template is null" ) );
+    }
+    IDE_EXCEPTION( ERR_NULL_PLAN )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QMC_UNEXPECTED_ERROR,
+                                  "qmnSDSE::makeNullColumn",
+                                  "datapaln is null" ) );
+    }
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
 }

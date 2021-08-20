@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qmoOneNonPlan.cpp 91237 2021-07-16 04:28:37Z donovan.seo $
+ * $Id: qmoOneNonPlan.cpp 91445 2021-08-10 01:09:08Z andrew.shin $
  *
  * Description :
  *     Plan Generator
@@ -8977,6 +8977,8 @@ IDE_RC qmoOneNonPlan::makeSDSE( qcStatement       * aStatement,
 
     UShort      sShardParamCount = 0;
 
+    idBool sIsPushProj = ID_FALSE; /* BUG-49154 */
+
     //----------------------------------
     // 적합성 검사
     //----------------------------------
@@ -9038,7 +9040,8 @@ IDE_RC qmoOneNonPlan::makeSDSE( qcStatement       * aStatement,
     {
         if ( ( sColumn->flag & MTC_COLUMN_NULL_TYPE_MASK ) == MTC_COLUMN_NULL_TYPE_TRUE )
         {
-            /* Nothing to do */
+            /* BUG-49154 */
+            sIsPushProj = ID_TRUE;
         }
         else
         {
@@ -9071,6 +9074,17 @@ IDE_RC qmoOneNonPlan::makeSDSE( qcStatement       * aStatement,
     sSDSE->mOutRefBindData = sSDSE->shardDataOffset + sSDSE->shardDataSize;
     sSDSE->shardDataSize += idlOS::align8( getOutRefBindDataSize( sTemplate,
                                                                   sSDSE ) );
+
+    /* BUG-49154 */
+    if ( sIsPushProj == ID_TRUE )
+    {
+        sSDSE->mRowForTransformed = sSDSE->shardDataOffset + sSDSE->shardDataSize;
+        sSDSE->shardDataSize += idlOS::align8( sTemplate->rows[sTupleID].rowOffset );
+    }
+    else
+    {
+        sSDSE->mRowForTransformed = 0;
+    }
 
     QC_SHARED_TMPLATE(aStatement)->shardExecData.dataSize =
         sSDSE->shardDataOffset + sSDSE->shardDataSize;
