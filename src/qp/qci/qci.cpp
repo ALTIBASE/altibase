@@ -3060,16 +3060,17 @@ IDE_RC qci::setBindParamInfo( qciStatement  * aStatement,
     }
     IDE_EXCEPTION( err_invalid_binding_init_data );
     {
-        // BUG-37405
-        for( i = 0; i < sStatement->pBindParamCount; i++ )
-        {
-            sStatement->pBindParam[i].isParamInfoBound = ID_FALSE;
-        }
     }
     IDE_EXCEPTION_END;
 
+    // BUG-37405
+    for( i = 0; i < sStatement->pBindParamCount; i++ )
+    {
+        sStatement->pBindParam[i].isParamInfoBound = ID_FALSE;
+    }
+    
     // PROJ-2163
-    sStatement->pBindParam[aBindParam->id].isParamInfoBound = ID_FALSE;
+    //sStatement->pBindParam[aBindParam->id].isParamInfoBound = ID_FALSE;
 
     return IDE_FAILURE;
 }
@@ -8530,6 +8531,29 @@ IDE_RC qci::setRemoteTableCallback( qciRemoteTableCallback * aCallback )
     sRet = qmrSetRemoteTableCallback( aCallback );
 
     return sRet;
+}
+
+/* BUG-49194 [mm-altiaudit] INC-45592 방어코드 추가 */
+void qci::getAllRefObjectCount( qciStatement      * aStatement, 
+                                UInt              * aRefObjectCount )
+{
+    qcStatement  *sQCStatement = &(aStatement->statement);
+
+    if ( sQCStatement->myPlan != NULL)
+    {
+        if ( sQCStatement->myPlan->planEnv == NULL)
+        {
+            *aRefObjectCount = 0;
+        }
+        else
+        {
+            *aRefObjectCount = sQCStatement->myPlan->planEnv->auditInfo.refObjectCount;
+        }
+    }
+    else
+    {
+        *aRefObjectCount = 0;
+    }
 }
 
 void qci::getAllRefObjects( qciStatement       * aStatement,

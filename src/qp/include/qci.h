@@ -209,8 +209,10 @@ typedef struct qciValidateReplicationCallback
 
     IDE_RC    ( * mValidateCreate )           ( void        * aQcStatement );
     IDE_RC    ( * mValidateOneReplItem )      ( void        * aQcStatement,
+                                                SChar       * aReplName,
                                                 qriReplItem * aReplItem,
                                                 SInt          aRole,
+                                                idBool        aIsDDLReplicateOpt,
                                                 idBool        aIsRecoveryOpt,
                                                 SInt          aReplMode );
     IDE_RC    ( * mValidateAlterAddTbl )      ( void        * aQcStatement );
@@ -1828,6 +1830,10 @@ public:
             qciExecuteReplicationCallback     aExecuteCallback,
             qciCatalogReplicationCallback     aCatalogCallback,
             qciManageReplicationCallback      aManageCallback );
+
+    /* BUG-49194 [mm-altiaudit] INC-45592 방어코드 추가 */
+    static void getAllRefObjectCount( qciStatement      * aStatement, 
+                                      UInt              * aRefObjectCount );
 
     // PROJ-2223 audit
     static void getAllRefObjects( qciStatement       * aStatement,
