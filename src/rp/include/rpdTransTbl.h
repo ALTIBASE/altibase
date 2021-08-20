@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpdTransTbl.h 91226 2021-07-14 08:01:24Z lswhh $
+ * $Id: rpdTransTbl.h 91485 2021-08-17 23:46:35Z seulki $
  **********************************************************************/
 
 #ifndef _O_RPD_TRANSTBL_H_
@@ -47,7 +47,7 @@ public:
 
     smTID  getTransID() { return mRpdTrans->mSmiTrans.getTransID(); }
     IDE_RC commit( smTID aTID );
-    IDE_RC rollback( smTID aTID );
+    IDE_RC rollback( smTID aTID, idBool aTxSlotRelease = ID_FALSE );
     IDE_RC setSavepoint( smTID aTID, rpSavepointType aType, SChar * aSavepointName );
     IDE_RC abortSavepoint( rpSavepointType aType, SChar * aSavepointName );
 };

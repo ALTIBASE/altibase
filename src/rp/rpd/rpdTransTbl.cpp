@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpdTransTbl.cpp 91226 2021-07-14 08:01:24Z lswhh $
+ * $Id: rpdTransTbl.cpp 91485 2021-08-17 23:46:35Z seulki $
  **********************************************************************/
 
 #include <idl.h>
@@ -614,8 +614,7 @@ void rpdTransTbl::rollbackAllATrans()
                                                    &sIsExist)
                                    == IDE_SUCCESS);
                     }
-
-                    if ( mTransTbl[i].mTrans.rollback( mTransTbl[i].mRemoteTID ) != IDE_SUCCESS )
+                    if ( mTransTbl[i].mTrans.rollback( mTransTbl[i].mRemoteTID, ID_TRUE ) != IDE_SUCCESS )
                     {
                         IDE_ERRLOG(IDE_RP_0);
                         IDE_CALLBACK_FATAL("[Repl] Transaction Rollback Failure");

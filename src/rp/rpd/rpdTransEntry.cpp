@@ -19,7 +19,7 @@
 #include <rpdTransTbl.h>
 
 /* TASK-6548 unique key duplication */
-IDE_RC rpdTransEntry::rollback( smTID aTID )
+IDE_RC rpdTransEntry::rollback( smTID aTID, idBool aTxSlotRelease )
 {
     if ( mTransForConflictResolution != NULL )
     {
@@ -31,8 +31,17 @@ IDE_RC rpdTransEntry::rollback( smTID aTID )
     {
         /* Nothing to do */
     }
-    IDE_TEST_RAISE( mRpdTrans->mSmiTrans.rollback( NULL, SMI_DO_NOT_RELEASE_TRANSACTION )
-                    != IDE_SUCCESS, ERR_TX_ABORT );
+
+    if( aTxSlotRelease == ID_TRUE )
+    {
+        IDE_TEST_RAISE( mRpdTrans->mSmiTrans.rollback( NULL, SMI_RELEASE_TRANSACTION )
+                        != IDE_SUCCESS, ERR_TX_ABORT );
+    }
+    else
+    {
+        IDE_TEST_RAISE( mRpdTrans->mSmiTrans.rollback( NULL, SMI_DO_NOT_RELEASE_TRANSACTION )
+                        != IDE_SUCCESS, ERR_TX_ABORT );
+    }
 
     return IDE_SUCCESS;
 
