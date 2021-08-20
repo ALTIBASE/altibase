@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpdMeta.h 91258 2021-07-19 06:52:13Z minku.kang $
+ * $Id: rpdMeta.h 91356 2021-07-27 06:07:52Z donghyun1 $
  **********************************************************************/
 
 #ifndef _O_RPD_META_H_
@@ -238,6 +238,8 @@ typedef struct rpdReplications
     smLSN                 mCurrentReadLSNFromXLogfile;
     
     cmiCompressType       mCompressType;
+    
+    UInt                  mSqlApplyTableCount;
 } rpdReplications;
 
 typedef struct rpdReplItems
@@ -1001,6 +1003,7 @@ public:
                                                      SChar * aPeerRepName );
 
     /* PROJ-2642 */
+    void             setSqlApplyTableCount( void );
     UInt             getSqlApplyTableCount( void );
     void             printItemActionInfo( void );
 

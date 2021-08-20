@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: rpxReceiver.cpp 91224 2021-07-14 05:36:12Z minku.kang $
+ * $Id: rpxReceiver.cpp 91356 2021-07-27 06:07:52Z donghyun1 $
  **********************************************************************/
 
 #include <idl.h>
@@ -2519,6 +2519,8 @@ IDE_RC rpxReceiver::checkMeta( smiTrans         * aTrans,
     sIsBegin = ID_FALSE;
     IDE_TEST( sStatement.end( SMI_STATEMENT_RESULT_SUCCESS ) != IDE_SUCCESS );
 
+    mMeta.setSqlApplyTableCount();
+    
     /* check offline replication log info */
     if ( ( mMeta.mReplication.mOptions & RP_OPTION_OFFLINE_MASK ) ==
          RP_OPTION_OFFLINE_SET )

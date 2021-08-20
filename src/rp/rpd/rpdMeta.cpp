@@ -15,7 +15,7 @@
  */
  
 /***********************************************************************
- * $Id: rpdMeta.cpp 91258 2021-07-19 06:52:13Z minku.kang $
+ * $Id: rpdMeta.cpp 91356 2021-07-27 06:07:52Z donghyun1 $
  **********************************************************************/
 
 #include <idl.h>
@@ -7710,7 +7710,7 @@ void rpdMetaItem::setIsDummyItem( idBool aIsDummyItem )
     mIsDummyItem = aIsDummyItem;
 }
 
-UInt rpdMeta::getSqlApplyTableCount( void )
+void rpdMeta::setSqlApplyTableCount( void )
 {
     SInt        i = 0;
     UInt        sCount = 0;
@@ -7727,7 +7727,12 @@ UInt rpdMeta::getSqlApplyTableCount( void )
         }
     }
 
-    return sCount;
+    mReplication.mSqlApplyTableCount = sCount;
+}
+
+UInt rpdMeta::getSqlApplyTableCount( void )
+{
+    return mReplication.mSqlApplyTableCount;
 }
 
 void rpdMeta::printItemActionInfo( void )
