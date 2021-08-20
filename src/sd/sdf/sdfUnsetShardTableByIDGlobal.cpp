@@ -301,7 +301,8 @@ IDE_RC sdfCalculate_UnsetShardTableByIDGlobal( mtcNode*     aNode,
                              SDI_BACKUP_TABLE_PREFIX,
                              sTableNameStr );
 
-            if ( sTableInfo.mDefaultNodeId != SDI_NODE_NULL_ID )
+            if ( ( sTableInfo.mDefaultNodeId != SDI_NODE_NULL_ID ) &&
+                 ( sTableInfo.mDefaultNodeId != SDI_NODE_DEALLOC_ID ) )
             {
                 // Default Replication Drop
                 if ( idlOS::strncmp( sTableInfo.mDefaultPartitionName, 

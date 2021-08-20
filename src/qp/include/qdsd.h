@@ -116,6 +116,10 @@ public:
                                                SChar       * aNodeName,
                                                SChar       * aReplName );
 
+    static IDE_RC syncReplicationForInternal( qcStatement * aStatement,
+                                              SChar       * aNodeName,
+                                              SChar       * aReplName );
+
     static IDE_RC truncateBackupTable( qcStatement * aStatement );
     
     static IDE_RC truncateBackupTableForInternal( qcStatement       * aStatement,
@@ -270,6 +274,14 @@ private:
                                          SChar * aNodeName,
                                          qdReShardAttribute * aReShardAttr,
                                          ZKPendingJobType  aPendingJobType );
+
+    static IDE_RC truncateAllPrimaryData( qcStatement * aStatement,
+                                          SChar * aSQLBuf,
+                                          UInt    aSQLBufSize,
+                                          SChar * aNodeName,
+                                          qdReShardAttribute * aReShardAttr,
+                                          ZKPendingJobType  aPendingJobType );
+
     static IDE_RC isExistBackupDataForAllReshardAttr( qcStatement * aStatement,
                                                       SChar * aNodeName,
                                                       qdReShardAttribute * aReShardAttr,
@@ -373,6 +385,7 @@ private:
     static IDE_RC failbackRecoverRPAfterLock( qcStatement        * aStatement,
                                               SChar              * aFailbackFromNodeName,
                                               sdiReplicaSet      * aMainReplicaSet,
+                                              sdiReplicaSetInfo  * aFailoverHistoryInfo,
                                               sdiReplicaSetInfo  * aFailoverHistoryInfoWithOtherNode );
     
     static IDE_RC failbackJoin( qcStatement        * aStatement,
@@ -398,6 +411,24 @@ private:
     static IDE_RC executeResetCloneMeta( qcStatement * aStatement );
 
     static IDE_RC checkShardPIN( qcStatement * aStatement );
-    
+
+    static IDE_RC syncFailbackData( qcStatement        * aStatement,
+                                    SChar              * aFromNodeName,
+                                    SChar              * aToNodeName,
+                                    sdiTableInfoList   * aTableInfoList,
+                                    sdiReplicaSetInfo  * aReplicaSetInfo,
+                                    sdiReplicaSetInfo  * aFailoverHistoryInfo,
+                                    ULong                aSMN,
+                                    idBool               aIsCloneOnly );
+
+    static IDE_RC syncFailbackDataAfterLock( qcStatement        * aStatement,
+                                             SChar              * aFromNodeName,
+                                             SChar              * aToNodeName );
+
+    static IDE_RC syncDataWithReplicaSet( qcStatement        * aStatement,
+                                          SChar              * aFromNodeName,
+                                          sdiTableInfoList   * aTableInfoList,
+                                          sdiReplicaSet      * aReplicaSet,
+                                          ULong                aSMN );
 };
 #endif

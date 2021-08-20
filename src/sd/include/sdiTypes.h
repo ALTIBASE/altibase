@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: sdiTypes.h 91173 2021-07-08 04:26:30Z jayce.park $
+ * $Id: sdiTypes.h 91417 2021-08-03 06:35:26Z donghyun $
  *
  * Description : SD 및 타 모듈에서도 사용하는 자료구조 정의
  *
@@ -288,11 +288,12 @@ typedef enum {
 
 typedef enum
 {
-    SDI_INTERNAL_OP_NOT      = 0,
-    SDI_INTERNAL_OP_NORMAL   = 1,
-    SDI_INTERNAL_OP_FAILOVER = 2,
-    SDI_INTERNAL_OP_FAILBACK = 3,
-    SDI_INTERNAL_OP_MAX      = 4,
+    SDI_INTERNAL_OP_NOT       = 0,
+    SDI_INTERNAL_OP_NORMAL    = 1,
+    SDI_INTERNAL_OP_FAILOVER  = 2,
+    SDI_INTERNAL_OP_FAILBACK  = 3,
+    SDI_INTERNAL_OP_DROPFORCE = 4,
+    SDI_INTERNAL_OP_MAX       = 5,
 } sdiInternalOperation;
 
 /* call function after transaction end */

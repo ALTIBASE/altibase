@@ -411,6 +411,13 @@ IDE_RC sdfCalculate_ResetShardPartitionNode( mtcNode*     aNode,
                 IDE_TEST_CONT( sCalledBy == SDM_CALLED_BY_SHARD_FAILBACK, normal_exit );
                 sIsUsable = ID_TRUE;
             }
+            else if ( idlOS::strncmp( sNewNodeNameStr,
+                                      SDI_NODE_DEALLOC_NAME,
+                                      SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            {
+                /* DEALLOC 되는 경우 항상 FALSE 한다. */
+                sIsUsable = ID_FALSE;
+            }
             else
             {
                 IDE_CONT( normal_exit );

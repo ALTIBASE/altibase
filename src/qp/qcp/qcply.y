@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qcply.y 90444 2021-04-02 10:15:58Z minku.kang $
+ * $Id: qcply.y 91417 2021-08-03 06:35:26Z donghyun $
  **********************************************************************/
 
 /*
@@ -40532,7 +40532,56 @@ alter_database_shard_statement
           QDSD_SHARD_PARSE_TREE_INIT($<shardParseTree>$);
 
           if (idlOS::strMatch("FAILOVER", 8,
-                              QTEXT+$<position>4.offset, $<position>4.size) != 0)
+                              QTEXT+$<position>4.offset, $<position>4.size) == 0)
+          {
+              $<shardParseTree>$->mDDLType = SHARD_FAILOVER_NORMAL;
+
+              if ($<position>5.size > QC_MAX_NAME_LEN)
+              {
+                  sqlInfo.setSourceInfo(STATEMENT, & $<position>5 );
+                  sqlInfo.init(MEMORY);
+                  IDE_SET(ideSetErrorCode(qpERR_ABORT_QCP_MAX_NAME_LENGTH_OVERFLOW,
+                                          sqlInfo.getErrMessage() ));
+                  sqlInfo.fini();
+                  YYABORT;
+              }
+
+              SET_POSITION($<shardParseTree>$->mNodeName, $<position>5);
+
+              $<shardParseTree>$->common.parse    = qcc::parse;
+              $<shardParseTree>$->common.validate = qdsd::validateShardFailover;
+              $<shardParseTree>$->common.optimize = qcc::optimize;
+              $<shardParseTree>$->common.execute  = qdsd::executeShardFailover; 
+          }
+          else if (idlOS::strMatch("FAILBACK", 8,
+                                   QTEXT+$<position>4.offset, $<position>4.size) == 0)
+          {
+              if (idlOS::strMatch("SYNC", 4,
+                  QTEXT+$<position>5.offset, $<position>5.size) == 0)
+              {
+                  $<shardParseTree>$->mDDLType = SHARD_FAILBACK_SYNC;
+              }
+              else if (idlOS::strMatch("INSTANT", 7,
+                  QTEXT+$<position>5.offset, $<position>5.size) == 0)
+              {
+                  $<shardParseTree>$->mDDLType = SHARD_FAILBACK_INSTANT;
+              }
+              else
+              {
+                  sqlInfo.setSourceInfo( STATEMENT, & $<position>5 );
+                  sqlInfo.init( MEMORY );
+                  IDE_SET( ideSetErrorCode( qpERR_ABORT_QCP_SYNTAX,
+                                            sqlInfo.getErrMessage() ) );
+                  sqlInfo.fini();
+                  YYABORT;
+              }
+
+              $<shardParseTree>$->common.parse    = qcc::parse;
+              $<shardParseTree>$->common.validate = qdsd::validateShardFailback;
+              $<shardParseTree>$->common.optimize = qcc::optimize;
+              $<shardParseTree>$->common.execute  = qdsd::executeShardFailback;
+          }
+          else
           {
           
               sqlInfo.setSourceInfo( STATEMENT, & $<position>4 );
@@ -40542,25 +40591,6 @@ alter_database_shard_statement
               sqlInfo.fini();
               YYABORT;
           }
-
-          $<shardParseTree>$->mDDLType = SHARD_FAILOVER_NORMAL;
-
-          if ($<position>5.size > QC_MAX_NAME_LEN)
-          {
-              sqlInfo.setSourceInfo(STATEMENT, & $<position>5 );
-              sqlInfo.init(MEMORY);
-              IDE_SET(ideSetErrorCode(qpERR_ABORT_QCP_MAX_NAME_LENGTH_OVERFLOW,
-                                      sqlInfo.getErrMessage() ));
-              sqlInfo.fini();
-              YYABORT;
-          }
-
-          SET_POSITION($<shardParseTree>$->mNodeName, $<position>5);
-
-          $<shardParseTree>$->common.parse    = qcc::parse;
-          $<shardParseTree>$->common.validate = qdsd::validateShardFailover;
-          $<shardParseTree>$->common.optimize = qcc::optimize;
-          $<shardParseTree>$->common.execute  = qdsd::executeShardFailover; 
       }
     | TR_ALTER TR_DATABASE TA_SHARD TI_NONQUOTED_IDENTIFIER TI_NONQUOTED_IDENTIFIER TI_IDENTIFIER
       { 

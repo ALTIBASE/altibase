@@ -271,6 +271,7 @@ IDE_RC sdfCalculate_UnsetNode( mtcNode*     aNode,
                 break;
             case SDI_INTERNAL_OP_FAILOVER:
             case SDI_INTERNAL_OP_FAILBACK:
+            case SDI_INTERNAL_OP_DROPFORCE:
                 break;
             default:
                 IDE_DASSERT( 0 );

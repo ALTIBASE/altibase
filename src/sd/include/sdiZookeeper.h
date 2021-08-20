@@ -108,6 +108,7 @@ typedef enum
     ZK_JOB_SHUTDOWN,
     ZK_JOB_JOIN,
     ZK_JOB_DROP,
+    ZK_JOB_DROP_FORCE,
     ZK_JOB_RESHARD,
     ZK_JOB_ERROR
 } ZKJOB;
@@ -236,8 +237,9 @@ class sdiZookeeper
                                SChar * aInternalReplicationHostIPnPort,
                                SChar * aConnType );
         static IDE_RC addNodeAfterCommit( ULong aSMN );
-        static IDE_RC dropNode( SChar * aNodeName );
+        static IDE_RC dropNode( SChar * aNodeName, idBool aIsDropForce );
         static IDE_RC dropNodeAfterCommit( ULong   aSMN );
+        static IDE_RC dropForceAfterCommit( ULong   aSMN );
         static IDE_RC shutdown();
         static IDE_RC joinNode();
         static IDE_RC joinNodeAfterCommit();
@@ -274,6 +276,9 @@ class sdiZookeeper
                                         SChar   * aReturnName );
         static sdiLocalMetaInfo * getNodeInfo( iduList * aNodeList,
                                                SChar   * aNodeName );
+
+        static sdiLocalMetaInfo * getNodeInfoByID( iduList * aNodeList,
+                                                   UInt      aNodeId );
 
         /* watch ฐüทร */
         static IDE_RC settingAddNodeWatch();

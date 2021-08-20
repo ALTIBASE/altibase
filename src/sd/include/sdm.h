@@ -251,7 +251,8 @@ private:
                            smiStatement * aSmiStmt,
                            ULong          aSMN,
                            sdiTableInfo * aTableInfo,
-                           sdiRangeInfo * aRangeInfo );
+                           sdiRangeInfo * aRangeInfo,
+                           idBool         aNeedMerge );
 public:
     static IDE_RC checkIsInCluster( qcStatement  * aStatement,
                                     idBool       * aIsInCluster );
@@ -656,6 +657,10 @@ public:
                                              SChar              * aOldNodeName,
                                              SChar              * aNewNodeName );
 
+    static IDE_RC updateReplicaSet4DropForce( qcStatement        * aStatement,
+                                              SChar              * aOldNodeName,
+                                              SChar              * aNewNodeName );
+
     static IDE_RC backupReplicaSet4Failover( qcStatement        * aStatement,
                                              SChar              * aTargetNodeName,
                                              SChar              * aFailoverNodeName,
@@ -704,6 +709,11 @@ public:
                                   SChar            * aTableName,
                                   sdiSplitMethod     aSdSplitMethod,
                                   idBool             aIsNewTrans );
+
+    static IDE_RC checkFailoverHistoryOverSMN( smiStatement       * aSmiStmt,
+                                               ULong                aSMN,
+                                               idBool             * aIsExist );
+
 
 };
 

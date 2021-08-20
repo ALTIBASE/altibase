@@ -195,7 +195,7 @@ IDE_RC sdiZookeeper::addNodeAfterCommit( ULong )
     return IDE_FAILURE;
 }
 
-IDE_RC sdiZookeeper::dropNode( SChar * )
+IDE_RC sdiZookeeper::dropNode( SChar *, idBool )
 {
     IDE_SET( ideSetErrorCode( sdERR_ABORT_SDC_UNEXPECTED_ERROR,
                               "sdiZookeeperstub.cpp",
@@ -205,6 +205,15 @@ IDE_RC sdiZookeeper::dropNode( SChar * )
 }
 
 IDE_RC sdiZookeeper::dropNodeAfterCommit( ULong )
+{
+    IDE_SET( ideSetErrorCode( sdERR_ABORT_SDC_UNEXPECTED_ERROR,
+                              "sdiZookeeperstub.cpp",
+                              "Zookeeper C client only support Linux." ) );
+
+    return IDE_FAILURE;
+}
+
+IDE_RC sdiZookeeper::dropForceAfterCommit( ULong )
 {
     IDE_SET( ideSetErrorCode( sdERR_ABORT_SDC_UNEXPECTED_ERROR,
                               "sdiZookeeperstub.cpp",
@@ -342,6 +351,16 @@ sdiLocalMetaInfo * sdiZookeeper::getNodeInfo(iduList * aNodeList, SChar * aNodeN
 
     return (sdiLocalMetaInfo *)NULL;
 }
+
+sdiLocalMetaInfo * sdiZookeeper::getNodeInfoByID(iduList * aNodeList, UInt aNodeId )
+{
+    IDE_SET( ideSetErrorCode( sdERR_ABORT_SDC_UNEXPECTED_ERROR,
+                              "sdiZookeeperstub.cpp",
+                              "Zookeeper C client only support Linux." ) );
+
+    return (sdiLocalMetaInfo *)NULL;
+}
+
 IDE_RC sdiZookeeper::getAliveNodeNameList( iduListNode ** )
 {
     IDE_SET( ideSetErrorCode( sdERR_ABORT_SDC_UNEXPECTED_ERROR,

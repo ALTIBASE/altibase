@@ -2557,6 +2557,7 @@ IDE_RC sdm::updateDefaultNodeAndPartititon( qcStatement         * aStatement,
 
         case SDI_INTERNAL_OP_FAILOVER:
         case SDI_INTERNAL_OP_FAILBACK:
+        case SDI_INTERNAL_OP_DROPFORCE:
             /* Failover/Failback에서는 ReplicaSet을 변경하지 않는다. */
             sReplicaSetId = sTableInfo.mDefaultPartitionReplicaSetId;
             break;
@@ -3131,9 +3132,111 @@ IDE_RC sdm::updateRange( qcStatement         * aStatement,
                 }
             }
 
-            /* Shard Object 추가는 모든 Node가 Valid 한 상황에서만 호출된다.
-             * ReplicaSet의 PrimaryNodeName과 현재 Node가 일치하는 경우가 항상 1개 있어야 한다. */
-            IDE_TEST_RAISE( sOldIsFound != ID_TRUE , ERR_SHARD_META );
+            if ( idlOS::strncmp( sOldNode.mNodeName,
+                                 SDI_NODE_DEALLOC_NAME,
+                                 SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+            {
+                /* Shard Object 추가는 모든 Node가 Valid 한 상황에서만 호출된다.
+                 * ReplicaSet의 PrimaryNodeName과 현재 Node가 일치하는 경우가 항상 1개 있어야 한다. */
+                IDE_TEST_RAISE( sOldIsFound != ID_TRUE , ERR_SHARD_META );
+            }
+            else
+            {
+                /* Dealloc의 경우 ReplicaSetId는 RangeInfo를 확인해야 한다. */
+                IDE_TEST( setKeyDataType( aStatement,
+                                          &sTableInfo ) != IDE_SUCCESS );
+
+                IDE_TEST( sdm::getRangeInfo ( aStatement,
+                                              QC_SMI_STMT( aStatement ),
+                                              sMetaNodeInfo.mShardMetaNumber,
+                                              &sTableInfo,
+                                              &sRangeInfo,
+                                              ID_FALSE )
+                          != IDE_SUCCESS );
+
+                sShardTableType = sdi::getShardObjectType( &sTableInfo );
+
+                switch( sShardTableType )
+                {
+                    case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
+                        for ( sCnt = 0; sCnt < sRangeInfo.mCount ; sCnt++ )
+                        {
+                            if ( sTableInfo.mObjectType == 'T' ) /* Table */
+                            {
+                                if ( idlOS::strncmp( sRangeInfo.mRanges[sCnt].mPartitionName,
+                                                     aPartitionName,
+                                                     QC_MAX_OBJECT_NAME_LEN + 1 ) == 0 )
+                                {
+                                    sOldReplicaSetId = sRangeInfo.mRanges[sCnt].mReplicaSetId;
+                                    break;
+                                }
+                            }
+                            else /* Procedure */
+                            {
+                                if ( sTableInfo.mSplitMethod == SDI_SPLIT_HASH )
+                                {
+                                    IDE_TEST( sdi::getValueStr( MTD_INTEGER_ID,
+                                                                &sRangeInfo.mRanges[sCnt].mValue,
+                                                                &sValueStr )
+                                              != IDE_SUCCESS );
+                                }
+                                else
+                                {
+                                    IDE_TEST( sdi::getValueStr( sTableInfo.mKeyDataType,
+                                                                &sRangeInfo.mRanges[sCnt].mValue,
+                                                                &sValueStr )
+                                              != IDE_SUCCESS );
+                                }
+
+                                if ( sValueStr.mCharMax.value[0] == '\'' )
+                                {
+                                    // INPUT ARG ('''A''') => 'A' => '''A'''
+                                    idlOS::snprintf( sObjectValue,
+                                                     SDI_RANGE_VARCHAR_MAX_PRECISION + 1,
+                                                     "''%s''",
+                                                     sValueStr.mCharMax.value );
+                                }
+                                else
+                                {
+                                    // INPUT ARG ('A') => A => 'A'
+                                    idlOS::snprintf( sObjectValue,
+                                                     SDI_RANGE_VARCHAR_MAX_PRECISION + 1,
+                                                     "'%s'",
+                                                     sValueStr.mCharMax.value );
+                                }
+
+                                if ( idlOS::strncmp( sObjectValue,
+                                                     aValue,
+                                                     SDI_RANGE_VARCHAR_MAX_PRECISION + 1 ) == 0 )
+                                {
+                                    sOldReplicaSetId = sRangeInfo.mRanges[sCnt].mReplicaSetId;
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    case SDI_SOLO_DIST_OBJECT:
+                        for ( sCnt = 0; sCnt < sRangeInfo.mCount ; sCnt++ )
+                        {
+                            sOldReplicaSetId = sRangeInfo.mRanges[sCnt].mReplicaSetId;
+                        }
+                        break;
+                    case SDI_CLONE_DIST_OBJECT:
+                        for ( sCnt = 0; sCnt < sRangeInfo.mCount ; sCnt++ )
+                        {
+                            if ( sRangeInfo.mRanges[sCnt].mNodeId == sOldNode.mNodeId )
+                            { 
+                                sOldReplicaSetId = sRangeInfo.mRanges[sCnt].mReplicaSetId;
+                            }
+                        }
+                        break;
+                    case SDI_NON_SHARD_OBJECT:
+                    case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
+                    default:
+                        IDE_RAISE( ERR_SHARD_TYPE );
+                        break;
+                }
+            }
             if ( sNewNode.mNodeId != SDI_NODE_NULL_ID )
             {
                 IDE_TEST_RAISE( sNewIsFound != ID_TRUE , ERR_SHARD_META );
@@ -3141,7 +3244,7 @@ IDE_RC sdm::updateRange( qcStatement         * aStatement,
             break;
         case SDI_INTERNAL_OP_FAILOVER:
         case SDI_INTERNAL_OP_FAILBACK:
-
+        case SDI_INTERNAL_OP_DROPFORCE:
             /* FailOver/FailBack은 연결되어 있는 ReplicaSetID를 변경하지 않는다. */
             /* FailOver에서는 FailOver 가능한 Partition만 넘어온다.
              * 다만 ReplicaSet은 특정 Node에 여럿 연결되어 있을수 있기 때문에
@@ -3221,6 +3324,12 @@ IDE_RC sdm::updateRange( qcStatement         * aStatement,
                     }
                     break;
                 case SDI_SOLO_DIST_OBJECT:
+                    for ( sCnt = 0; sCnt < sRangeInfo.mCount ; sCnt++ )
+                    {
+                        sOldReplicaSetId = sRangeInfo.mRanges[sCnt].mReplicaSetId;
+                        sNewReplicaSetId = sRangeInfo.mRanges[sCnt].mReplicaSetId;
+                    }
+                    break;
                 case SDI_CLONE_DIST_OBJECT:
                     for ( sCnt = 0; sCnt < sRangeInfo.mCount ; sCnt++ )
                     {
@@ -3575,6 +3684,7 @@ IDE_RC sdm::insertClone( qcStatement * aStatement,
             sReplicaSetId = aReplicaSetId;
             break;
 
+        case SDI_INTERNAL_OP_DROPFORCE:
         default :
             IDE_DASSERT( 0 );
             break;
@@ -3789,6 +3899,18 @@ IDE_RC sdm::getNodeByName( smiStatement * aSmiStmt,
     IDE_TEST_RAISE( idlOS::strlen(aNodeName) > QC_MAX_OBJECT_NAME_LEN,
                     ERR_NOT_EXIST_NODE );
 
+    if ( idlOS::strncmp( aNodeName,
+                         SDI_NODE_DEALLOC_NAME,
+                         SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 ) 
+    {
+        idlOS::strncpy( aNode->mNodeName,
+                        aNodeName,
+                        SDI_NODE_NAME_MAX_SIZE + 1 );
+        aNode->mNodeId = SDI_NODE_DEALLOC_ID;
+
+        IDE_CONT( normal_exit );
+    } 
+
     IDE_TEST( getMetaTableAndIndex( aSmiStmt,
                                     SDM_NODES,
                                     & sSdmNodes,
@@ -3958,6 +4080,8 @@ IDE_RC sdm::getNodeByName( smiStatement * aSmiStmt,
     sIsCursorOpen = ID_FALSE;
     IDE_TEST( sCursor.close() != IDE_SUCCESS );
 
+    IDE_EXCEPTION_CONT( normal_exit );
+
     return IDE_SUCCESS;
 
     IDE_EXCEPTION( ERR_META_HANDLE )
@@ -4027,6 +4151,16 @@ IDE_RC sdm::getNodeByID( smiStatement * aSmiStmt,
 
     IDE_TEST_RAISE( aNodeID == SDI_NODE_NULL_ID,
                     ERR_NOT_EXIST_NODE );
+
+    if ( aNodeID == SDI_NODE_DEALLOC_ID ) 
+    {
+        idlOS::strncpy( aNode->mNodeName,
+                        SDI_NODE_DEALLOC_NAME,
+                        SDI_NODE_NAME_MAX_SIZE + 1 );
+        aNode->mNodeId = SDI_NODE_DEALLOC_ID;
+
+        IDE_CONT( normal_exit );
+    } 
 
     IDE_TEST( getMetaTableAndIndex( aSmiStmt,
                                     SDM_NODES,
@@ -4191,6 +4325,8 @@ IDE_RC sdm::getNodeByID( smiStatement * aSmiStmt,
 
     sIsCursorOpen = ID_FALSE;
     IDE_TEST( sCursor.close() != IDE_SUCCESS );
+
+    IDE_EXCEPTION_CONT( normal_exit );
 
     return IDE_SUCCESS;
 
@@ -6362,7 +6498,8 @@ IDE_RC sdm::getRangeInfo( qcStatement  * aStatement,
                                aSmiStmt,
                                aSMN,
                                aTableInfo,
-                               aRangeInfo )
+                               aRangeInfo,
+                               aNeedMerge )
                       != IDE_SUCCESS );
             break;
         default:
@@ -6867,7 +7004,8 @@ IDE_RC sdm::getSolo( qcStatement  * aStatement,
                      smiStatement * aSmiStmt,
                      ULong          aSMN,
                      sdiTableInfo * aTableInfo,
-                     sdiRangeInfo * aRangeInfo )
+                     sdiRangeInfo * aRangeInfo,
+                     idBool         aNeedMerge )
 {
     idBool               sIsCursorOpen = ID_FALSE;
     const void         * sRow          = NULL;
@@ -12991,6 +13129,198 @@ IDE_RC sdm::getFailoverHistoryWithSMN( smiStatement       * aSmiStmt,
     return IDE_FAILURE;
 }
 
+/* FailoverHistory에 SMN 값 보다 큰 Row가 존재하는지 확인한다. */
+IDE_RC sdm::checkFailoverHistoryOverSMN( smiStatement       * aSmiStmt,
+                                         ULong                aSMN,
+                                         idBool             * aIsExist )
+{
+    idBool            sIsCursorOpen = ID_FALSE;
+    const void      * sRow          = NULL;
+    scGRID            sRid;
+    const void      * sFailoverHistory;
+    const void      * sFailoverHistoryIdx[SDM_MAX_META_INDICES];
+/*    mtcColumn       * sReplicaSetIDColumn;
+    mtcColumn       * sPrimaryNodeNameColumn;
+    mtcColumn       * sFirstBackupNodeNameColumn;
+    mtcColumn       * sSecondBackupNodeNameColumn;
+    mtcColumn       * sStopFirstBackupNodeNameColumn;
+    mtcColumn       * sStopSecondBackupNodeNameColumn;
+    mtcColumn       * sFirstReplicationNameColumn;
+    mtcColumn       * sFirstReplFromNodeNameColumn;
+    mtcColumn       * sFirstReplToNodeNameColumn;
+    mtcColumn       * sSecondReplicaiontNameColumn;
+    mtcColumn       * sSecondReplFromNodeNameColumn;
+    mtcColumn       * sSecondReplToNodeNameColumn;*/
+    mtcColumn       * sSMNColumn;
+
+/*    mtdIntegerType    sReplicaSetID;
+    mtdCharType     * sPrimaryNodeName;
+    mtdCharType     * sFirstBackupNodeName;
+    mtdCharType     * sSecondBackupNodeName;
+    mtdCharType     * sStopFirstBackupNodeName;
+    mtdCharType     * sStopSecondBackupNodeName;
+    mtdCharType     * sFirstReplicationName;
+    mtdCharType     * sFirstReplFromNodeName;
+    mtdCharType     * sFirstReplToNodeName;
+    mtdCharType     * sSecondReplicaiontName;
+    mtdCharType     * sSecondReplFromNodeName;
+    mtdCharType     * sSecondReplToNodeName;*/
+    mtdIntegerType    sSMN;
+
+    smiTableCursor       sCursor;
+    smiCursorProperties  sCursorProperty;
+
+    idBool            sIsExist = ID_FALSE;
+
+    IDE_TEST( checkMetaVersion( aSmiStmt )
+              != IDE_SUCCESS );
+
+    IDE_TEST( getMetaTableAndIndex( aSmiStmt,
+                                    SDM_FAILOVER_HISTORY_,
+                                    &sFailoverHistory,
+                                    sFailoverHistoryIdx )
+              != IDE_SUCCESS );
+
+    /* SMN index */
+
+/*    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_REPLICA_SET_ID_COL_ORDER,
+                                  (const smiColumn**)&sReplicaSetIDColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_PRIMARY_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sPrimaryNodeNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_FIRST_BACKUP_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sFirstBackupNodeNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_SECOND_BACKUP_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sSecondBackupNodeNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_STOP_FIRST_BACKUP_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sStopFirstBackupNodeNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_STOP_SECOND_BACKUP_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sStopSecondBackupNodeNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_FIRST_REPLICATION_NAME_COL_ORDER,
+                                  (const smiColumn**)&sFirstReplicationNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_FIRST_REPL_FROM_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sFirstReplFromNodeNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_FIRST_REPL_TO_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sFirstReplToNodeNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_SECOND_REPLICATION_NAME_COL_ORDER,
+                                  (const smiColumn**)&sSecondReplicaiontNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_SECOND_REPL_FROM_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sSecondReplFromNodeNameColumn )
+              != IDE_SUCCESS );
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_SECOND_REPL_TO_NODE_NAME_COL_ORDER,
+                                  (const smiColumn**)&sSecondReplToNodeNameColumn )
+              != IDE_SUCCESS );
+*/
+    IDE_TEST( smiGetTableColumns( sFailoverHistory,
+                                  SDM_FAILOVER_HISTORY_SMN_COL_ORDER,
+                                  (const smiColumn**)&sSMNColumn )
+              != IDE_SUCCESS );
+
+    // mtdModule 설정
+    IDE_TEST( mtd::moduleById( &(sSMNColumn->module),
+                               sSMNColumn->type.dataTypeId )
+              != IDE_SUCCESS );
+
+    // mtlModule 설정
+    IDE_TEST( mtl::moduleById( &sSMNColumn->language,
+                               sSMNColumn->type.languageId )
+              != IDE_SUCCESS );
+
+    sCursor.initialize();
+
+    /* PROJ-2622 */
+    SMI_CURSOR_PROP_INIT_FOR_META_FULL_SCAN( &sCursorProperty, NULL );
+
+    IDE_TEST( sCursor.open(
+                  aSmiStmt,
+                  sFailoverHistory,
+                  NULL,
+                  smiGetRowSCN( sFailoverHistory ),
+                  NULL,
+                  smiGetDefaultKeyRange(),
+                  smiGetDefaultKeyRange(),
+                  smiGetDefaultFilter(),
+                  QCM_META_CURSOR_FLAG,
+                  SMI_SELECT_CURSOR,
+                  &sCursorProperty )
+              != IDE_SUCCESS );
+
+    sIsCursorOpen = ID_TRUE;
+
+    IDE_TEST( sCursor.beforeFirst() != IDE_SUCCESS );
+
+    IDE_TEST( sCursor.readRow( &sRow, &sRid, SMI_FIND_NEXT )
+              != IDE_SUCCESS );
+
+    while ( sRow != NULL )
+    {
+/*        sReplicaSetID = *(mtdIntegerType*)((SChar *)sRow + sReplicaSetIDColumn->column.offset );
+        sPrimaryNodeName = (mtdCharType*)((SChar *)sRow + sPrimaryNodeNameColumn->column.offset );
+        sFirstBackupNodeName = (mtdCharType*)((SChar *)sRow + sFirstBackupNodeNameColumn->column.offset );
+        sSecondBackupNodeName = (mtdCharType*)((SChar *)sRow + sSecondBackupNodeNameColumn->column.offset );
+        sStopFirstBackupNodeName = (mtdCharType*)((SChar *)sRow + sStopFirstBackupNodeNameColumn->column.offset );
+        sStopSecondBackupNodeName = (mtdCharType*)((SChar *)sRow + sStopSecondBackupNodeNameColumn->column.offset );
+        sFirstReplicationName = (mtdCharType*)((SChar *)sRow + sFirstReplicationNameColumn->column.offset );
+        sFirstReplFromNodeName = (mtdCharType*)((SChar *)sRow + sFirstReplFromNodeNameColumn->column.offset );
+        sFirstReplToNodeName = (mtdCharType*)((SChar *)sRow + sFirstReplToNodeNameColumn->column.offset );
+        sSecondReplicaiontName = (mtdCharType*)((SChar *)sRow + sSecondReplicaiontNameColumn->column.offset );
+        sSecondReplFromNodeName = (mtdCharType*)((SChar *)sRow + sSecondReplFromNodeNameColumn->column.offset );
+        sSecondReplToNodeName = (mtdCharType*)((SChar *)sRow + sSecondReplToNodeNameColumn->column.offset );*/
+        sSMN = *(mtdIntegerType*)((SChar *)sRow + sSMNColumn->column.offset );
+
+        if ( (ULong)sSMN > aSMN )
+        {
+            sIsExist = ID_TRUE;
+            break;
+        }
+
+        IDE_TEST( sCursor.readRow( &sRow, &sRid, SMI_FIND_NEXT )
+                  != IDE_SUCCESS );
+    }
+
+    sIsCursorOpen = ID_FALSE;
+    IDE_TEST( sCursor.close() != IDE_SUCCESS );
+
+    *aIsExist = sIsExist;
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION_END;
+
+    if ( sIsCursorOpen == ID_TRUE )
+    {
+        (void)sCursor.close();
+    }
+    else
+    {
+        /* Nothing to do */
+    }
+
+    return IDE_FAILURE;
+}
+
+
 /* PROJ-2748 Shard Failback */
 /* aNodeName에서 해당 ReplicaSet의 Failback을 수행해야하는지 확인
  * [IN] aReplicaSetInfo : 전체 ReplicaSet 정보 PName 정렬됨
@@ -13049,7 +13379,9 @@ IDE_RC sdm::updateReplicaSet4Failback( qcStatement        * aStatement,
 
     SChar               sRecentDeadNode[SDI_NODE_NAME_MAX_SIZE + 1] = {0,};
 
-    sdiGlobalMetaInfo sMetaNodeInfo = { ID_ULONG(0) };
+    sdiGlobalMetaInfo   sMetaNodeInfo = { ID_ULONG(0) };
+
+    idBool              sIsAlive = ID_FALSE;
 
     sSmiStmtFlag = SMI_STATEMENT_NORMAL | SMI_STATEMENT_MEMORY_CURSOR;
     sOldStmt                = QC_SMI_STMT(aStatement);
@@ -13145,6 +13477,36 @@ IDE_RC sdm::updateReplicaSet4Failback( qcStatement        * aStatement,
                           != IDE_SUCCESS );
                 /* Primary의 변경은 RP Stop이 없다. */
             }
+            else
+            {
+                /* Normal Failback/Failback Sync를 구별할수 있으면 좋은데 ... 아직 없음.
+                 * 일단 위에도 FailoverHistory와 같은 값으로 변경하는 것이기 때문에 
+                 * 확인 하나만 더 하는 것일 뿐 내용은 같다 */
+                /* DROP FORCE로 인해 FailoverHistory가 수정된 이후의  FAILBACK 일 경우 
+                 * aFailbackFromNode 와 FailoverHistory에 기록된 FromNode 값이 일치하지 않는다.
+                 * FailoverHistory에 기록된 정보로 되돌려주어야 한다. */
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "UPDATE SYS_SHARD.REPLICA_SETS_ "
+                                 "   SET PRIMARY_NODE_NAME         = "QCM_SQL_VARCHAR_FMT", "
+                                 "   FIRST_BACKUP_NODE_NAME        = "QCM_SQL_VARCHAR_FMT", "
+                                 "   STOP_FIRST_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT", "
+                                 "   SECOND_BACKUP_NODE_NAME       = "QCM_SQL_VARCHAR_FMT", "
+                                 "   STOP_SECOND_BACKUP_NODE_NAME  = "QCM_SQL_VARCHAR_FMT
+                                 "   WHERE REPLICA_SET_ID          = "QCM_SQL_UINT32_FMT
+                                 "         AND SMN                 = "QCM_SQL_BIGINT_FMT,
+                                 sReplicaSet->mPrimaryNodeName,
+                                 sReplicaSet->mFirstBackupNodeName,
+                                 sReplicaSet->mStopFirstBackupNodeName,
+                                 sReplicaSet->mSecondBackupNodeName,
+                                 sReplicaSet->mStopSecondBackupNodeName,
+                                 sReplicaSet->mReplicaSetId,
+                                 sMetaNodeInfo.mShardMetaNumber );
+
+                IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
+                                                 sSqlStr,
+                                                 & sRowCnt )
+                          != IDE_SUCCESS );
+            }
         }
     }
 
@@ -13158,25 +13520,31 @@ IDE_RC sdm::updateReplicaSet4Failback( qcStatement        * aStatement,
             /* R2HA 하나 밖에 없어야 정상인데 ... check 해야 하나? */
             sReplicaSet = &sFailoverHistoryInfo.mReplicaSets[i];
 
-            /* FIRST UPDATE */
-            /* First To TargetNode 중인 ReplicaSet의 First 를 NA로 변경한다. */
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "UPDATE SYS_SHARD.REPLICA_SETS_ "
-                             "   SET FIRST_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT", "
-                             "   STOP_FIRST_BACKUP_NODE_NAME  = "QCM_SQL_VARCHAR_FMT
-                             "   WHERE REPLICA_SET_ID           = "QCM_SQL_UINT32_FMT
-                             "   AND SMN                      = "QCM_SQL_BIGINT_FMT,
-                             aNewNodeName,
-                             SDM_NA_STR,
-                             sReplicaSet->mReplicaSetId,
-                             sMetaNodeInfo.mShardMetaNumber );
+            IDE_TEST( sdiZookeeper::checkNodeAlive( sReplicaSet->mPrimaryNodeName,
+                                                    &sIsAlive ) != IDE_SUCCESS );
 
-            IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
-                                             sSqlStr,
-                                             & sRowCnt )
-                      != IDE_SUCCESS );
+            if ( sIsAlive == ID_TRUE )
+            {
+                /* FIRST UPDATE */
+                /* First To TargetNode 중인 ReplicaSet의 First 를 NA로 변경한다. */
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "UPDATE SYS_SHARD.REPLICA_SETS_ "
+                                 "   SET FIRST_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT", "
+                                 "   STOP_FIRST_BACKUP_NODE_NAME  = "QCM_SQL_VARCHAR_FMT
+                                 "   WHERE REPLICA_SET_ID           = "QCM_SQL_UINT32_FMT
+                                 "   AND SMN                      = "QCM_SQL_BIGINT_FMT,
+                                 aNewNodeName,
+                                 SDM_NA_STR,
+                                 sReplicaSet->mReplicaSetId,
+                                 sMetaNodeInfo.mShardMetaNumber );
 
-            /* To OldNode는 RP Stop이 필요하다. */
+                IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
+                                                 sSqlStr,
+                                                 & sRowCnt )
+                          != IDE_SUCCESS );
+
+                /* To OldNode는 RP Stop이 필요하다. */
+            }
         }
 
         /* Find Second To OldNode ReplicaSet */
@@ -13187,24 +13555,30 @@ IDE_RC sdm::updateReplicaSet4Failback( qcStatement        * aStatement,
             /* R2HA 하나 밖에 없어야 정상인데 ... check 해야 하나? */
             sReplicaSet = &sFailoverHistoryInfo.mReplicaSets[i];
 
-            /* SECOND UPDATE */
-            /* Second To TargetNode 중인 ReplicaSet의 Second 를 NA로 변경한다. */
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "UPDATE SYS_SHARD.REPLICA_SETS_ "
-                             "   SET SECOND_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT", "
-                             "   STOP_SECOND_BACKUP_NODE_NAME  = "QCM_SQL_VARCHAR_FMT
-                             "   WHERE REPLICA_SET_ID            = "QCM_SQL_UINT32_FMT
-                             "   AND SMN                       = "QCM_SQL_BIGINT_FMT,
-                             aNewNodeName,
-                             SDM_NA_STR,
-                             sReplicaSet->mReplicaSetId,
-                             sMetaNodeInfo.mShardMetaNumber );
+            IDE_TEST( sdiZookeeper::checkNodeAlive( sReplicaSet->mPrimaryNodeName,
+                                                    &sIsAlive ) != IDE_SUCCESS );
 
-            IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
-                                             sSqlStr,
-                                             & sRowCnt )
-                      != IDE_SUCCESS );
-            /* To OldNode는 RP Stop이 필요하다. */
+            if ( sIsAlive == ID_TRUE )
+            {
+                /* SECOND UPDATE */
+                /* Second To TargetNode 중인 ReplicaSet의 Second 를 NA로 변경한다. */
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "UPDATE SYS_SHARD.REPLICA_SETS_ "
+                                 "   SET SECOND_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT", "
+                                 "   STOP_SECOND_BACKUP_NODE_NAME  = "QCM_SQL_VARCHAR_FMT
+                                 "   WHERE REPLICA_SET_ID            = "QCM_SQL_UINT32_FMT
+                                 "   AND SMN                       = "QCM_SQL_BIGINT_FMT,
+                                 aNewNodeName,
+                                 SDM_NA_STR,
+                                 sReplicaSet->mReplicaSetId,
+                                 sMetaNodeInfo.mShardMetaNumber );
+
+                IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
+                                                 sSqlStr,
+                                                 & sRowCnt )
+                          != IDE_SUCCESS );
+                /* To OldNode는 RP Stop이 필요하다. */
+            }
         }
     }
 
@@ -13218,6 +13592,186 @@ IDE_RC sdm::updateReplicaSet4Failback( qcStatement        * aStatement,
 
     return IDE_SUCCESS;
 
+    IDE_EXCEPTION_END;
+
+    switch ( sState )
+    {
+        case 2:
+            if ( sSmiStmt.end(SMI_STATEMENT_RESULT_FAILURE) != IDE_SUCCESS )
+            {
+                IDE_ERRLOG(IDE_SD_1);
+            }
+            else
+            {
+                /* Nothing to do */
+            }
+        case 1:
+            QC_SMI_STMT(aStatement) = sOldStmt;
+        default:
+            break;
+    }
+
+    return IDE_FAILURE;
+}
+
+IDE_RC sdm::updateReplicaSet4DropForce( qcStatement        * aStatement,
+                                        SChar              * /*aOldNodeName*/,
+                                        SChar              * aNewNodeName )
+{
+    SChar             * sSqlStr;
+    vSLong              sRowCnt;
+
+    sdiReplicaSetInfo   sFailoverHistoryInfo;
+
+    ULong               sFailbackSMN = 0;
+
+    smiStatement      * sOldStmt = NULL;
+    smiStatement        sSmiStmt;
+    UInt                sSmiStmtFlag;
+    SInt                sState = 0;
+
+    SChar               sRecentDeadNode[SDI_NODE_NAME_MAX_SIZE + 1] = {0,};
+
+    SChar               sMyNextNodeName[SDI_NODE_NAME_MAX_SIZE + 1] = {0,};
+
+    ZKState             sZKState = ZK_NONE;
+
+    sdiGlobalMetaInfo   sMetaNodeInfo = { ID_ULONG(0) };
+
+    sdiReplicaSetInfo   sReplicaSetInfo;
+
+    SChar               sFailoverToNodeName[SDI_NODE_NAME_MAX_SIZE + 1];
+    SInt                sDataLength;
+    SChar               sBuffer[SDI_ZKC_BUFFER_SIZE] = {0,};
+
+    sSmiStmtFlag = SMI_STATEMENT_NORMAL | SMI_STATEMENT_MEMORY_CURSOR;
+    sOldStmt                = QC_SMI_STMT(aStatement);
+    QC_SMI_STMT(aStatement) = &sSmiStmt;
+    sState = 1;
+
+    IDE_TEST( sSmiStmt.begin( aStatement->mStatistics,
+                              sOldStmt,
+                              sSmiStmtFlag )
+              != IDE_SUCCESS );
+    sState = 2;
+
+    IDE_TEST( STRUCT_ALLOC_WITH_SIZE( aStatement->qmxMem,
+                                      SChar,
+                                      QD_MAX_SQL_LENGTH,
+                                      &sSqlStr )
+              != IDE_SUCCESS);
+
+    IDE_TEST( checkMetaVersion( QC_SMI_STMT( aStatement ) )
+              != IDE_SUCCESS );
+
+    IDE_TEST( makeShardMeta4NewSMN(aStatement) != IDE_SUCCESS );
+
+    IDE_TEST( getGlobalMetaInfoCore( QC_SMI_STMT(aStatement),
+                                     &sMetaNodeInfo ) != IDE_SUCCESS );
+
+    /* 여기까지 왔으면 RecentDeadNode는 내가 맞으니까 확인할 필요는 없고 FailbackSMN 만 필요하다. */
+    IDE_TEST( sdiZookeeper::checkRecentDeadNode( sRecentDeadNode, &sFailbackSMN, NULL ) != IDE_SUCCESS );
+
+    sDataLength = SDI_ZKC_BUFFER_SIZE;
+    IDE_TEST( sdiZookeeper::getNodeInfo( aNewNodeName,
+                                         (SChar*)SDI_ZKC_PATH_NODE_FAILOVER_TO,
+                                         sBuffer,
+                                         &sDataLength ) != IDE_SUCCESS );
+
+    IDE_TEST_RAISE( sDataLength <= 0 , Not_failed_over );
+
+    idlOS::strncpy( sFailoverToNodeName,
+                    sBuffer,
+                    SDI_NODE_NAME_MAX_SIZE + 1 );
+
+    IDE_TEST( sdm::getAllReplicaSetInfoSortedByPName( QC_SMI_STMT( aStatement ),
+                                                      &sReplicaSetInfo,
+                                                      sMetaNodeInfo.mShardMetaNumber )
+              != IDE_SUCCESS );
+
+    /* get FailoverHistory */
+    IDE_TEST( sdm::getFailoverHistoryWithSMN( QC_SMI_STMT( aStatement),
+                                              &sFailoverHistoryInfo,
+                                              sFailbackSMN ) != IDE_SUCCESS );
+
+    /* Find Target's MainReplicaSet ID */
+    IDE_TEST( sdiZookeeper::getNextNode( aNewNodeName, 
+                                         sMyNextNodeName, 
+                                         &sZKState ) != IDE_SUCCESS );
+
+    /* DROP FORCE에 의해 제거되는 Node 정보는 Failover 여부와 상관없이 
+     * 모든 ReplicaSet 을 대상으로 이루어 져야 한다. */
+    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                     "UPDATE SYS_SHARD.REPLICA_SETS_ "
+                     "   SET FIRST_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT
+                     "   WHERE FIRST_BACKUP_NODE_NAME = "QCM_SQL_VARCHAR_FMT
+                     "         AND SMN                = "QCM_SQL_BIGINT_FMT,
+                     SDM_NA_STR,
+                     aNewNodeName,
+                     sMetaNodeInfo.mShardMetaNumber );
+
+    IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
+                                     sSqlStr,
+                                     & sRowCnt )
+              != IDE_SUCCESS );
+
+    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                     "UPDATE SYS_SHARD.REPLICA_SETS_ "
+                     "   SET STOP_FIRST_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT
+                     "   WHERE STOP_FIRST_BACKUP_NODE_NAME = "QCM_SQL_VARCHAR_FMT
+                     "         AND SMN                     = "QCM_SQL_BIGINT_FMT,
+                     SDM_NA_STR,
+                     aNewNodeName,
+                     sMetaNodeInfo.mShardMetaNumber );
+
+    IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
+                                     sSqlStr,
+                                     & sRowCnt )
+              != IDE_SUCCESS );
+
+    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                     "UPDATE SYS_SHARD.REPLICA_SETS_ "
+                     "   SET SECOND_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT
+                     "   WHERE SECOND_BACKUP_NODE_NAME = "QCM_SQL_VARCHAR_FMT
+                     "         AND SMN                = "QCM_SQL_BIGINT_FMT,
+                     SDM_NA_STR,
+                     aNewNodeName,
+                     sMetaNodeInfo.mShardMetaNumber );
+
+    IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
+                                     sSqlStr,
+                                     & sRowCnt )
+              != IDE_SUCCESS );
+
+    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                     "UPDATE SYS_SHARD.REPLICA_SETS_ "
+                     "   SET STOP_SECOND_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT
+                     "   WHERE STOP_SECOND_BACKUP_NODE_NAME = "QCM_SQL_VARCHAR_FMT
+                     "         AND SMN                     = "QCM_SQL_BIGINT_FMT,
+                     SDM_NA_STR,
+                     aNewNodeName,
+                     sMetaNodeInfo.mShardMetaNumber );
+
+    IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
+                                     sSqlStr,
+                                     & sRowCnt )
+              != IDE_SUCCESS );
+    ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] RESET REPLICASET UPDATED");
+
+    sState = 1;
+    IDE_TEST( sSmiStmt.end( SMI_STATEMENT_RESULT_SUCCESS ) != IDE_SUCCESS );
+
+    sState = 0;
+    QC_SMI_STMT(aStatement) = sOldStmt;
+
+    sdi::setShardMetaTouched( aStatement->session );
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( Not_failed_over )
+    {
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDM_NOT_FAILEDOVER ) );
+    }
     IDE_EXCEPTION_END;
 
     switch ( sState )
@@ -13294,6 +13848,7 @@ IDE_RC sdm::touchMeta( qcStatement        * aStatement )
 
     return IDE_FAILURE;
 }
+
 
 /* PROJ-2748 Shard Failback */
 

@@ -1664,7 +1664,7 @@ const ulnConnAttribute gUlnConnAttrTable[ULN_CONN_ATTR_MAX]  =
       /* AttrType    */ tINT,
       /* Min         */ 0,
       /* Default     */ 0,
-      /* Max         */ 3,
+      /* Max         */ 4,
       /* Check       */ gNULL_LIST,
       /* User Conn   */ ACP_FALSE,
       /* Lib  Conn   */ ACP_FALSE

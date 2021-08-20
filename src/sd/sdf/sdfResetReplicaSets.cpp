@@ -303,8 +303,13 @@ IDE_RC sdfCalculate_ResetReplicaSets( mtcNode*     aNode,
                                                           sOldNodeNameStr,
                                                           sNewNodeNameStr ) != IDE_SUCCESS );
                 break;
-            case SDI_INTERNAL_OP_NOT:
+            case SDI_INTERNAL_OP_DROPFORCE:
+                IDE_TEST( sdm::updateReplicaSet4DropForce( sStatement,
+                                                           sOldNodeNameStr,
+                                                           sNewNodeNameStr ) != IDE_SUCCESS );
+                break;
             case SDI_INTERNAL_OP_NORMAL:
+            case SDI_INTERNAL_OP_NOT:
                 /* Failover/Failback 에서 만 호출한다. */
             default:
                 IDE_DASSERT( 0 );

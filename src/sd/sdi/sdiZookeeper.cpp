@@ -2014,7 +2014,7 @@ IDE_RC sdiZookeeper::addNode( SChar * aShardNodeID,
         if( sState == ZK_ADD )
         {
             /* 해당 노드가 ADD 도중 실패했으나 제거되지 않은 상태이므로 제거하고 진행한다. */
-            IDE_TEST( dropNode( mMyNodeName ) != IDE_SUCCESS );
+            IDE_TEST( dropNode( mMyNodeName, ID_FALSE ) != IDE_SUCCESS );
         }
         else
         {
@@ -2297,9 +2297,10 @@ IDE_RC sdiZookeeper::addNodeAfterCommit( ULong aSMN )
  * 해당 함수에서는 대상 노드의 state를 DROP으로 바꾸는 작업만 수행한다.
  * 실제 제거 작업은 commit시 호출되는 dropNodeAfterCommit에서 수행된다.
  *
- * aNodeName - [IN] 클러스터 메타에서 제거할 노드의 이름
+ * aNodeName    - [IN] 클러스터 메타에서 제거할 노드의 이름
+ * aIsDropForce - [IN] DROP FORCE 여부
  *********************************************************************/
-IDE_RC sdiZookeeper::dropNode( SChar * aNodeName )
+IDE_RC sdiZookeeper::dropNode( SChar * aNodeName, idBool aIsDropForce )
 {
     ZKCResult       sResult;
 
@@ -2335,7 +2336,14 @@ IDE_RC sdiZookeeper::dropNode( SChar * aNodeName )
     IDE_TEST_RAISE( sResult != ZKC_SUCCESS, err_ZKC );
 
     /* mm 모듈에서 commit시 dropNodeAfterCommit을 호출할 수 있도록 현재 수행 중인 작업이 drop임을 표시한다. */
-    mRunningJobType = ZK_JOB_DROP;
+    if ( aIsDropForce != ID_TRUE )
+    {
+        mRunningJobType = ZK_JOB_DROP;
+    }
+    else
+    {
+        mRunningJobType = ZK_JOB_DROP_FORCE;
+    }
     idlOS::strncpy( mTargetNodeName, 
                     aNodeName, 
                     SDI_NODE_NAME_MAX_SIZE + 1 );
@@ -2578,11 +2586,372 @@ IDE_RC sdiZookeeper::dropNodeAfterCommit( ULong     aSMN )
         sdiZookeeper::disconnect();
     }
 
+    sIsAlloc = ID_FALSE;
     freeList( sNodeInfoList, SDI_ZKS_LIST_NODEINFO );
 
     /* shard meta를 초기화한다. */
     IDE_TEST( sdi::resetShardMetaWithDummyStmt() != IDE_SUCCESS );
     /* 차후 local node 정보로 제거해야 한다.(node id 프로젝트시 처리할 예정)*/
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( err_ZKC )
+    {
+        logAndSetErrMsg( sResult );
+    }
+    IDE_EXCEPTION_END;
+
+    releaseShardMetaLock();
+    releaseZookeeperMetaLock();
+
+    if (sIsAlloc == ID_TRUE)
+    {
+        freeList( sNodeInfoList, SDI_ZKS_LIST_NODEINFO );
+    }
+    return IDE_FAILURE;
+}
+
+/*********************************************************************
+ * FUNCTION DESCRIPTION : sdiZookeeper::dropForceAfterCommit          *
+ * ------------------------------------------------------------------*
+ * DROP Force 작업이 완료되어 commit 된 후 호출된다.
+ * 해당 노드의 노드 메타를 제거한 후 failover history / 클러스터의 SMN 값을 갱신한다.
+ * 만약 DROP 작업의 대상이 자신이라면 lock을 풀고 zookeeper와의 연결을 종료한다. 
+ *
+ * aSMN      - [IN]  변경할 클러스터 메타의 SMN 값
+ *********************************************************************/
+IDE_RC sdiZookeeper::dropForceAfterCommit( ULong     aSMN )
+{
+    ZKCResult       sResult;
+    SChar           sPath[2][SDI_ZKC_PATH_LENGTH] = {{0,},};
+    SChar           sBuffer[SDI_ZKC_BUFFER_SIZE] = {0,};
+    SChar         * sStringPtr = NULL;
+    SChar           sOldFailoverHistory[SDI_ZKC_BUFFER_SIZE] = {0,};
+    SChar           sNewFailoverHistory[SDI_ZKC_BUFFER_SIZE] = {0,};
+    SChar           sTargetNodeName[SDI_NODE_NAME_MAX_SIZE + 1] = {0,};
+    SInt            sDataLength;
+    idBool          sIsDead = ID_FALSE;
+    idBool          sIsAlloc = ID_FALSE;
+    iduList       * sNodeInfoList;
+    UInt            sNodeCnt ;
+    /* multi op */
+    SInt            i = 0;
+    zoo_op_t        sOp[2];
+    zoo_op_result_t sOpResult[2];
+
+    SChar           sFailoverToNodeName[SDI_NODE_NAME_MAX_SIZE + 1] = {0,};
+    sdiLocalMetaInfo * sLocalMetaInfo = NULL;
+    iduListNode   * sNode = NULL;
+    iduListNode   * sDummy = NULL;
+
+    SChar           sNodePath[SDI_ZKC_PATH_LENGTH] = {0,};
+
+    IDE_DASSERT( mIsGetZookeeperLock == ID_TRUE );
+    IDE_DASSERT( mRunningJobType == ZK_JOB_DROP_FORCE );
+    IDE_DASSERT( idlOS::strlen( mTargetNodeName ) > 0 );
+
+    idlOS::strncpy( sTargetNodeName,
+                    mTargetNodeName,
+                    idlOS::strlen( mTargetNodeName ) );
+
+    idlOS::strncpy( sNodePath,
+                    SDI_ZKC_PATH_NODE_META, 
+                    SDI_ZKC_PATH_LENGTH );
+    idlOS::strncat( sNodePath,
+                    "/",
+                    ID_SIZEOF( sNodePath ) - idlOS::strlen( sNodePath ) - 1 );
+    idlOS::strncat( sNodePath,
+                    sTargetNodeName,
+                    ID_SIZEOF( sNodePath ) - idlOS::strlen( sNodePath ) - 1 );
+    /* sNodePath는 '/altibase_shard/node_meta/[mMyNodeName]'의 값을 가진다. */
+
+
+    /* TargetNode의 FailoverTo를 확인한다. */
+    sDataLength = SDI_ZKC_BUFFER_SIZE;
+    IDE_TEST( sdiZookeeper::getNodeInfo( sTargetNodeName,
+                                         (SChar*)SDI_ZKC_PATH_NODE_FAILOVER_TO,
+                                         sBuffer,
+                                         &sDataLength ) != IDE_SUCCESS );
+
+    idlOS::strncpy( sFailoverToNodeName,
+                    sBuffer,
+                    SDI_NODE_NAME_MAX_SIZE + 1 );
+
+    ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] TargetNode's FailoverTo : %s", sFailoverToNodeName);
+
+    /* 제거 대상 노드가 살아 있는 상태인지 체크한다. */
+    idlOS::strncpy( sPath[0],
+                    SDI_ZKC_PATH_CONNECTION_INFO,
+                    SDI_ZKC_PATH_LENGTH );
+    idlOS::strncat( sPath[0],
+                    "/",
+                    ID_SIZEOF( sPath[0] ) - idlOS::strlen( sPath[0] ) - 1 );
+    idlOS::strncat( sPath[0],
+                    mTargetNodeName,
+                    ID_SIZEOF( sPath[0] ) - idlOS::strlen( sPath[0] ) - 1 );
+    /* sPath[0]는 '/altibase_shard/connection_info/[mTargetNodeName]'의 값을 가진다. */
+
+    sDataLength = SDI_ZKC_BUFFER_SIZE;
+    sResult = aclZKC_getInfo( mZKHandler,
+                              sPath[0],
+                              sBuffer,
+                              &sDataLength );
+
+    ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] TargetNode Connection Info : %d", sResult);
+
+    /* 제거 대상 노드가 죽어있는 상태라면 failover history에서 해당 노드의 정보를 제거해야 할 수 있다. */
+    if( sResult == ZKC_NO_NODE )
+    {
+        sIsDead = ID_TRUE;
+
+        idlOS::memset( sPath[0], 0, SDI_ZKC_PATH_LENGTH );
+        idlOS::strncpy( sPath[0],
+                        SDI_ZKC_PATH_FAILOVER_HISTORY,
+                        SDI_ZKC_PATH_LENGTH );
+        /* sPath[0]는 '/altibase_shard/cluster_meta/failover_history'의 값을 가진다. '*/
+
+        sDataLength = SDI_ZKC_BUFFER_SIZE;
+        sResult = aclZKC_getInfo( mZKHandler,
+                                  sPath[0],
+                                  sOldFailoverHistory,
+                                  &sDataLength );
+
+        IDE_TEST_RAISE( sResult != ZKC_SUCCESS, err_ZKC );
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] Old FailoverHistory : %s", sOldFailoverHistory);
+
+        if( sDataLength > 0 )
+        {
+            sStringPtr = idlOS::strtok( sOldFailoverHistory, ":" );
+
+            /* failover history는 [노드이름]:[SMN]/[노드이름]:[SMN]/...의 형식으로 되어 있으므로  *
+             * 앞부분만 비교한다면 노드 이름만 정상적으로 비교할 수 있다.                         */
+            if( isNodeMatch( sStringPtr, mTargetNodeName ) == ID_TRUE )
+            {
+                /* 대상 노드의 failover history 정보를 읽었다면 해당 정보를 무시한다. */
+            }
+            else
+            {
+                /* 대상 노드가 아닌 다른 노드의 failover history 정보를 읽었다면 *
+                 * 그 정보를 그대로 new Failover histroy에 복사한다.             */
+                idlOS::strncpy( sNewFailoverHistory,
+                                sStringPtr,
+                                SDI_ZKC_BUFFER_SIZE );
+            }
+
+            ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] before Loop NEw FailoverHistory : %s", sNewFailoverHistory);
+            ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] before Loop1 StrPtr : %s", sStringPtr );
+
+            sStringPtr = idlOS::strtok( NULL, "/" );
+
+            ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] before Loop2 StrPtr : %s", sStringPtr );
+
+            while( sStringPtr != NULL )
+            {
+                sStringPtr = idlOS::strtok( NULL, ":" );
+
+                if( sStringPtr != NULL )
+                {
+                    if( isNodeMatch( sStringPtr, mTargetNodeName ) == ID_TRUE )
+                    {
+                        /* 대상 노드의 failover history 정보를 읽었다면 해당 정보를 무시한다. */
+                        sStringPtr = idlOS::strtok( NULL, "/" );
+                    }
+                    else
+                    {
+                        /* 대상 노드가 아닌 다른 노드의 failover history 정보를 읽었다면 *
+                         * 그 정보를 그대로 new Failover histroy에 복사한다.             */
+
+                        if( idlOS::strlen( sNewFailoverHistory ) > 1 )
+                        {
+                            idlOS::strncat( sNewFailoverHistory,
+                                            "/",
+                                            ID_SIZEOF( sNewFailoverHistory ) - idlOS::strlen( sNewFailoverHistory ) - 1 );
+                        }
+
+                        idlOS::strncat( sNewFailoverHistory,
+                                        sStringPtr,
+                                        ID_SIZEOF( sNewFailoverHistory ) - idlOS::strlen( sNewFailoverHistory ) - 1 );
+                        sStringPtr = idlOS::strtok( NULL, "/" );
+
+                        idlOS::strncat( sNewFailoverHistory,
+                                        ":",
+                                        ID_SIZEOF( sNewFailoverHistory ) - idlOS::strlen( sNewFailoverHistory ) - 1 );
+
+                        idlOS::strncat( sNewFailoverHistory,
+                                        sStringPtr,
+                                        ID_SIZEOF( sNewFailoverHistory ) - idlOS::strlen( sNewFailoverHistory ) - 1 );
+
+                    }
+                }
+                else
+                {
+                    /* failover history의 끝까지 다 옴 */
+                }
+
+
+                ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] In Loop NEw FailoverHistory : %s", sNewFailoverHistory);
+                ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] In Loop StrPtr : %s", sStringPtr );
+
+
+            }
+        }
+        else
+        {
+            /* failover history가 비어있다면 해당 노드는 죽은게 아니라 SHUTDOWN된 상태이다. */
+            sIsDead = ID_FALSE;
+        }
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] New FailoverHistory : %s", sNewFailoverHistory);
+
+    }
+    else
+    {
+        IDE_TEST_RAISE( sResult != ZKC_SUCCESS, err_ZKC );
+    }
+
+    /* 메타에서 노드 정보를 제거한다. */
+    IDE_TEST( removeNode( mTargetNodeName ) != IDE_SUCCESS );
+
+    /* SMN을 변경하기 위해 path와 값(aSMN)을 세팅한다. */
+    idlOS::strncpy( sPath[0],
+                    SDI_ZKC_PATH_SMN,
+                    SDI_ZKC_PATH_LENGTH );
+    /* sPath[0]은 '/altibase_shard/cluster_meta/SMN'의 값을 가진다. */
+    (void)idlOS::snprintf( sBuffer, SDI_ZKC_BUFFER_SIZE, "%"ID_UINT64_FMT, aSMN );
+
+    idlOS::strncpy( sPath[1],
+                    SDI_ZKC_PATH_FAILOVER_HISTORY,
+                    SDI_ZKC_PATH_LENGTH );
+    /* sPath[1]는 '/altibase_shard/cluster_meta/failover_history'의 값을 가진다. */
+
+    /* multi op를 생성한다. */
+
+    /* SMN */
+    zoo_set_op_init( &sOp[0],
+                     sPath[0],
+                     sBuffer,
+                     idlOS::strlen( sBuffer ),
+                     -1,
+                     NULL );
+
+    /* failover history */
+
+    if( sNewFailoverHistory != NULL )
+    {
+        zoo_set_op_init( &sOp[1],
+                         sPath[1],
+                         sNewFailoverHistory,
+                         idlOS::strlen( sNewFailoverHistory ),
+                         -1,
+                         NULL );
+    }
+    else
+    {
+        zoo_set_op_init( &sOp[1],
+                         sPath[1],
+                         NULL,
+                         -1,
+                         -1,
+                         NULL );       
+    }
+
+    /* multi op를 수행해 한번에 변경한다. */
+    if( sIsDead == ID_FALSE )
+    {
+        /* 대상 노드가 살아있다면 state와 SMN만 변경한다. */
+        sResult = aclZKC_multiOp( mZKHandler, 1, sOp, sOpResult );
+
+        /* 정상 수행 여부를 확인한다. */
+        IDE_TEST_RAISE( sResult != ZKC_SUCCESS, err_ZKC );
+        IDE_TEST_RAISE( sOpResult[0].err != ZOK, err_ZKC );
+    }
+    else
+    {
+        /* 대상 노드가 죽어있다면 failover history도 변경해야 한다. */
+        sResult = aclZKC_multiOp( mZKHandler, 2, sOp, sOpResult );
+
+        /* 정상 수행 여부를 확인한다. */
+        IDE_TEST_RAISE( sResult != ZKC_SUCCESS, err_ZKC );
+
+        for( i = 0; i <= 1; i++ )
+        {
+            IDE_TEST_RAISE( sOpResult[i].err != ZOK, err_ZKC );
+        }
+    }
+
+    IDE_TEST( getAllNodeInfoList( &sNodeInfoList,
+                                  &sNodeCnt )
+              != IDE_SUCCESS );
+    sIsAlloc = ID_TRUE;
+
+    /* FailoverTo가 TargetNode인 노드 들의 정보를 TargetNode의 FailoverTo 정보로 변경한다. */
+    IDU_LIST_ITERATE_SAFE( sNodeInfoList, sNode, sDummy )
+    {
+        sLocalMetaInfo = (sdiLocalMetaInfo *)sNode->mObj;
+
+        sDataLength = SDI_ZKC_BUFFER_SIZE;
+        IDE_TEST( sdiZookeeper::getNodeInfo( sLocalMetaInfo->mNodeName,
+                                             (SChar*)SDI_ZKC_PATH_NODE_FAILOVER_TO,
+                                             sBuffer,
+                                             &sDataLength ) != IDE_SUCCESS );
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] TCTC Node Name : %s", sLocalMetaInfo->mNodeName );
+ 
+        if ( sDataLength > 0 )
+        {
+
+            ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] FailoverTo Node Name : %s", sBuffer );
+            ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] TargetName & FT Name : %s, %s", sTargetNodeName, sFailoverToNodeName );
+
+            if ( idlOS::strncmp( sBuffer, sTargetNodeName, SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            {
+
+                idlOS::strncpy( sNodePath,
+                                SDI_ZKC_PATH_NODE_META, 
+                                SDI_ZKC_PATH_LENGTH );
+                idlOS::strncat( sNodePath,
+                                "/",
+                                ID_SIZEOF( sNodePath ) - idlOS::strlen( sNodePath ) - 1 );
+                idlOS::strncat( sNodePath,
+                                sLocalMetaInfo->mNodeName,
+                                ID_SIZEOF( sNodePath ) - idlOS::strlen( sNodePath ) - 1 );
+
+                idlOS::strncpy( sPath[0],
+                                sNodePath,
+                                SDI_ZKC_PATH_LENGTH );
+                idlOS::strncat( sPath[0],
+                                SDI_ZKC_PATH_NODE_FAILOVER_TO,
+                                ID_SIZEOF( sPath[0] ) - idlOS::strlen( sPath[0] ) - 1 );
+
+                sResult = aclZKC_setInfo( mZKHandler,
+                                          sPath[0],
+                                          sFailoverToNodeName,
+                                          idlOS::strlen( sFailoverToNodeName ) );
+
+                IDE_TEST_RAISE( sResult != ZKC_SUCCESS, err_ZKC );
+            }
+        }
+    }
+
+    if (sNodeCnt == 0)
+    {
+        IDE_TEST(finalizeClusterMeta() != IDE_SUCCESS);
+    }
+    else
+    {
+        releaseShardMetaLock();
+        releaseZookeeperMetaLock();
+    }
+    /* 제거된 노드가 자신이라면 연결을 끊는다. */
+    /* metalock을 해제하면서 mTargetNodeName을 초기화하므로 미리 복사해둔 sTargetNodeName과 비교해야 한다. */
+    if( isNodeMatch( sTargetNodeName, mMyNodeName ) == ID_TRUE )
+    {
+        sdiZookeeper::disconnect();
+    }
+
+    sIsAlloc = ID_FALSE;
+    freeList( sNodeInfoList, SDI_ZKS_LIST_NODEINFO );
 
     return IDE_SUCCESS;
 
@@ -6210,6 +6579,8 @@ IDE_RC sdiZookeeper::checkRecentDeadNode( SChar * aNodeName,
         sFailoveredSMN = idlOS::strToULong( (UChar*)sCheckBuffer, idlOS::strlen( sCheckBuffer ) );
 
         ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] failback SMN : %u, failoverd SMN : %u", sFailbackSMN, sFailoveredSMN);
+        ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] RecentDeadNode : %s", aNodeName);
+
 
         if ( aFailbackSMN != NULL )
         {
@@ -6485,6 +6856,36 @@ sdiLocalMetaInfo * sdiZookeeper::getNodeInfo(iduList * aNodeList, SChar * aNodeN
         {
             sLocalMetaInfo = (sdiLocalMetaInfo *)sNode->mObj;
             if( idlOS::strncmp(sLocalMetaInfo->mNodeName, aNodeName, SDI_NODE_NAME_MAX_SIZE) != 0 )
+            {
+                sLocalMetaInfo = NULL;
+            }
+            else
+            {
+                /* return current sLocalMetaInfo */
+                break;
+            }
+        }
+    }
+    else
+    {
+        sLocalMetaInfo = NULL;
+    }
+
+    return sLocalMetaInfo;
+}
+
+sdiLocalMetaInfo * sdiZookeeper::getNodeInfoByID(iduList * aNodeList, UInt aNodeId )
+{
+    sdiLocalMetaInfo * sLocalMetaInfo = NULL;
+    iduListNode * sNode = NULL;
+    iduListNode * sDummy = NULL;
+
+    if ( IDU_LIST_IS_EMPTY( aNodeList ) != ID_TRUE )
+    {
+        IDU_LIST_ITERATE_SAFE( aNodeList, sNode, sDummy )
+        {
+            sLocalMetaInfo = (sdiLocalMetaInfo *)sNode->mObj;
+            if( sLocalMetaInfo->mShardNodeId != aNodeId )
             {
                 sLocalMetaInfo = NULL;
             }
@@ -6781,6 +7182,10 @@ void sdiZookeeper::callAfterCommitFunc( ULong   aNewSMN, ULong aBeforeSMN )
              * 이미 바꿔주었으므로 여기서는 할 필요가 없다. */
             qcm::unsetShardNodeID();
             break;
+        case ZK_JOB_DROP_FORCE:
+            IDE_DASSERT(aNewSMN != SDI_NULL_SMN);
+            IDE_TEST( dropForceAfterCommit( aNewSMN ) != IDE_SUCCESS );
+            break;
         case ZK_JOB_JOIN:
             IDE_TEST( joinNodeAfterCommit() != IDE_SUCCESS );
             sdi::setShardStatus(1); // SHARD_STATUS  0 -> 1
@@ -6866,6 +7271,10 @@ void sdiZookeeper::callAfterRollbackFunc( ULong   aNewSMN, ULong aBeforeSMN )
         case ZK_JOB_DROP:
             sdi::setShardStatus(1);
             (void)idp::update( NULL, "SHARD_ADMIN_MODE", (ULong)0, 0, NULL );
+            releaseShardMetaLock();
+            releaseZookeeperMetaLock();
+            break;
+        case ZK_JOB_DROP_FORCE:
             releaseShardMetaLock();
             releaseZookeeperMetaLock();
             break;

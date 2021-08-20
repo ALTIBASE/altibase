@@ -15,7 +15,7 @@
 # 반드시 main trunk에서 번호를 할당받은 후 브랜치에서 사용하셔야 합니다.
 # 의문 사항이 있으시면 AK팀 혹은 QP(품질본부)팀에 문의 부탁드립니다.
 
-# Last Number = 1187
+# Last Number = 1193
 
 SECTION = 3
 
@@ -3792,7 +3792,7 @@ SECTION = 3
 
 1149,qpERR_ABORT_QDSD_ZKC_NOT_MY_TURN = Unable to failback, because the node is not the most recently failed node in sharding cluster.
 # *Cause: Only the most recent failed node can be a target for failback.
-# *Action: Recover the most recent failed node.  
+# *Action: Recover the most recent failed node.
 
 1150,qpERR_ABORT_QDSD_ZKC_CONNECTION_FAIL = Failed to connect Zookeeper.
 # *Cause: It is unable to connect to ZooKeeper.
@@ -3897,6 +3897,23 @@ SECTION = 3
 1189,qpERR_ABORT_QDSD_SHARD_DDL_TRY_WITH_SHARD_CLI = The shard DDL cannot be executed with a shard CLI connection.
 # *Cause: The shard DDL cannot be executed with a shard CLI connection.
 # *Action: Connect with ODBC or isql and execute the shard DDL again.
+
+1190,qpERR_ABORT_QDSD_DROP_FORCE_DETECTED = Unable to fail back because one or more failed over nodes were removed by the DROP FORCE operation.
+# *Cause: One or more failed over nodes were removed by the DROP FORCE operation.
+# *Action: Use FAILBACK SYNC syntax instead of FAILBACK syntax.
+ 
+1191,qpERR_ABORT_QDSD_TARGET_NODE_NOT_FAILED_OVER = DROP FORCE cannot be executed because the target node was not failed over.
+# *Cause: The target node was not failed over.
+# *Action: Fail over the target node before executing DROP FORCE.
+ 
+1192,qpERR_ABORT_QDSD_DROPFORCE_NOT_MY_TURN = DROP FORCE cannot be executed because the target node is not the node most recently failed over.
+# *Cause:  DROP FORCE can only be executed by the most recently failed over node.
+# *Action: Fail over the target node or switch the target node.
+ 
+1193,qpERR_ABORT_QDSD_EXIST_NOT_FAILEDOVER_DEADNODE_DROPFORCE = The target node has to be failed over to execute DROP FORCE.
+# *Cause: The target node was not failed over.
+# *Action: Execute ALTER DATABASE SHARD FAILOVER on the target node.
+
 
 INTERNAL_TRACE_MESSAGE_BEGIN
 

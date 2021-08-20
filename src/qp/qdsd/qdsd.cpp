@@ -715,6 +715,11 @@ IDE_RC qdsd::validateShardDrop( qcStatement * aStatement )
     SChar               sNodeName[SDI_NODE_NAME_MAX_SIZE + 1] = {0,};
     idBool              sIsAcquireZookeeperMetaLock = ID_FALSE;
     idBool              sIsAcquireShardMetaLock = ID_FALSE;
+
+    SInt                sDataLength;
+    SChar               sBuffer[SDI_ZKC_BUFFER_SIZE] = {0,};
+    SChar               sRecentDeadNode[SDI_NODE_NAME_MAX_SIZE + 1] = {0,};
+    idBool              sExistNotFailedoverDeadNode = ID_FALSE;
     
     sParseTree = (qdShardParseTree *)aStatement->myPlan->parseTree;
 
@@ -781,6 +786,62 @@ IDE_RC qdsd::validateShardDrop( qcStatement * aStatement )
             // nothing to do
         }
     }
+    else
+    {
+        /* DROP FORCE */
+
+        /* DROP FORCE는 All node alive check를 하지 않는다. Target은 항상 Failover 되어 있어야 하기 때문 */
+        if ( QC_IS_NULL_NAME( sParseTree->mNodeName ) == ID_FALSE )
+        {
+            QC_STR_COPY( sNodeName, sParseTree->mNodeName );
+
+            idlOS::strncpy( sPath,
+                            SDI_ZKC_PATH_NODE_META,
+                            SDI_ZKC_PATH_LENGTH );
+            idlOS::strncat( sPath,
+                            "/",
+                            ID_SIZEOF( sPath ) - idlOS::strlen( sPath ) - 1 );
+            idlOS::strncat( sPath,
+                            sNodeName,
+                            ID_SIZEOF( sPath ) - idlOS::strlen( sPath ) - 1 );
+
+            IDE_TEST( sdiZookeeper::checkPath( sPath,
+                                               &sIsValid ) != IDE_SUCCESS );
+
+            IDE_TEST_RAISE( sIsValid == ID_FALSE, invalid_nodeName );
+           
+            /* DROP FORCE는 Local 수행하지 않는다. */
+            IDE_TEST_RAISE( sdi::isSameNode( sNodeName, 
+                                             sdiZookeeper::mMyNodeName )
+                            == ID_TRUE, invalid_nodeName );
+
+            sDataLength = SDI_ZKC_BUFFER_SIZE;
+            IDE_TEST( sdiZookeeper::getNodeInfo( sNodeName,
+                                                 (SChar*)SDI_ZKC_PATH_NODE_FAILOVER_TO,
+                                                 sBuffer,
+                                                 &sDataLength ) != IDE_SUCCESS );
+
+            IDE_TEST_RAISE( sDataLength <= 0 , Not_failed_over );
+
+            IDE_TEST( sdiZookeeper::checkRecentDeadNode( sRecentDeadNode, NULL, NULL ) 
+                      != IDE_SUCCESS );
+
+            IDE_TEST_RAISE( idlOS::strncmp( sNodeName,
+                                            sRecentDeadNode,
+                                            idlOS::strlen( sRecentDeadNode ) ) != 0, not_my_turn );
+
+            IDE_TEST( sdiZookeeper::checkExistNotFailedoverDeadNode( &sExistNotFailedoverDeadNode ) 
+                      != IDE_SUCCESS );
+
+            IDE_TEST_RAISE( sExistNotFailedoverDeadNode != ID_FALSE, EXIST_NOT_FAILEDOVER_DEADNODE );
+
+        }
+        else
+        {
+            /* DROP FORCE는 Local 수행하지 않는다. */
+            IDE_RAISE( invalid_nodeName );
+        }
+    }
     
     if ( sIsAcquireShardMetaLock == ID_TRUE )
     {
@@ -793,8 +854,23 @@ IDE_RC qdsd::validateShardDrop( qcStatement * aStatement )
         sdiZookeeper::releaseZookeeperMetaLock();
         sIsAcquireZookeeperMetaLock = ID_FALSE;
     }
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] VALIDATION SUCCESS");
+
     return IDE_SUCCESS;
 
+    IDE_EXCEPTION( EXIST_NOT_FAILEDOVER_DEADNODE )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_EXIST_NOT_FAILEDOVER_DEADNODE ));
+    }
+    IDE_EXCEPTION( not_my_turn )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_DROPFORCE_NOT_MY_TURN ) ); 
+    }
+    IDE_EXCEPTION( Not_failed_over )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_TARGET_NODE_NOT_FAILED_OVER ) );
+    }
     IDE_EXCEPTION( connect_Fail )
     {
         IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_ZKC_CONNECTION_FAIL ) );
@@ -822,6 +898,9 @@ IDE_RC qdsd::validateShardDrop( qcStatement * aStatement )
         sIsAcquireZookeeperMetaLock = ID_FALSE;
     }
 
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] VALIDATION FAILED");
+
+
     return IDE_FAILURE;
 }
 
@@ -841,8 +920,70 @@ IDE_RC qdsd::executeShardDrop( qcStatement * aStatement )
     SChar               sNodeName[SDI_NODE_NAME_MAX_SIZE + 1];
     sdiLocalMetaInfo    sLocalMetaInfo;
     idBool              sIsRemoteNode = ID_FALSE;
-        
+
+    SInt                sDataLength;
+    SChar               sBuffer[SDI_ZKC_BUFFER_SIZE] = {0,};
+    SChar               sRecentDeadNode[SDI_NODE_NAME_MAX_SIZE + 1] = {0,};
+    idBool              sExistNotFailedoverDeadNode = ID_FALSE;
+
+    SChar               sFailoverToNodeName[SDI_NODE_NAME_MAX_SIZE + 1];
+
+    ZKState             sZKState = ZK_NONE;
+
+    ULong               sFailbackSMN = 0;
+    ULong               sFailoveredSMN = 0;
+
+    ULong               sOldSMN = 0;
+
+    iduList           * sList;
+    idBool              sIsAllocList = ID_FALSE;
+
+    sdiClientInfo     * sClientInfo  = NULL;
+
+    sdiReplicaSetInfo   sFailoverHistoryInfo;
+    sdiReplicaSetInfo   sFailoverHistoryInfoWithOtherNode;
+
+    sdiReplicaSetInfo   sReplicaSetInfo;
+
+    sdiReplicaSet     * sMainReplicaSet = NULL;
+    sdiReplicaSet     * sReplicaSet = NULL;
+
+    SChar               sMyNextNodeName[SDI_NODE_NAME_MAX_SIZE + 1];
+
+    UInt                i;
+    UInt                j;
+    UInt                sExecCount;
+    ULong               sCount = 0;
+    idBool              sFetchResult = ID_FALSE;
+
+    SChar               sReverseReplName[SDI_REPLICATION_NAME_MAX_SIZE + 1];
+    SChar               sRemoveReplName[SDI_REPLICATION_NAME_MAX_SIZE + 1];
+
+    SChar             * sUserName;
+
+    sdiNodeInfo         sNodeInfo;
+    sdiNode           * sTargetNodeInfo = NULL;
+
+    sdiTableInfoList  * sTableInfoList = NULL;
+
+    sdiTableInfoList  * sTmpTableInfoList = NULL;    
+
+    sdiTableInfo      * sTableInfo  = NULL;
+    sdiRangeInfo        sRangeInfos;
+
+    sdiShardObjectType  sShardTableType = SDI_NON_SHARD_OBJECT;
+
+    sdiValue            sValueStr;
+
+    SChar               sObjectValue[SDI_RANGE_VARCHAR_MAX_PRECISION + 1];
+
+    sdiLocalMetaInfo  * sNodeMetaInfo = NULL;
+
+    idBool              sIsAlive = ID_FALSE;
+
     sParseTree = (qdShardParseTree *)aStatement->myPlan->parseTree;
+
+    sUserName = QCG_GET_SESSION_USER_NAME( aStatement );
     
     if( sParseTree->mDDLType == SHARD_DROP )
     {
@@ -964,32 +1105,658 @@ IDE_RC qdsd::executeShardDrop( qcStatement * aStatement )
              *   SYSTEM_.SYS_TABLES_.SHARD_FLAG 업데이트
              ***********************************************************************/
             IDE_TEST( executeAlterShardNone( aStatement ) != IDE_SUCCESS );
+
+            /***********************************************************************
+             * Zookeeper meta 1차 변경
+             ***********************************************************************/
+            IDE_TEST( executeZookeeperDrop( aStatement ) != IDE_SUCCESS );
         }
     }
     else
     {
-        /* Drop force를 사용하면 위에 것 안하고 그냥 zookeeper만 제거하도록 해둠. */
         IDE_DASSERT( sParseTree->mDDLType == SHARD_DROP_FORCE );
-    }
 
-    if (( aStatement->session->mQPSpecific.mFlag & QC_SESSION_HANDOVER_SHARD_DDL_MASK ) == 
-        QC_SESSION_HANDOVER_SHARD_DDL_FALSE )
-    {
-        IDE_DASSERT( sIsRemoteNode != ID_TRUE );
-        
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] EXECUTE START");
+
         /***********************************************************************
-         * Zookeeper meta 1차 변경
+         * check internal property validate
          ***********************************************************************/
+        IDE_TEST( validateCommonForExecute( aStatement ) != IDE_SUCCESS );
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] EXECUTE VALIDATE SUCCESS");
+
+
+        /* for smn propagation to all nodes at commit */
+        sdi::setShardMetaTouched( aStatement->session );
+        IDE_TEST( sdiZookeeper::getZookeeperMetaLock(QCG_GET_SESSION_ID(aStatement)) != IDE_SUCCESS );
+        IDE_TEST( sdiZookeeper::getShardMetaLock( QC_SMI_STMT(aStatement)->getTrans()->getTransID() ) != IDE_SUCCESS );
+
         IDE_TEST( executeZookeeperDrop( aStatement ) != IDE_SUCCESS );
+
+        /***********************************************************************
+         * check node_name
+         ***********************************************************************/
+        IDE_TEST( sdi::getLocalMetaInfo( &sLocalMetaInfo ) != IDE_SUCCESS );
+
+        QC_STR_COPY( sNodeName, sParseTree->mNodeName );
+
+        IDE_TEST( sdiZookeeper::checkRecentDeadNode( sRecentDeadNode, &sFailbackSMN, &sFailoveredSMN ) 
+                  != IDE_SUCCESS );
+
+        IDE_TEST_RAISE( idlOS::strncmp( sNodeName,
+                                        sRecentDeadNode,
+                                        idlOS::strlen( sRecentDeadNode ) ) != 0, not_my_turn );
+
+        IDE_TEST( sdiZookeeper::checkExistNotFailedoverDeadNode( &sExistNotFailedoverDeadNode ) 
+                  != IDE_SUCCESS );
+
+        IDE_TEST_RAISE( sExistNotFailedoverDeadNode != ID_FALSE, EXIST_NOT_FAILEDOVER_DEADNODE );
+
+
+        sDataLength = SDI_ZKC_BUFFER_SIZE;
+        IDE_TEST( sdiZookeeper::getNodeInfo( sNodeName,
+                                             (SChar*)SDI_ZKC_PATH_NODE_FAILOVER_TO,
+                                             sBuffer,
+                                             &sDataLength ) != IDE_SUCCESS );
+
+        IDE_TEST_RAISE( sDataLength <= 0 , Not_failed_over );
+
+        idlOS::strncpy( sFailoverToNodeName,
+                        sBuffer,
+                        SDI_NODE_NAME_MAX_SIZE + 1 );
+
+        sOldSMN = sdi::getSMNForDataNode();
+
+        /* get Alive Node List */
+        IDE_TEST( sdiZookeeper::getAliveNodeNameList( &sList ) != IDE_SUCCESS );
+        sIsAllocList = ID_TRUE;
+
+        /* AliveNode들만 대상으로 ShardLinker 생성해야 한다. Node Stop 후에 호출되어야 함. */
+        IDE_TEST( sdi::checkShardLinkerWithNodeList ( aStatement,
+                                                      sOldSMN,
+                                                      NULL,
+                                                      sList ) != IDE_SUCCESS );
+
+        sClientInfo = aStatement->session->mQPSpecific.mClientInfo;
+
+        IDE_DASSERT( sClientInfo != NULL );
+
+        IDE_TEST_RAISE( sClientInfo == NULL, ERR_NODE_NOT_EXIST );
+
+        IDE_TEST( sdm::getFailoverHistoryWithPrimaryNodename( QC_SMI_STMT( aStatement),
+                                                              &sFailoverHistoryInfo,
+                                                              sNodeName,
+                                                              sFailbackSMN ) != IDE_SUCCESS );
+
+        IDE_TEST( sdm::getFailoverHistoryWithSMN( QC_SMI_STMT( aStatement),
+                                                  &sFailoverHistoryInfoWithOtherNode,
+                                                  sFailbackSMN ) != IDE_SUCCESS );
+
+        /* get ReplicaSet Info */
+        IDE_TEST( sdm::getAllReplicaSetInfoSortedByPName( QC_SMI_STMT( aStatement ),
+                                                          &sReplicaSetInfo,
+                                                          sOldSMN )
+                  != IDE_SUCCESS );
+
+        /* Find Target's MainReplicaSet ID */
+        IDE_TEST( sdiZookeeper::getNextNode( sNodeName, 
+                                             sMyNextNodeName, 
+                                             &sZKState ) != IDE_SUCCESS );
+
+        IDE_TEST( getAllNodeInfoList( aStatement ) != IDE_SUCCESS );
+
+        sNodeMetaInfo = sdiZookeeper::getNodeInfo( sParseTree->mNodeInfoList,
+                                                   sNodeName );
+
+        for ( i = 0; i < sReplicaSetInfo.mCount; i++ )
+        {
+            if ( sReplicaSetInfo.mReplicaSets[i].mReplicaSetId == sNodeMetaInfo->mShardNodeId )
+            {
+                sMainReplicaSet = &sReplicaSetInfo.mReplicaSets[i];
+                break;
+            }
+        }
+        IDE_DASSERT( sMainReplicaSet != NULL );
+
+        /* ResetShardMeta */
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] RESET SHARD META START");
+
+        IDE_TEST( sdi::getExternalNodeInfo( &sNodeInfo,
+                                            sOldSMN )
+                  != IDE_SUCCESS );
+
+        for ( i = 0; i < sNodeInfo.mCount; i++ )
+        {
+            if ( idlOS::strncmp( sNodeInfo.mNodes[i].mNodeName,
+                                 sNodeName,
+                                 SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            {
+                sTargetNodeInfo = &sNodeInfo.mNodes[i];
+            }
+        }
+
+        /* TargetNodeInfo가 Null 이면 이미 Unset 된 상황이다. 더이상 할게 없다. */
+        if ( sTargetNodeInfo != NULL )
+        {
+            ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] TARGET NODE EXIST");
+
+            /* get All TableInfo */
+            IDE_TEST( sdi::getTableInfoAllObject( aStatement,
+                                                  &sTableInfoList,
+                                                  sOldSMN )
+                      != IDE_SUCCESS );
+
+            for ( sTmpTableInfoList = sTableInfoList;
+                  sTmpTableInfoList != NULL;
+                  sTmpTableInfoList = sTmpTableInfoList->mNext )
+
+            {
+                sTableInfo = sTmpTableInfoList->mTableInfo;
+
+                ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] TABLE META CHANGE : %s", sTableInfo->mObjectName );
+
+
+                /* Default Partition check */
+                if ( sTableInfo->mDefaultNodeId == sTargetNodeInfo->mNodeId )
+                {
+                    /* Node 제거를 위해 Data 제거 해야 하는데 아예 제거 해버리면 
+                     * Failback 불가능 해지므로 ReplicaSetId와의 연결을  남길수 있도록 
+                     * Dealloc Name으로 셋팅해둔다. */
+                    /* Send resetShardPartitioinNode to All Alive Node */
+                    if ( sTableInfo->mObjectType == 'T' ) /* Table */
+                    {
+                        idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                         "exec dbms_shard.reset_shard_partition_node( '"
+                                         QCM_SQL_STRING_SKIP_FMT"', '"
+                                         QCM_SQL_STRING_SKIP_FMT"', '"
+                                         QCM_SQL_STRING_SKIP_FMT"', "
+                                         QCM_SQL_VARCHAR_FMT", "
+                                         QCM_SQL_VARCHAR_FMT" )",
+                                         sTableInfo->mUserName,
+                                         sTableInfo->mObjectName,
+                                         sNodeName,
+                                         SDI_NODE_DEALLOC_NAME,
+                                         sTableInfo->mDefaultPartitionName );
+                    }
+                    else /* Procedure */
+                    {
+                        idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                         "exec dbms_shard.reset_shard_resident_node( '"
+                                         QCM_SQL_STRING_SKIP_FMT"', '"
+                                         QCM_SQL_STRING_SKIP_FMT"', '"
+                                         QCM_SQL_STRING_SKIP_FMT"', "
+                                         QCM_SQL_VARCHAR_FMT", "
+                                         QCM_SQL_VARCHAR_FMT", "
+                                         QCM_SQL_VARCHAR_FMT", "
+                                         QCM_SQL_UINT32_FMT" )",
+                                         sTableInfo->mUserName,
+                                         sTableInfo->mObjectName,
+                                         sNodeName,
+                                         SDI_NODE_DEALLOC_NAME,
+                                         "",
+                                         "",
+                                         1 );
+                    }
+
+                    IDE_TEST( executeSQLNodeList( aStatement,
+                                                  SDI_INTERNAL_OP_DROPFORCE,
+                                                  QCI_STMT_MASK_SP,
+                                                  sSqlStr,
+                                                  NULL,
+                                                  sList ) != IDE_SUCCESS );
+
+                }
+
+                /* Range Info Check */
+                IDE_TEST( sdm::getRangeInfo( aStatement,
+                                             QC_SMI_STMT( aStatement ),
+                                             sOldSMN,
+                                             sTableInfo,
+                                             &sRangeInfos,
+                                             ID_FALSE )
+                          != IDE_SUCCESS );
+
+                /* check Table Type */
+                sShardTableType = sdi::getShardObjectType( sTableInfo );
+
+                for ( j = 0; j < sRangeInfos.mCount; j++ )
+                {
+
+                    if ( sRangeInfos.mRanges[j].mNodeId == sTargetNodeInfo->mNodeId )
+                    {
+                        switch ( sShardTableType )
+                        {
+                            case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
+                            case SDI_SOLO_DIST_OBJECT:
+                                /* send resetShardPartitionNode to All Alive Node */
+                                if ( sTableInfo->mObjectType == 'T' ) /* Table */
+                                {
+                                    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                     "exec dbms_shard.reset_shard_partition_node( '"
+                                                     QCM_SQL_STRING_SKIP_FMT"', '"
+                                                     QCM_SQL_STRING_SKIP_FMT"', '"
+                                                     QCM_SQL_STRING_SKIP_FMT"', "
+                                                     QCM_SQL_VARCHAR_FMT", "
+                                                     QCM_SQL_VARCHAR_FMT" )",
+                                                     sTableInfo->mUserName,
+                                                     sTableInfo->mObjectName,
+                                                     sNodeName,
+                                                     SDI_NODE_DEALLOC_NAME,
+                                                     sRangeInfos.mRanges[j].mPartitionName );
+                                }
+                                else /* Procedure */
+                                {
+                                    if ( sTableInfo->mSplitMethod == SDI_SPLIT_HASH )
+                                    {
+                                        IDE_TEST( sdi::getValueStr( MTD_INTEGER_ID,
+                                                                    &sRangeInfos.mRanges[j].mValue,
+                                                                    &sValueStr )
+                                                  != IDE_SUCCESS );
+                                    }
+                                    else
+                                    {
+                                        IDE_TEST( sdi::getValueStr( sTableInfo->mKeyDataType,
+                                                                    &sRangeInfos.mRanges[j].mValue,
+                                                                    &sValueStr )
+                                                  != IDE_SUCCESS );
+                                    }
+
+                                    if ( sValueStr.mCharMax.value[0] == '\'' )
+                                    {
+                                        // INPUT ARG ('''A''') => 'A' => '''A'''
+                                        idlOS::snprintf( sObjectValue,
+                                                         SDI_RANGE_VARCHAR_MAX_PRECISION + 1,
+                                                         "''%s''",
+                                                         sValueStr.mCharMax.value );
+                                    }
+                                    else
+                                    {
+                                        // INPUT ARG ('A') => A => 'A'
+                                        idlOS::snprintf( sObjectValue,
+                                                         SDI_RANGE_VARCHAR_MAX_PRECISION + 1,
+                                                         "'%s'",
+                                                         sValueStr.mCharMax.value );
+                                    }
+
+                                    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                     "exec dbms_shard.reset_shard_resident_node( '"
+                                                     QCM_SQL_STRING_SKIP_FMT"', '"
+                                                     QCM_SQL_STRING_SKIP_FMT"', '"
+                                                     QCM_SQL_STRING_SKIP_FMT"', "
+                                                     QCM_SQL_VARCHAR_FMT", "
+                                                     "%s, "
+                                                     QCM_SQL_VARCHAR_FMT" )",
+                                                     sTableInfo->mUserName,
+                                                     sTableInfo->mObjectName,
+                                                     sNodeName,
+                                                     SDI_NODE_DEALLOC_NAME,
+                                                     sObjectValue,
+                                                     "" );
+                                }
+
+                                IDE_TEST( executeSQLNodeList( aStatement,
+                                                              SDI_INTERNAL_OP_DROPFORCE,
+                                                              QCI_STMT_MASK_SP,
+                                                              sSqlStr,
+                                                              NULL,
+                                                              sList ) != IDE_SUCCESS );
+                                break;
+                            case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
+                                /* Composite는 지원하지 않는다. */
+                                continue;
+                            case SDI_CLONE_DIST_OBJECT:
+                                /* Clones_ 은 Failover 수행시 이미 제거 했다. */
+                                continue;
+                            case SDI_NON_SHARD_OBJECT:
+                            default:
+                                /* Non Shard Table이 오면 안됨. */
+                                IDE_DASSERT( 0 );
+                                break;
+                        }
+
+
+                    }
+                }
+            }
+
+            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                             "EXEC DBMS_SHARD.UNSET_NODE( '"QCM_SQL_STRING_SKIP_FMT"' ); ",
+                             sNodeName );
+
+            /* Local Node의 SetNode는 따로 수행했으므로 Exception 으로 제외한다. */
+            IDE_TEST( executeSQLNodeList( aStatement,
+                                          SDI_INTERNAL_OP_DROPFORCE,
+                                          QCI_STMT_MASK_SP,
+                                          sSqlStr,
+                                          NULL,
+                                          sList ) != IDE_SUCCESS );
+        }
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] RESET SHARDMETA COMPLETE");
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] REORG REPLICATION START");
+
+        /* Organize Replication */
+        /* FailoverToNode로 부터 TargetNode로의 ReverseRP를 제거한다. */
+        /* ReverseRP를 생성했다는 것은 TargetNode로 부터 Receive 중인 RP가 있다는 뜻이다.
+         * 해당 RP 중 제거되는 RP를 판단하여 같이 제거 해야 한다.(RemoveReplName) */
+        for ( i = 0 ; i < sFailoverHistoryInfo.mCount; i++ )
+        {
+            sReplicaSet = &sFailoverHistoryInfo.mReplicaSets[i];
+
+            if ( idlOS::strncmp( sReplicaSet->mFirstBackupNodeName,
+                                 sFailoverToNodeName,
+                                 SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            {
+                idlOS::snprintf( sReverseReplName, 
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                 "R_%s", 
+                                 sReplicaSet->mFirstReplName );
+
+                /* First가 FailoverToNode이면 지워야 하는 RP 이다. */
+                idlOS::snprintf( sRemoveReplName, 
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                 "%s", 
+                                 sReplicaSet->mFirstReplName );
+
+            }
+            else if ( idlOS::strncmp( sReplicaSet->mSecondBackupNodeName,
+                                      sFailoverToNodeName,
+                                      SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+
+            {
+                idlOS::snprintf( sReverseReplName, 
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                 "R_%s", 
+                                 sReplicaSet->mSecondReplName );
+
+                /* Second가 FailoverTo 인경우
+                 * 1. First가 Failover되어 있어서 Second로 Failover 된 경우 : Remove 대상
+                 * 2. 한번 Failover되어 Second로 Failover 된 경우 : Remove 대상 아님
+                 * 2의 경우가 아니면 Remove 한다. */
+                if ( idlOS::strncmp( sReplicaSet->mStopFirstBackupNodeName,
+                                     sNodeName,
+                                     SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+                {
+                    idlOS::snprintf( sRemoveReplName,
+                                     SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                     SDM_NA_STR );
+                }
+                else
+                {
+                    idlOS::snprintf( sRemoveReplName, 
+                                     SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                     "%s", 
+                                     sReplicaSet->mSecondReplName );
+                }
+            }
+            else
+            {
+                idlOS::snprintf( sReverseReplName,
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                 SDM_NA_STR );
+
+                idlOS::snprintf( sRemoveReplName,
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                 SDM_NA_STR );
+            }
+
+            if ( idlOS::strncmp( sReverseReplName,
+                                 SDM_NA_STR,
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1 ) != 0 )
+            {
+                idlOS::snprintf( sSqlStr, 
+                                 QD_MAX_SQL_LENGTH + 1,
+                                 "select Count(*) from system_.sys_replications_ where replication_name='%s' ",
+                                 sReverseReplName );
+
+                IDE_TEST( sdi::shardExecDirect( aStatement,
+                                                sFailoverToNodeName,
+                                                (SChar*)sSqlStr,
+                                                (UInt) idlOS::strlen(sSqlStr),
+                                                SDI_INTERNAL_OP_DROPFORCE,
+                                                &sExecCount,
+                                                &sCount,
+                                                NULL,
+                                                ID_SIZEOF(sCount),
+                                                &sFetchResult )
+                          != IDE_SUCCESS );
+
+                if ( sCount != 0 )
+                {
+                    /* Reverse RP와 RemoveRP 모두 TxDDL로 처리한다. */
+                    idlOS::snprintf(sSqlStr,
+                                    QD_MAX_SQL_LENGTH,
+                                    "drop replication "QCM_SQL_STRING_SKIP_FMT,
+                                    sReverseReplName );
+
+                    IDE_TEST( executeRemoteSQL( aStatement, 
+                                                sFailoverToNodeName,
+                                                SDI_INTERNAL_OP_DROPFORCE,
+                                                QCI_STMT_MASK_DDL,
+                                                sSqlStr,
+                                                QD_MAX_SQL_LENGTH,
+                                                NULL )
+                                != IDE_SUCCESS );
+
+                }
+
+                if ( idlOS::strncmp( sRemoveReplName,
+                                     SDM_NA_STR,
+                                     SDI_REPLICATION_NAME_MAX_SIZE + 1 ) != 0 )
+                {
+                    idlOS::snprintf(sSqlStr,
+                                    QD_MAX_SQL_LENGTH,
+                                    "drop replication "QCM_SQL_STRING_SKIP_FMT,
+                                    sRemoveReplName );
+
+                    IDE_TEST( executeRemoteSQL( aStatement, 
+                                                sFailoverToNodeName,
+                                                SDI_INTERNAL_OP_DROPFORCE,
+                                                QCI_STMT_MASK_DDL,
+                                                sSqlStr,
+                                                QD_MAX_SQL_LENGTH,
+                                                NULL )
+                                != IDE_SUCCESS );
+                }
+            }
+        }
+
+        /* TargetNode가 Receive 중이던 RP들을 찾아서 DROP 해주어야 한다. */
+        for ( i = 0 ; i < sFailoverHistoryInfoWithOtherNode.mCount; i++ )
+        {
+            sReplicaSet = &sFailoverHistoryInfoWithOtherNode.mReplicaSets[i];
+
+            if ( idlOS::strncmp( sReplicaSet->mFirstBackupNodeName,
+                                 sNodeName,
+                                 SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            {
+                idlOS::snprintf( sRemoveReplName, 
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                 "%s", 
+                                 sReplicaSet->mFirstReplName );
+            }
+            else if ( idlOS::strncmp( sReplicaSet->mSecondBackupNodeName,
+                                 sNodeName,
+                                 SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            {
+                idlOS::snprintf( sRemoveReplName, 
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                 "%s", 
+                                 sReplicaSet->mSecondReplName );
+            }
+            else
+            {
+                idlOS::snprintf( sRemoveReplName,
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                 SDM_NA_STR );
+            }
+
+            if ( idlOS::strncmp( sRemoveReplName,
+                                 SDM_NA_STR,
+                                 SDI_REPLICATION_NAME_MAX_SIZE + 1 ) != 0 )
+            {
+
+                IDE_TEST( sdiZookeeper::checkNodeAlive( sReplicaSet->mPrimaryNodeName,
+                                                        &sIsAlive ) != IDE_SUCCESS );
+
+                if ( sIsAlive == ID_TRUE )
+                {
+                    idlOS::snprintf( sSqlStr, 
+                                     QD_MAX_SQL_LENGTH + 1,
+                                     "select Count(*) from system_.sys_replications_ where replication_name='%s' ",
+                                     sRemoveReplName );
+
+                    IDE_TEST( sdi::shardExecDirect( aStatement,
+                                                    sReplicaSet->mPrimaryNodeName,
+                                                    (SChar*)sSqlStr,
+                                                    (UInt) idlOS::strlen(sSqlStr),
+                                                    SDI_INTERNAL_OP_DROPFORCE,
+                                                    &sExecCount,
+                                                    &sCount,
+                                                    NULL,
+                                                    ID_SIZEOF(sCount),
+                                                    &sFetchResult )
+                              != IDE_SUCCESS );
+
+                    if ( sCount != 0 )
+                    {
+                        idlOS::snprintf(sSqlStr,
+                                        QD_MAX_SQL_LENGTH,
+                                        "drop replication "QCM_SQL_STRING_SKIP_FMT,
+                                        sRemoveReplName );
+
+                        IDE_TEST( executeRemoteSQL( aStatement, 
+                                                    sReplicaSet->mPrimaryNodeName,
+                                                    SDI_INTERNAL_OP_DROPFORCE,
+                                                    QCI_STMT_MASK_DDL,
+                                                    sSqlStr,
+                                                    QD_MAX_SQL_LENGTH,
+                                                    NULL )
+                                    != IDE_SUCCESS );
+                    }
+                }
+            }
+        }
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] REORG REPLICATION COMPLETE");
+
+        /* ResetReplicaSet */
+        idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                         "exec dbms_shard.reset_ReplicaSets( '"QCM_SQL_STRING_SKIP_FMT"', '"
+                                                              QCM_SQL_STRING_SKIP_FMT"', '"
+                                                              QCM_SQL_STRING_SKIP_FMT"' )",
+                         sUserName,
+                         sMyNextNodeName, /* 제거 이기 때문에 Old 값은 사용하지 않는다. */
+                         sNodeName );
+
+        IDE_TEST( executeSQLNodeList( aStatement,
+                                      SDI_INTERNAL_OP_DROPFORCE,
+                                      QCI_STMT_MASK_SP,
+                                      sSqlStr,
+                                      NULL,
+                                      sList ) != IDE_SUCCESS );
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] RESET REPLICASET COMPLETE");
+
+        /* ResetFailoverHistory */
+        /* FailoverHistory에 있는 모든 SMN 에 대해서 처리 해야 하는데 어떻게 해야 할까 */
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] RESET FAILOVERHISTORY START");
+
+        /* 1차 FailbackSMN 에 일치하는 FailoverHistory는 제거
+         * 해당 정보를 이용하여 Failback Sync를 판단할 예정 추후에 제거 해야 함. */
+        /* FailbackSMN과 일치하는 FailoverHistory는 일반 Failback과 Failback Sync/Instant를
+         * 구분하기 위해 남겨두도록 한다.
+         * Drop Force는 가장 최신의 DeadNode를 대상으로만 작동하기 때문에
+         * 해당 SMN보다 작은 FailbackSMN을 가진 Failback은 Failback Sync/Instant를 사용해야만 하고
+         * DropForce 이후 동작한 Failover 등은 DropForce 상황에 맞추어 Failover 되어 있기 때문에
+         * 일반 Failback 을 수행할 수 있다. */
+        if ( sFailoverHistoryInfoWithOtherNode.mCount != 0 )
+        { 
+/*            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                             "DELETE FROM SYS_SHARD.FAILOVER_HISTORY_ WHERE SMN = "QCM_SQL_BIGINT_FMT, 
+                             sFailbackSMN );
+
+            IDE_TEST( executeSQLNodeList( aStatement,
+                                          SDI_INTERNAL_OP_DROPFORCE,
+                                          QCI_STMT_MASK_SP,
+                                          sSqlStr,
+                                          NULL,
+                                          sList ) != IDE_SUCCESS ); */
+        }
+
+        /* 2차 TargetNode를 대상으로 하고 있던 정보 모두 변경 */
+        idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                         "UPDATE SYS_SHARD.FAILOVER_HISTORY_ "
+                         "   SET FIRST_BACKUP_NODE_NAME     = "QCM_SQL_VARCHAR_FMT", "
+                         "   STOP_FIRST_BACKUP_NODE_NAME    = "QCM_SQL_VARCHAR_FMT
+                         "   WHERE FIRST_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT
+                         "   OR STOP_FIRST_BACKUP_NODE_NAME = "QCM_SQL_VARCHAR_FMT,
+                         SDM_NA_STR,
+                         SDM_NA_STR,
+                         sNodeName,
+                         sNodeName );
+
+        IDE_TEST( executeSQLNodeList( aStatement,
+                                      SDI_INTERNAL_OP_DROPFORCE,
+                                      QCI_STMT_MASK_SP,
+                                      sSqlStr,
+                                      NULL,
+                                      sList ) != IDE_SUCCESS );
+
+        idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                         "UPDATE SYS_SHARD.FAILOVER_HISTORY_ "
+                         "   SET SECOND_BACKUP_NODE_NAME     = "QCM_SQL_VARCHAR_FMT", "
+                         "   STOP_SECOND_BACKUP_NODE_NAME    = "QCM_SQL_VARCHAR_FMT
+                         "   WHERE SECOND_BACKUP_NODE_NAME   = "QCM_SQL_VARCHAR_FMT
+                         "   OR STOP_SECOND_BACKUP_NODE_NAME = "QCM_SQL_VARCHAR_FMT,
+                         SDM_NA_STR,
+                         SDM_NA_STR,
+                         sNodeName,
+                         sNodeName );
+
+        IDE_TEST( executeSQLNodeList( aStatement,
+                                      SDI_INTERNAL_OP_NORMAL,
+                                      QCI_STMT_MASK_SP,
+                                      sSqlStr,
+                                      NULL,
+                                      sList ) != IDE_SUCCESS );
+
+        ideLog::log(IDE_SD_0,"[SHARD_DROP_FORCE] RESET FAILOVERHISTORY COMPLETE");
+
+        sIsAllocList = ID_FALSE;
+        sdiZookeeper::freeList( sList, SDI_ZKS_LIST_NODENAME );    
     }
 
     return IDE_SUCCESS;
 
+    IDE_EXCEPTION( ERR_NODE_NOT_EXIST )
+    {
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDM_SHARD_NODE_NOT_EXIST ) );
+    }
+    IDE_EXCEPTION( EXIST_NOT_FAILEDOVER_DEADNODE )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_EXIST_NOT_FAILEDOVER_DEADNODE ));
+    }
+    IDE_EXCEPTION( Not_failed_over )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_TARGET_NODE_NOT_FAILED_OVER ) );
+    }
+    IDE_EXCEPTION( not_my_turn )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_DROPFORCE_NOT_MY_TURN ) ); 
+    }
     IDE_EXCEPTION( ERR_NOT_SUPPORTED_SYNTAX );
     {
         IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_SYNTAX_ERROR_SHARD_DROP, sNodeName) );
     }
     IDE_EXCEPTION_END;
+
+    if( sIsAllocList == ID_TRUE )
+    {
+        sdiZookeeper::freeList( sList, SDI_ZKS_LIST_NODENAME );    
+    }
     
     return IDE_FAILURE;
 }
@@ -2605,10 +3372,12 @@ IDE_RC qdsd::executeShardMove( qcStatement * aStatement )
     sdiReplicaSet    * sFromReplicaSetPtr = NULL;
     sdiReplicaSet    * sToReplicaSetPtr = NULL;
     sdiReplicaSet      sToReplicaSet;
+    sdiReplicaSet      sFromReplicaSet;
     ULong              sSMN = SDI_NULL_SMN;
     idBool             sIsPrimaryDataSync = ID_FALSE;
     idBool             sIsFirstBackupDataSync = ID_FALSE;
     idBool             sIsSecondBackupDataSync = ID_FALSE;
+    idBool             sIsDealloc = ID_FALSE;
     SChar            * sSqlStr = NULL;
     SChar              sPrimaryReplicationName[SDI_REPLICATION_NAME_MAX_SIZE + 1] = { 0, };
     SChar              sFirstBackupReplicationName[SDI_REPLICATION_NAME_MAX_SIZE + 1] = { 0, };
@@ -2620,6 +3389,9 @@ IDE_RC qdsd::executeShardMove( qcStatement * aStatement )
     UInt               sShardDDLLockTryCount = QCG_GET_SESSION_SHARD_DDL_LOCK_TRY_COUNT(aStatement);
     UInt               sRemoteLockTimeout = QCG_GET_SESSION_SHARD_DDL_LOCK_TIMEOUT(aStatement);
     sdiGlobalMetaInfo  sMetaNodeInfo = { ID_ULONG(0) };
+
+    sdiNode            sNode; 
+    UInt               i;
     
     sParseTree = (qdShardParseTree *)aStatement->myPlan->parseTree;
 
@@ -2699,200 +3471,269 @@ IDE_RC qdsd::executeShardMove( qcStatement * aStatement )
     {    
         sSMN = sdi::getSMNForDataNode();
     }
-    
-    
-    IDE_TEST( sdi::getReplicaSet( QC_SMI_STMT(aStatement)->getTrans(),
-                                  sFromNodeName,
-                                  ID_FALSE,
-                                  sSMN,
-                                  &sFromReplicaSetsInfo ) != IDE_SUCCESS );
-
-    IDE_TEST_RAISE( sFromReplicaSetsInfo.mCount != 1, ERR_SHARD_META );
-    sFromReplicaSetPtr = &sFromReplicaSetsInfo.mReplicaSets[0];
-    
+   
     IDE_TEST( sdi::getLocalMetaInfo( &sLocalMetaInfo ) != IDE_SUCCESS );
-    /* Backup Replications running check, 
-     * If backup replications of from node and to node does not running normally 
-     * then you cannot run resharding.
-     */
-    IDE_TEST( sdi::checkBackupReplicationRunning( sLocalMetaInfo.mKSafety,
-                                                  sFromReplicaSetPtr,
-                                                  sParseTree->mNodeCount )
-              != IDE_SUCCESS );
 
-    if ( SDI_IS_NULL_NAME(sToNodeName) != ID_TRUE )
+    if ( idlOS::strncmp( sFromNodeName,
+                         SDI_NODE_DEALLOC_NAME,
+                         SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
     {
-        IDE_TEST( sdi::getReplicaSet( QC_SMI_STMT(aStatement)->getTrans(),
-                                      sToNodeName,
-                                      ID_FALSE,
-                                      sSMN,
-                                      &sToReplicaSetsInfo ) != IDE_SUCCESS );
-        IDE_TEST_RAISE( sToReplicaSetsInfo.mCount != 1, ERR_SHARD_META );
-        sToReplicaSetPtr = &sToReplicaSetsInfo.mReplicaSets[0];
-        IDE_TEST( sdi::checkBackupReplicationRunning( sLocalMetaInfo.mKSafety,
-                                                      sToReplicaSetPtr,
-                                                      sParseTree->mNodeCount ) != IDE_SUCCESS );
-    }
-    else
-    {
-        SDI_INIT_REPLICA_SET(&sToReplicaSet);
-        sToReplicaSetPtr = &sToReplicaSet;
-    }
+        sIsDealloc = ID_TRUE;
 
-    /* 5. Determine whether the primary data should be synchronized. */
-    if ( SDI_IS_NULL_NAME(sToNodeName) == ID_TRUE )
-    {
-        /* REMOVE */
+        SDI_INIT_REPLICA_SET(&sFromReplicaSet);
+        sFromReplicaSetPtr = &sFromReplicaSet; 
+
+        if ( SDI_IS_NULL_NAME(sToNodeName) != ID_TRUE )
+        {
+            IDE_TEST( sdi::getReplicaSet( QC_SMI_STMT(aStatement)->getTrans(),
+                                          sToNodeName,
+                                          ID_FALSE,
+                                          sSMN,
+                                          &sToReplicaSetsInfo ) != IDE_SUCCESS );
+
+            SDI_INIT_NODE(&sNode);
+            IDE_TEST( sdm::getNodeByName( QC_SMI_STMT( aStatement ),
+                                          sToNodeName,
+                                          sSMN,
+                                          &sNode )
+                      != IDE_SUCCESS );
+
+            /* ToNode에 ReplicaSet이 여러개 연결되어 있는 상태일 수 있다. ToNode의 MainReplicaSet을 찾는다. */
+            for ( i = 0 ; i < sToReplicaSetsInfo.mCount; i++ )
+            {
+                if ( sToReplicaSetsInfo.mReplicaSets[i].mReplicaSetId == sNode.mNodeId )
+                {
+                    sToReplicaSetPtr = &sToReplicaSetsInfo.mReplicaSets[i];
+                    break;
+                }
+            }
+            IDE_TEST_RAISE( sToReplicaSetPtr == NULL, ERR_SHARD_META );
+
+            IDE_TEST( sdi::checkBackupReplicationRunning( sLocalMetaInfo.mKSafety,
+                                                          sToReplicaSetPtr,
+                                                          sParseTree->mNodeCount ) != IDE_SUCCESS );
+        }
+        else
+        {
+            /* DEALLOC을 MOVE 하는 경우 To Null은 지원하지 않음.
+             * 위에서 거르고 있으나 이후 REMOVE 제공시에 필요 */
+            IDE_RAISE( ERR_NOT_FOUND_NODE );
+        }
+
+        /* DEALLOC에서 새로 할당이기 때문에 Data Sync 필요 없음. */
+        /* 5. Determine whether the primary data should be synchronized. */
         SDI_SET_NULL_NAME(sPrimaryReplicationName);
         sIsPrimaryDataSync = ID_FALSE;
-    }
-    else
-    {
-        if ( sParseTree->mDDLType == SHARD_MOVE_TO_INTERNAL_CLONE_COPY )
-        {
-            idlOS::snprintf(sPrimaryReplicationName,
-                            SDI_REPLICATION_NAME_MAX_SIZE + 1,
-                            "%s#%s#PR",                   /* nodename size = 10 *2 , + # + # + PR => 24 */
-                            sFromNodeName,
-                            sToNodeName);
-            sIsPrimaryDataSync = ID_TRUE;
-        }
-        else if ( sdi::isSameNode(sToNodeName, sFromReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE )
-        {
-            /* the resharding target(to) node of primary data is first backup node
-             * the primary data is in backup table of to node, therefore, the primary data does not need sync
-             */
-            idlOS::strncpy(sPrimaryReplicationName, sFromReplicaSetPtr->mFirstReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
-            sIsPrimaryDataSync = ID_FALSE;
-            sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
-        }
-        else if ( sdi::isSameNode(sToNodeName, sFromReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE )
-        {
-            /* the resharding target(to) node of primary data is second backup node
-             * the primary data is in backup table of to node, therefore,  the primary data does not need sync
-             */
-            idlOS::strncpy(sPrimaryReplicationName, sFromReplicaSetPtr->mSecondReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
-            sIsPrimaryDataSync = ID_FALSE;
-            sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
-        }
-        else /* not first or second backup node */
-        {
-            idlOS::snprintf(sPrimaryReplicationName,
-                            SDI_REPLICATION_NAME_MAX_SIZE + 1,
-                            "%s#%s#PR",                   /* nodename size = 10 *2 , + # + # + PR => 24 */
-                            sFromNodeName,
-                            sToNodeName);
-            sIsPrimaryDataSync = ID_TRUE;
-        }
-    }
 
-    /* 6. Determine whether the first backup data should be synchronized. */
-
-    if ( SDI_IS_NULL_NAME(sToReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE )
-    {
+        /* 6. Determine whether the first backup data should be synchronized. */
         SDI_SET_NULL_NAME(sFirstBackupReplicationName);
         sIsFirstBackupDataSync = ID_FALSE;
-    }
-    else
-    {
-        if ( sParseTree->mDDLType == SHARD_MOVE_TO_INTERNAL_CLONE_COPY )
-        {
-            SDI_SET_NULL_NAME(sFirstBackupReplicationName);
-            sIsFirstBackupDataSync = ID_FALSE;
-        }
-        else if ( sdi::isSameNode(sToReplicaSetPtr->mFirstBackupNodeName, sFromReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE )
-        {
-            idlOS::strncpy(sFirstBackupReplicationName, sFromReplicaSetPtr->mFirstReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
-            sIsFirstBackupDataSync = ID_FALSE;
-            sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
-        }
-        else if ( sdi::isSameNode(sToReplicaSetPtr->mFirstBackupNodeName, sFromReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE )
-        {
-            idlOS::strncpy(sFirstBackupReplicationName, sFromReplicaSetPtr->mSecondReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
-            sIsFirstBackupDataSync = ID_FALSE;
-            sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
-        }
-        else if ( sdi::isSameNode(sToReplicaSetPtr->mFirstBackupNodeName, sFromNodeName) == ID_TRUE )
-        {
-            SDI_SET_NULL_NAME(sFirstBackupReplicationName);
-            sIsFirstBackupDataSync = ID_FALSE;
-            sIsFromNodeTruncate = ID_FALSE;
-        }
-        else
-        {
-            idlOS::snprintf(sFirstBackupReplicationName,
-                            SDI_REPLICATION_NAME_MAX_SIZE + 1,
-                            "%s#%s#FB",                   /* nodename size = 10 *2 , + # + # + FB => 24 */
-                            sFromNodeName,
-                            sToReplicaSetPtr->mFirstBackupNodeName);
-            sIsFirstBackupDataSync = ID_TRUE;
-        }
-    }
-    /* 7. Determine whether the second backup data should be synchronized. */
-    if ( SDI_IS_NULL_NAME(sToReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE )
-    {
+
+        /* 7. Determine whether the second backup data should be synchronized. */
         SDI_SET_NULL_NAME(sSecondBackupReplicationName);
         sIsSecondBackupDataSync = ID_FALSE;
-    }
-    else
-    {
-        if ( sParseTree->mDDLType == SHARD_MOVE_TO_INTERNAL_CLONE_COPY )
-        {
-            SDI_SET_NULL_NAME(sSecondBackupReplicationName);
-            sIsSecondBackupDataSync = ID_FALSE;
-        }
-        else if ( sdi::isSameNode(sToReplicaSetPtr->mSecondBackupNodeName, sFromReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE )
-        {
-            idlOS::strncpy(sSecondBackupReplicationName, sFromReplicaSetPtr->mFirstReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
-            sIsSecondBackupDataSync = ID_FALSE;
-            sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
-        }
-        else if ( sdi::isSameNode(sToReplicaSetPtr->mSecondBackupNodeName, sFromReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE )
-        {
-            idlOS::strncpy(sSecondBackupReplicationName, sFromReplicaSetPtr->mSecondReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
-            sIsSecondBackupDataSync = ID_FALSE;
-            sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
-        }
-        else if ( sdi::isSameNode(sToReplicaSetPtr->mSecondBackupNodeName, sFromNodeName) == ID_TRUE )
-        {
-            SDI_SET_NULL_NAME(sSecondBackupReplicationName);
-            sIsSecondBackupDataSync = ID_FALSE;
-            sIsFromNodeTruncate = ID_FALSE;
-        }
-        else
-        {
-            idlOS::snprintf(sSecondBackupReplicationName,
-                            SDI_REPLICATION_NAME_MAX_SIZE + 1,
-                            "%s#%s#SB",                   /* nodename size = 10 *2 , + # + # + SB => 24 */
-                            sFromNodeName,
-                            sToReplicaSetPtr->mSecondBackupNodeName);
-            sIsSecondBackupDataSync = ID_TRUE;
-        }
-    }
 
-    /* 8. correct truncate flag: exception situation by k-safey and count of nodes and clone resharding */
-    if ( sParseTree->mDDLType == SHARD_MOVE_TO_INTERNAL_CLONE_COPY )
-    {
+        /* 8. correct truncate flag: exception situation by k-safey and count of nodes and clone resharding */
         sIsFromNodeTruncate = ID_FALSE;
         sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
         sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
     }
     else
     {
-        if ( ( sIsFirstBackupOfFromNodeTruncate == ID_TRUE ) &&
-             ( SDI_IS_NULL_NAME(sFromReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE ) )
+    
+        IDE_TEST( sdi::getReplicaSet( QC_SMI_STMT(aStatement)->getTrans(),
+                                      sFromNodeName,
+                                      ID_FALSE,
+                                      sSMN,
+                                      &sFromReplicaSetsInfo ) != IDE_SUCCESS );
+
+        IDE_TEST_RAISE( sFromReplicaSetsInfo.mCount != 1, ERR_SHARD_META );
+        sFromReplicaSetPtr = &sFromReplicaSetsInfo.mReplicaSets[0];
+        
+        /* Backup Replications running check, 
+         * If backup replications of from node and to node does not running normally 
+         * then you cannot run resharding.
+         */
+        IDE_TEST( sdi::checkBackupReplicationRunning( sLocalMetaInfo.mKSafety,
+                                                      sFromReplicaSetPtr,
+                                                      sParseTree->mNodeCount )
+                  != IDE_SUCCESS );
+
+        if ( SDI_IS_NULL_NAME(sToNodeName) != ID_TRUE )
         {
-            sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
+            IDE_TEST( sdi::getReplicaSet( QC_SMI_STMT(aStatement)->getTrans(),
+                                          sToNodeName,
+                                          ID_FALSE,
+                                          sSMN,
+                                          &sToReplicaSetsInfo ) != IDE_SUCCESS );
+            IDE_TEST_RAISE( sToReplicaSetsInfo.mCount != 1, ERR_SHARD_META );
+            sToReplicaSetPtr = &sToReplicaSetsInfo.mReplicaSets[0];
+            IDE_TEST( sdi::checkBackupReplicationRunning( sLocalMetaInfo.mKSafety,
+                                                          sToReplicaSetPtr,
+                                                          sParseTree->mNodeCount ) != IDE_SUCCESS );
+        }
+        else
+        {
+            SDI_INIT_REPLICA_SET(&sToReplicaSet);
+            sToReplicaSetPtr = &sToReplicaSet;
         }
 
-        if ( ( sIsSecondBackupOfFromNodeTruncate == ID_TRUE ) &&
-             ( SDI_IS_NULL_NAME(sFromReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE ) )
+        /* 5. Determine whether the primary data should be synchronized. */
+        if ( SDI_IS_NULL_NAME(sToNodeName) == ID_TRUE )
         {
+            /* REMOVE */
+            SDI_SET_NULL_NAME(sPrimaryReplicationName);
+            sIsPrimaryDataSync = ID_FALSE;
+        }
+        else
+        {
+            if ( sParseTree->mDDLType == SHARD_MOVE_TO_INTERNAL_CLONE_COPY )
+            {
+                idlOS::snprintf(sPrimaryReplicationName,
+                                SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                "%s#%s#PR",                   /* nodename size = 10 *2 , + # + # + PR => 24 */
+                                sFromNodeName,
+                                sToNodeName);
+                sIsPrimaryDataSync = ID_TRUE;
+            }
+            else if ( sdi::isSameNode(sToNodeName, sFromReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE )
+            {
+                /* the resharding target(to) node of primary data is first backup node
+                 * the primary data is in backup table of to node, therefore, the primary data does not need sync
+                 */
+                idlOS::strncpy(sPrimaryReplicationName, sFromReplicaSetPtr->mFirstReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
+                sIsPrimaryDataSync = ID_FALSE;
+                sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
+            }
+            else if ( sdi::isSameNode(sToNodeName, sFromReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE )
+            {
+                /* the resharding target(to) node of primary data is second backup node
+                 * the primary data is in backup table of to node, therefore,  the primary data does not need sync
+                 */
+                idlOS::strncpy(sPrimaryReplicationName, sFromReplicaSetPtr->mSecondReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
+                sIsPrimaryDataSync = ID_FALSE;
+                sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
+            }
+            else /* not first or second backup node */
+            {
+                idlOS::snprintf(sPrimaryReplicationName,
+                                SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                "%s#%s#PR",                   /* nodename size = 10 *2 , + # + # + PR => 24 */
+                                sFromNodeName,
+                                sToNodeName);
+                sIsPrimaryDataSync = ID_TRUE;
+            }
+        }
+
+        /* 6. Determine whether the first backup data should be synchronized. */
+
+        if ( SDI_IS_NULL_NAME(sToReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE )
+        {
+            SDI_SET_NULL_NAME(sFirstBackupReplicationName);
+            sIsFirstBackupDataSync = ID_FALSE;
+        }
+        else
+        {
+            if ( sParseTree->mDDLType == SHARD_MOVE_TO_INTERNAL_CLONE_COPY )
+            {
+                SDI_SET_NULL_NAME(sFirstBackupReplicationName);
+                sIsFirstBackupDataSync = ID_FALSE;
+            }
+            else if ( sdi::isSameNode(sToReplicaSetPtr->mFirstBackupNodeName, sFromReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE )
+            {
+                idlOS::strncpy(sFirstBackupReplicationName, sFromReplicaSetPtr->mFirstReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
+                sIsFirstBackupDataSync = ID_FALSE;
+                sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
+            }
+            else if ( sdi::isSameNode(sToReplicaSetPtr->mFirstBackupNodeName, sFromReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE )
+            {
+                idlOS::strncpy(sFirstBackupReplicationName, sFromReplicaSetPtr->mSecondReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
+                sIsFirstBackupDataSync = ID_FALSE;
+                sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
+            }
+            else if ( sdi::isSameNode(sToReplicaSetPtr->mFirstBackupNodeName, sFromNodeName) == ID_TRUE )
+            {
+                SDI_SET_NULL_NAME(sFirstBackupReplicationName);
+                sIsFirstBackupDataSync = ID_FALSE;
+                sIsFromNodeTruncate = ID_FALSE;
+            }
+            else
+            {
+                idlOS::snprintf(sFirstBackupReplicationName,
+                                SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                "%s#%s#FB",                   /* nodename size = 10 *2 , + # + # + FB => 24 */
+                                sFromNodeName,
+                                sToReplicaSetPtr->mFirstBackupNodeName);
+                sIsFirstBackupDataSync = ID_TRUE;
+            }
+        }
+        /* 7. Determine whether the second backup data should be synchronized. */
+        if ( SDI_IS_NULL_NAME(sToReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE )
+        {
+            SDI_SET_NULL_NAME(sSecondBackupReplicationName);
+            sIsSecondBackupDataSync = ID_FALSE;
+        }
+        else
+        {
+            if ( sParseTree->mDDLType == SHARD_MOVE_TO_INTERNAL_CLONE_COPY )
+            {
+                SDI_SET_NULL_NAME(sSecondBackupReplicationName);
+                sIsSecondBackupDataSync = ID_FALSE;
+            }
+            else if ( sdi::isSameNode(sToReplicaSetPtr->mSecondBackupNodeName, sFromReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE )
+            {
+                idlOS::strncpy(sSecondBackupReplicationName, sFromReplicaSetPtr->mFirstReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
+                sIsSecondBackupDataSync = ID_FALSE;
+                sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
+            }
+            else if ( sdi::isSameNode(sToReplicaSetPtr->mSecondBackupNodeName, sFromReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE )
+            {
+                idlOS::strncpy(sSecondBackupReplicationName, sFromReplicaSetPtr->mSecondReplName, SDI_REPLICATION_NAME_MAX_SIZE + 1);
+                sIsSecondBackupDataSync = ID_FALSE;
+                sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
+            }
+            else if ( sdi::isSameNode(sToReplicaSetPtr->mSecondBackupNodeName, sFromNodeName) == ID_TRUE )
+            {
+                SDI_SET_NULL_NAME(sSecondBackupReplicationName);
+                sIsSecondBackupDataSync = ID_FALSE;
+                sIsFromNodeTruncate = ID_FALSE;
+            }
+            else
+            {
+                idlOS::snprintf(sSecondBackupReplicationName,
+                                SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                                "%s#%s#SB",                   /* nodename size = 10 *2 , + # + # + SB => 24 */
+                                sFromNodeName,
+                                sToReplicaSetPtr->mSecondBackupNodeName);
+                sIsSecondBackupDataSync = ID_TRUE;
+            }
+        }
+
+        /* 8. correct truncate flag: exception situation by k-safey and count of nodes and clone resharding */
+        if ( sParseTree->mDDLType == SHARD_MOVE_TO_INTERNAL_CLONE_COPY )
+        {
+            sIsFromNodeTruncate = ID_FALSE;
+            sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
             sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
         }
-    }
+        else
+        {
+            if ( ( sIsFirstBackupOfFromNodeTruncate == ID_TRUE ) &&
+                 ( SDI_IS_NULL_NAME(sFromReplicaSetPtr->mFirstBackupNodeName) == ID_TRUE ) )
+            {
+                sIsFirstBackupOfFromNodeTruncate = ID_FALSE;
+            }
 
-    IDE_DASSERT(SDI_IS_NULL_NAME(sFromNodeName) != ID_TRUE);
+            if ( ( sIsSecondBackupOfFromNodeTruncate == ID_TRUE ) &&
+                 ( SDI_IS_NULL_NAME(sFromReplicaSetPtr->mSecondBackupNodeName) == ID_TRUE ) )
+            {
+                sIsSecondBackupOfFromNodeTruncate = ID_FALSE;
+            }
+        }
+
+        IDE_DASSERT(SDI_IS_NULL_NAME(sFromNodeName) != ID_TRUE);
+
+    }
 
     /* start resharding operation */
     IDE_TEST( sdi::checkShardLinker( aStatement ) != IDE_SUCCESS );
@@ -3279,6 +4120,73 @@ IDE_RC qdsd::executeShardMove( qcStatement * aStatement )
                                 sSqlStr,
                                 QD_MAX_SQL_LENGTH,
                                 "exec dbms_shard.set_ReplicaSCN()") != IDE_SUCCESS );
+
+    /* Dealloc에서 Alloc 하는 경우 garbage Table을 Truncate 해야 한다. */
+    if ( sIsDealloc == ID_TRUE )
+    {
+        /* ToNoNode의 LOCAL/FirstBackup/SecondBackup의 Table Data도 Truncate 대상이다. */
+        if ( idlOS::strncmp( sToNodeName,
+                             SDM_NA_STR,
+                             SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+        {
+            IDE_TEST( truncateAllPrimaryData( aStatement,
+                                              sSqlStr,
+                                              QD_MAX_SQL_LENGTH,
+                                              sToNodeName,
+                                              sParseTree->mReShardAttr,
+                                              ZK_PENDING_JOB_NONE ) != IDE_SUCCESS );
+        }
+
+        if ( idlOS::strncmp( sToReplicaSetPtr->mFirstBackupNodeName,
+                             SDM_NA_STR,
+                             SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+        {
+            IDE_TEST( truncateAllPrimaryData( aStatement,
+                                              sSqlStr,
+                                              QD_MAX_SQL_LENGTH,
+                                              sToReplicaSetPtr->mFirstBackupNodeName,
+                                              sParseTree->mReShardAttr,
+                                              ZK_PENDING_JOB_NONE ) != IDE_SUCCESS );
+        }
+
+        if ( idlOS::strncmp( sToReplicaSetPtr->mSecondBackupNodeName,
+                             SDM_NA_STR,
+                             SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+        {
+            IDE_TEST( truncateAllPrimaryData( aStatement,
+                                              sSqlStr,
+                                              QD_MAX_SQL_LENGTH,
+                                              sToReplicaSetPtr->mSecondBackupNodeName,
+                                              sParseTree->mReShardAttr,
+                                              ZK_PENDING_JOB_NONE ) != IDE_SUCCESS );
+        }
+
+        /* ToNode의 LOCAL/FirstBackup/SecondBackup의 BAK Table 모두 Truncate 대상이다.
+         * LOCAL는 DEALLOC이 아닐때에도 하고 있으므로 여기서 안함. */
+        if ( idlOS::strncmp( sToReplicaSetPtr->mFirstBackupNodeName,
+                             SDM_NA_STR,
+                             SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+        {
+            IDE_TEST( truncateAllBackupData( aStatement,
+                                             sSqlStr,
+                                             QD_MAX_SQL_LENGTH,
+                                             sToReplicaSetPtr->mFirstBackupNodeName,
+                                             sParseTree->mReShardAttr,
+                                             ZK_PENDING_JOB_NONE ) != IDE_SUCCESS );
+        }
+
+        if ( idlOS::strncmp( sToReplicaSetPtr->mSecondBackupNodeName,
+                             SDM_NA_STR,
+                             SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+        {
+            IDE_TEST( truncateAllBackupData( aStatement,
+                                             sSqlStr,
+                                             QD_MAX_SQL_LENGTH,
+                                             sToReplicaSetPtr->mSecondBackupNodeName,
+                                             sParseTree->mReShardAttr,
+                                             ZK_PENDING_JOB_NONE ) != IDE_SUCCESS );
+        }
+    }
 
     /* replicaset move
      * logical move: the replicaset of resharding item move to replicaset of tonode through updating replicaset id: it was updated when reset_shard_partition(resident)_node execute
@@ -3837,27 +4745,42 @@ IDE_RC qdsd::executeZookeeperDrop( qcStatement * aQcStmt )
 
     qdShardParseTree * sParseTree = (qdShardParseTree *)aQcStmt->myPlan->parseTree;
 
-    if( QC_IS_NULL_NAME( sParseTree->mNodeName ) == ID_TRUE )
+    if ( sParseTree->mDDLType == SHARD_DROP )
     {
-        /* 구문에 노드 이름이 없다면 내 노드를 제거한다. */
-        IDE_TEST( sdiZookeeper::dropNode( sdiZookeeper::mMyNodeName ) != IDE_SUCCESS );
+        if( QC_IS_NULL_NAME( sParseTree->mNodeName ) == ID_TRUE )
+        {
+            /* 구문에 노드 이름이 없다면 내 노드를 제거한다. */
+            IDE_TEST( sdiZookeeper::dropNode( sdiZookeeper::mMyNodeName, ID_FALSE ) != IDE_SUCCESS );
+        }
+        else
+        {
+            /* 구문에 노드 이름이 있다면 해당 노드를 제거한다. */
+            QC_STR_COPY( sNodeName, sParseTree->mNodeName );
+
+            IDE_TEST( sdiZookeeper::dropNode( sNodeName, ID_FALSE ) != IDE_SUCCESS );
+        }
+
+        /* drop하려고 하는 노드에 새 session이 달라붙지 못하게 막아야 한다. */
+        idp::update( NULL, "SHARD_ADMIN_MODE", (ULong)1, 0, NULL );
+        sdi::setShardStatus(0); // SHARD_STATUS 1 -> 0
+
+        /* 기존에 연결되어있던 session을 정리한다. */
+        IDE_TEST_RAISE( sdi::closeSessionForShardDrop( aQcStmt ) != IDE_SUCCESS, errSessionClose );
+
+        /* unsetShardNodeID는 commit된 후에 수행되어야 하므로 sdiZookeeper::callAfterCommitFunc에서 수행한다. */
     }
     else
     {
-        /* 구문에 노드 이름이 있다면 해당 노드를 제거한다. */
+        IDE_DASSERT( sParseTree->mDDLType == SHARD_DROP_FORCE );
+
+        /* Drop Force 일 경우 NodeName이 지정되지 않으면 Validation에서 튕긴다. */
         QC_STR_COPY( sNodeName, sParseTree->mNodeName );
 
-        IDE_TEST( sdiZookeeper::dropNode( sNodeName ) != IDE_SUCCESS );
+        IDE_TEST( sdiZookeeper::dropNode( sNodeName, ID_TRUE ) != IDE_SUCCESS );
+
+        /* Drop Force는 이미 Failover가 수행된 Node를 대상으로만 수행하기 때문에
+         * Local Session 정리 하면 안된다. */
     }
-
-    /* drop하려고 하는 노드에 새 session이 달라붙지 못하게 막아야 한다. */
-    idp::update( NULL, "SHARD_ADMIN_MODE", (ULong)1, 0, NULL );
-    sdi::setShardStatus(0); // SHARD_STATUS 1 -> 0
-
-    /* 기존에 연결되어있던 session을 정리한다. */
-    IDE_TEST_RAISE( sdi::closeSessionForShardDrop( aQcStmt ) != IDE_SUCCESS, errSessionClose );
-
-    /* unsetShardNodeID는 commit된 후에 수행되어야 하므로 sdiZookeeper::callAfterCommitFunc에서 수행한다. */
 
     return IDE_SUCCESS;
 
@@ -3867,8 +4790,6 @@ IDE_RC qdsd::executeZookeeperDrop( qcStatement * aQcStmt )
         idp::update( NULL, "SHARD_ADMIN_MODE", (ULong)0, 0, NULL );
     }
     IDE_EXCEPTION_END;
-
-    sdiZookeeper::releaseZookeeperMetaLock();
 
     return IDE_FAILURE;
 }
@@ -4544,7 +5465,7 @@ IDE_RC qdsd::searchAndRunReplicaSet( qcStatement       * aStatement,
                     break;
                 case QDSD_REPL_QUERY_TYPE_START:
                     // sender
-                    IDE_TEST( startReplicationForInternal(
+                    IDE_TEST( syncReplicationForInternal(
                                   aStatement,
                                   aReplicaSetInfo->mReplicaSets->mFirstReplFromNodeName,
                                   aReplicaSetInfo->mReplicaSets->mFirstReplName )
@@ -4678,7 +5599,7 @@ IDE_RC qdsd::searchAndRunReplicaSet( qcStatement       * aStatement,
                     break;
                 case QDSD_REPL_QUERY_TYPE_START:
                     // sender
-                    IDE_TEST( startReplicationForInternal(
+                    IDE_TEST( syncReplicationForInternal(
                                   aStatement,
                                   aReplicaSetInfo->mReplicaSets->mSecondReplFromNodeName,
                                   aReplicaSetInfo->mReplicaSets->mSecondReplName )
@@ -5175,6 +6096,64 @@ IDE_RC qdsd::startReplicationForInternal( qcStatement * aStatement,
                                    QCI_STMT_MASK_DCL,
                                    sSqlStr,
                                    QD_MAX_SQL_LENGTH,
+                                   "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" START ",
+                                   aReplName )
+                  != IDE_SUCCESS );
+    }
+    else
+    {
+        IDE_TEST( sdi::checkShardLinker( aStatement ) != IDE_SUCCESS );
+
+        if ( aStatement->session->mQPSpecific.mClientInfo != NULL )
+        {
+            IDE_TEST( executeRemoteSQL( aStatement, 
+                                        aNodeName,
+                                        sInternalOP,
+                                        QCI_STMT_MASK_DCL,
+                                        sSqlStr,
+                                        QD_MAX_SQL_LENGTH,
+                                        "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" START ",
+                                        aReplName )
+                      != IDE_SUCCESS);
+        }
+    }
+    
+    ideLog::log(IDE_SD_17,"[SHARD INTERNAL SQL]: %s, %s",aNodeName, sSqlStr);
+    
+    return IDE_SUCCESS;
+    
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+}
+
+IDE_RC qdsd::syncReplicationForInternal( qcStatement * aStatement,
+                                          SChar       * aNodeName,
+                                          SChar       * aReplName )
+{
+    sdiLocalMetaInfo    sLocalMetaInfo;
+    SChar               sSqlStr[QD_MAX_SQL_LENGTH + 1];
+
+    sdiInternalOperation sInternalOP = SDI_INTERNAL_OP_NORMAL;
+
+    if( qci::mSessionCallback.mGetShardInternalLocalOperation( aStatement->session->mMmSession ) 
+        == SDI_INTERNAL_OP_FAILBACK )
+    {
+        sInternalOP = SDI_INTERNAL_OP_FAILBACK;
+    }
+    
+    // LOCAL_META_INFO
+    IDE_TEST( sdi::getLocalMetaInfo( &sLocalMetaInfo ) 
+              != IDE_SUCCESS );
+
+    if ( idlOS::strncmp( sLocalMetaInfo.mNodeName, 
+                         aNodeName,
+                         SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+    {
+        IDE_TEST( executeLocalSQL( aStatement, 
+                                   QCI_STMT_MASK_DCL,
+                                   sSqlStr,
+                                   QD_MAX_SQL_LENGTH,
                                    "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" SYNC PARALLEL %"ID_UINT32_FMT,
                                    aReplName,
                                    sLocalMetaInfo.mParallelCount )
@@ -5207,6 +6186,8 @@ IDE_RC qdsd::startReplicationForInternal( qcStatement * aStatement,
 
     return IDE_FAILURE;
 }
+
+
 
 IDE_RC qdsd::truncateBackupTable( qcStatement * aStatement )
 {
@@ -6244,7 +7225,11 @@ IDE_RC qdsd::executeRemoteSQL( qcStatement         * aStatement,
                                                     0,
                                                     NULL )
                               != IDE_SUCCESS );
-                    IDE_TEST_RAISE( sExecCount != 1, ERR_REMOTE_EXECUTION );
+
+                    if ( aInternalOP <= SDI_INTERNAL_OP_NORMAL ) 
+                    {
+                        IDE_TEST_RAISE( sExecCount != 1, ERR_REMOTE_EXECUTION );
+                    }
                     IDE_TEST( sSmiStmt.begin( aStatement->mStatistics,
                                               spRootStmt,
                                               sSmiStmtFlag )
@@ -6332,7 +7317,10 @@ IDE_RC qdsd::executeRemoteSQL( qcStatement         * aStatement,
                                         0,
                                         NULL )
                     != IDE_SUCCESS );
-        IDE_TEST_RAISE( sExecCount != 1 , ERR_REMOTE_EXECUTION );
+        if ( aInternalOP <= SDI_INTERNAL_OP_NORMAL ) 
+        {
+            IDE_TEST_RAISE( sExecCount != 1 , ERR_REMOTE_EXECUTION );
+        }
     }
 
     ideLog::log(IDE_SD_17,"[SHARD_META] executeRemoteSQL Success: %s", aSQLBuf);
@@ -6453,13 +7441,19 @@ IDE_RC qdsd::lockAllRemoteReshardTables( qcStatement * aStatement,
     {
         sIsCancel = ID_FALSE;
         sIsLockAcquired = ID_FALSE;
-        IDE_TEST( executeRemoteSQL( aStatement, 
-                                    aFromNodeName,
-                                    SDI_INTERNAL_OP_NORMAL,
-                                    QCI_STMT_MASK_DCL,
-                                    aSQLBuf,
-                                    aSQLBufSize,
-                                    "SAVEPOINT __RESHARD_SVP0") != IDE_SUCCESS);
+
+        if ( idlOS::strncmp( aFromNodeName,
+                             SDI_NODE_DEALLOC_NAME,
+                             SDI_NODE_NAME_MAX_SIZE ) != 0 )
+        {
+            IDE_TEST( executeRemoteSQL( aStatement, 
+                                        aFromNodeName,
+                                        SDI_INTERNAL_OP_NORMAL,
+                                        QCI_STMT_MASK_DCL,
+                                        aSQLBuf,
+                                        aSQLBufSize,
+                                        "SAVEPOINT __RESHARD_SVP0") != IDE_SUCCESS);
+        }
 
         if ( SDI_IS_NULL_NAME(aToNodeName) != ID_TRUE )
         {
@@ -6485,23 +7479,28 @@ IDE_RC qdsd::lockAllRemoteReshardTables( qcStatement * aStatement,
                 {
                     QC_STR_COPY(sPartitionName, sReShardAttr->mPartitionName);
                     /* acquire table lock to fromnode */
-                    if( executeRemoteSQL( aStatement,
-                                          aFromNodeName,
-                                          SDI_INTERNAL_OP_NORMAL,
-                                          QCI_STMT_MASK_DML,
-                                          aSQLBuf,
-                                          aSQLBufSize,
-                                          "LOCK TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" IN EXCLUSIVE MODE WAIT %"ID_UINT32_FMT,
-                                          //"LOCK TABLE %s.%s PARTITION (%s) IN EXCLUSIVE MODE WAIT %"ID_UINT32_FMT,
-                                          sUserName,
-                                          sTableName,
-                                          //sPartitionName,
-                                          sRemoteLockTimeout
-                                        ) != IDE_SUCCESS )
+                    if ( idlOS::strncmp( aFromNodeName,
+                                         SDI_NODE_DEALLOC_NAME,
+                                         SDI_NODE_NAME_MAX_SIZE ) != 0 )
                     {
-                        /* cancel retry */
-                        sIsCancel = ID_TRUE;
-                        break;
+                        if( executeRemoteSQL( aStatement,
+                                              aFromNodeName,
+                                              SDI_INTERNAL_OP_NORMAL,
+                                              QCI_STMT_MASK_DML,
+                                              aSQLBuf,
+                                              aSQLBufSize,
+                                              "LOCK TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" IN EXCLUSIVE MODE WAIT %"ID_UINT32_FMT,
+                                              //"LOCK TABLE %s.%s PARTITION (%s) IN EXCLUSIVE MODE WAIT %"ID_UINT32_FMT,
+                                              sUserName,
+                                              sTableName,
+                                              //sPartitionName,
+                                              sRemoteLockTimeout
+                                            ) != IDE_SUCCESS )
+                        {
+                            /* cancel retry */
+                            sIsCancel = ID_TRUE;
+                            break;
+                        }
                     }
                     if ( SDI_IS_NULL_NAME(aToNodeName) != ID_TRUE )
                     {
@@ -6527,22 +7526,27 @@ IDE_RC qdsd::lockAllRemoteReshardTables( qcStatement * aStatement,
                 }
                 else /* PartitionName IS NULL : solo table */
                 {
-                    /* acquire table lock to fromnode */
-                    if( executeRemoteSQL( aStatement,
-                                          aFromNodeName,
-                                          SDI_INTERNAL_OP_NORMAL,
-                                          QCI_STMT_MASK_DML,
-                                          aSQLBuf,
-                                          aSQLBufSize,
-                                          "LOCK TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" IN EXCLUSIVE MODE WAIT %"ID_UINT32_FMT,
-                                          sUserName,
-                                          sTableName,
-                                          sRemoteLockTimeout
-                                        ) != IDE_SUCCESS )
+                    if ( idlOS::strncmp( aFromNodeName,
+                                         SDI_NODE_DEALLOC_NAME,
+                                         SDI_NODE_NAME_MAX_SIZE ) != 0 )
                     {
-                        /* cancel retry */
-                        sIsCancel = ID_TRUE;
-                        break;
+                        /* acquire table lock to fromnode */
+                        if( executeRemoteSQL( aStatement,
+                                              aFromNodeName,
+                                              SDI_INTERNAL_OP_NORMAL,
+                                              QCI_STMT_MASK_DML,
+                                              aSQLBuf,
+                                              aSQLBufSize,
+                                              "LOCK TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" IN EXCLUSIVE MODE WAIT %"ID_UINT32_FMT,
+                                              sUserName,
+                                              sTableName,
+                                              sRemoteLockTimeout
+                                            ) != IDE_SUCCESS )
+                        {
+                            /* cancel retry */
+                            sIsCancel = ID_TRUE;
+                            break;
+                        }
                     }
                     if ( SDI_IS_NULL_NAME(aToNodeName) != ID_TRUE )
                     {
@@ -6573,13 +7577,18 @@ IDE_RC qdsd::lockAllRemoteReshardTables( qcStatement * aStatement,
         }
         if ( sIsCancel == ID_TRUE )
         {
-            IDE_TEST( executeRemoteSQL( aStatement, 
-                                        aFromNodeName,
-                                        SDI_INTERNAL_OP_NORMAL,
-                                        QCI_STMT_MASK_DCL,
-                                        aSQLBuf,
-                                        aSQLBufSize,
-                                        "ROLLBACK TO SAVEPOINT __RESHARD_SVP0") != IDE_SUCCESS );
+            if ( idlOS::strncmp( aFromNodeName,
+                                 SDI_NODE_DEALLOC_NAME,
+                                 SDI_NODE_NAME_MAX_SIZE ) != 0 )
+            {
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            aFromNodeName,
+                                            SDI_INTERNAL_OP_NORMAL,
+                                            QCI_STMT_MASK_DCL,
+                                            aSQLBuf,
+                                            aSQLBufSize,
+                                            "ROLLBACK TO SAVEPOINT __RESHARD_SVP0") != IDE_SUCCESS );
+            }
             if ( SDI_IS_NULL_NAME(aToNodeName) != ID_TRUE )
             {
                 IDE_TEST( executeRemoteSQL( aStatement, 
@@ -6609,13 +7618,18 @@ IDE_RC qdsd::lockAllRemoteReshardTables( qcStatement * aStatement,
     IDE_EXCEPTION_END;
 
     IDE_PUSH();
-    (void)executeRemoteSQL( aStatement, 
-                            aFromNodeName,
-                            SDI_INTERNAL_OP_NORMAL,
-                            QCI_STMT_MASK_DCL,
-                            aSQLBuf,
-                            aSQLBufSize,
-                            "ROLLBACK TO SAVEPOINT __RESHARD_SVP0" );
+    if ( idlOS::strncmp( aFromNodeName,
+                         SDI_NODE_DEALLOC_NAME,
+                         SDI_NODE_NAME_MAX_SIZE ) != 0 )
+    {
+        (void)executeRemoteSQL( aStatement, 
+                                aFromNodeName,
+                                SDI_INTERNAL_OP_NORMAL,
+                                QCI_STMT_MASK_DCL,
+                                aSQLBuf,
+                                aSQLBufSize,
+                                "ROLLBACK TO SAVEPOINT __RESHARD_SVP0" );
+    }
     if ( SDI_IS_NULL_NAME(aToNodeName) != ID_TRUE )
     {
         (void)executeRemoteSQL( aStatement, 
@@ -6724,18 +7738,23 @@ IDE_RC qdsd::resetShardMetaAndSwapPartition( qcStatement * aStatement,
                         }
                     }
 
-                    IDE_TEST( executeRemoteSQL( aStatement,
-                                                aFromNodeName,
-                                                SDI_INTERNAL_OP_NORMAL,
-                                                QCI_STMT_MASK_DDL,
-                                                aSQLBuf,
-                                                aSQLBufSize,
-                                                "ALTER TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" REPLACE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" PARTITION "QCM_SQL_STRING_SKIP_FMT"",
-                                                sUserName,
-                                                sBufferNameStr,
-                                                sUserName,
-                                                sTableName,
-                                                sPartitionName ) != IDE_SUCCESS );
+                    if ( idlOS::strncmp( aFromNodeName,
+                                         SDI_NODE_DEALLOC_NAME,
+                                         SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+                    {
+                        IDE_TEST( executeRemoteSQL( aStatement,
+                                                    aFromNodeName,
+                                                    SDI_INTERNAL_OP_NORMAL,
+                                                    QCI_STMT_MASK_DDL,
+                                                    aSQLBuf,
+                                                    aSQLBufSize,
+                                                    "ALTER TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" REPLACE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" PARTITION "QCM_SQL_STRING_SKIP_FMT"",
+                                                    sUserName,
+                                                    sBufferNameStr,
+                                                    sUserName,
+                                                    sTableName,
+                                                    sPartitionName ) != IDE_SUCCESS );
+                    }
                     if ( SDI_IS_NULL_NAME(aToNodeName) != ID_TRUE )
                     {
                         /* ToNode: ALTER TABLE L1_REBUILD REPLACE L1 PARTITION P41 */
@@ -6789,17 +7808,22 @@ IDE_RC qdsd::resetShardMetaAndSwapPartition( qcStatement * aStatement,
                         }
                     }
 
-                    IDE_TEST( executeRemoteSQL( aStatement,
-                                                aFromNodeName,
-                                                SDI_INTERNAL_OP_NORMAL,
-                                                QCI_STMT_MASK_DDL,
-                                                aSQLBuf,
-                                                aSQLBufSize,
-                                                "ALTER TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" REPLACE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT"",
-                                                sUserName,
-                                                sBufferNameStr,
-                                                sUserName,
-                                                sTableName) != IDE_SUCCESS );
+                    if ( idlOS::strncmp( aFromNodeName,
+                                         SDI_NODE_DEALLOC_NAME,
+                                         SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+                    {
+                        IDE_TEST( executeRemoteSQL( aStatement,
+                                                    aFromNodeName,
+                                                    SDI_INTERNAL_OP_NORMAL,
+                                                    QCI_STMT_MASK_DDL,
+                                                    aSQLBuf,
+                                                    aSQLBufSize,
+                                                    "ALTER TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" REPLACE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT"",
+                                                    sUserName,
+                                                    sBufferNameStr,
+                                                    sUserName,
+                                                    sTableName) != IDE_SUCCESS );
+                    }
                     if ( SDI_IS_NULL_NAME(aToNodeName) != ID_TRUE )
                     {
                         /* ToNode: ALTER TABLE S1_REBUILD REPLACE S1 */
@@ -6859,15 +7883,20 @@ IDE_RC qdsd::resetShardMetaAndSwapPartition( qcStatement * aStatement,
                         }
                     }
 
-                    IDE_TEST( executeRemoteSQL( aStatement, 
-                                                aFromNodeName,
-                                                SDI_INTERNAL_OP_NORMAL,
-                                                QCI_STMT_MASK_DDL,
-                                                aSQLBuf,
-                                                aSQLBufSize,
-                                                "ALTER TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" TOUCH",
-                                                sUserName, 
-                                                sTableName ) != IDE_SUCCESS );
+                    if ( idlOS::strncmp( aFromNodeName,
+                                         SDI_NODE_DEALLOC_NAME,
+                                         SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 )
+                    {
+                        IDE_TEST( executeRemoteSQL( aStatement, 
+                                                    aFromNodeName,
+                                                    SDI_INTERNAL_OP_NORMAL,
+                                                    QCI_STMT_MASK_DDL,
+                                                    aSQLBuf,
+                                                    aSQLBufSize,
+                                                    "ALTER TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" TOUCH",
+                                                    sUserName, 
+                                                    sTableName ) != IDE_SUCCESS );
+                    }
                     if ( SDI_IS_NULL_NAME(aToNodeName) != ID_TRUE )
                     {
                         /* ToNode: ALTER TABLE S1_REBUILD REPLACE S1 */
@@ -7195,43 +8224,48 @@ IDE_RC qdsd::moveReplication( qcStatement * aStatement,
                         {
                             break;
                         }
-                                
-                        /* This function should only be called when there is something to be moved. */
-                        IDE_TEST_RAISE( SDI_IS_NULL_NAME(sBeforeFromNodeName[k]) == ID_TRUE, ERR_REPLICA_SET );
-                        IDE_TEST( executeRemoteSQL( aStatement,
-                                                    sBeforeFromNodeName[k],
-                                                    SDI_INTERNAL_OP_NORMAL,
-                                                    QCI_STMT_MASK_DDL,
-                                                    aSQLBuf,
-                                                    aSQLBufSize,
-                                                    "alter replication "QCM_SQL_STRING_SKIP_FMT" drop table from "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" partition "QCM_SQL_STRING_SKIP_FMT" "
-                                                    "to "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" partition "QCM_SQL_STRING_SKIP_FMT"",
-                                                    sBeforeRepName[k],
-                                                    sUserName,
-                                                    sTableName,
-                                                    sPartitionName,
-                                                    sUserName,
-                                                    sBufferNameStr,
-                                                    sPartitionName )
-                                    != IDE_SUCCESS );
 
-                        IDE_TEST_RAISE( SDI_IS_NULL_NAME(sBeforeToNodeName[k]) == ID_TRUE, ERR_REPLICA_SET );
-                        IDE_TEST( executeRemoteSQL( aStatement,
-                                                    sBeforeToNodeName[k],
-                                                    SDI_INTERNAL_OP_NORMAL,
-                                                    QCI_STMT_MASK_DDL,
-                                                    aSQLBuf,
-                                                    aSQLBufSize,
-                                                    "alter replication "QCM_SQL_STRING_SKIP_FMT" drop table from "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" partition "QCM_SQL_STRING_SKIP_FMT" "
-                                                    "to "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" partition "QCM_SQL_STRING_SKIP_FMT"",
-                                                    sBeforeRepName[k],
-                                                    sUserName,
-                                                    sBufferNameStr,
-                                                    sPartitionName,
-                                                    sUserName,
-                                                    sTableName,
-                                                    sPartitionName )
-                                    != IDE_SUCCESS );
+                        /* DEALLOC은 FROM이 없다. */
+                        if ( aFromReplicaSet->mReplicaSetId != SDI_REPLICASET_NULL_ID )
+                        {
+                            /* This function should only be called when there is something to be moved. */
+                            IDE_TEST_RAISE( SDI_IS_NULL_NAME(sBeforeFromNodeName[k]) == ID_TRUE, ERR_REPLICA_SET );
+                            IDE_TEST( executeRemoteSQL( aStatement,
+                                                        sBeforeFromNodeName[k],
+                                                        SDI_INTERNAL_OP_NORMAL,
+                                                        QCI_STMT_MASK_DDL,
+                                                        aSQLBuf,
+                                                        aSQLBufSize,
+                                                        "alter replication "QCM_SQL_STRING_SKIP_FMT" drop table from "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" partition "QCM_SQL_STRING_SKIP_FMT" "
+                                                        "to "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" partition "QCM_SQL_STRING_SKIP_FMT"",
+                                                        sBeforeRepName[k],
+                                                        sUserName,
+                                                        sTableName,
+                                                        sPartitionName,
+                                                        sUserName,
+                                                        sBufferNameStr,
+                                                        sPartitionName )
+                                        != IDE_SUCCESS );
+
+                            IDE_TEST_RAISE( SDI_IS_NULL_NAME(sBeforeToNodeName[k]) == ID_TRUE, ERR_REPLICA_SET );
+                            IDE_TEST( executeRemoteSQL( aStatement,
+                                                        sBeforeToNodeName[k],
+                                                        SDI_INTERNAL_OP_NORMAL,
+                                                        QCI_STMT_MASK_DDL,
+                                                        aSQLBuf,
+                                                        aSQLBufSize,
+                                                        "alter replication "QCM_SQL_STRING_SKIP_FMT" drop table from "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" partition "QCM_SQL_STRING_SKIP_FMT" "
+                                                        "to "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" partition "QCM_SQL_STRING_SKIP_FMT"",
+                                                        sBeforeRepName[k],
+                                                        sUserName,
+                                                        sBufferNameStr,
+                                                        sPartitionName,
+                                                        sUserName,
+                                                        sTableName,
+                                                        sPartitionName )
+                                        != IDE_SUCCESS );
+
+                        }
 
                         if ( SDI_IS_NULL_NAME(sAfterFromNodeName[k]) != ID_TRUE ) /* toreplicaset has N/A in REMOVE syntax */
                         {
@@ -7275,38 +8309,44 @@ IDE_RC qdsd::moveReplication( qcStatement * aStatement,
                 case SDI_SOLO_DIST_OBJECT:
                     for (k = 1; k <= aKSafety; k++ )
                     {
-                        /* This function should only be called when there is something to be moved. */
-                        IDE_TEST_RAISE( SDI_IS_NULL_NAME(sBeforeFromNodeName[k]) == ID_TRUE, ERR_REPLICA_SET );
-                        IDE_TEST( executeRemoteSQL( aStatement,
-                                                    sBeforeFromNodeName[k],
-                                                    SDI_INTERNAL_OP_NORMAL,
-                                                    QCI_STMT_MASK_DDL,
-                                                    aSQLBuf,
-                                                    aSQLBufSize,
-                                                    "alter replication "QCM_SQL_STRING_SKIP_FMT" drop table from "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" "
-                                                    "to "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT"",
-                                                    sBeforeRepName[k],
-                                                    sUserName,
-                                                    sTableName,
-                                                    sUserName,
-                                                    sBufferNameStr )
-                                    != IDE_SUCCESS );
+                        /* DEALLOC은 FROM이 없다. */
+                        if ( aFromReplicaSet->mReplicaSetId != SDI_REPLICASET_NULL_ID )
+                        {
 
-                        IDE_TEST_RAISE( SDI_IS_NULL_NAME(sBeforeToNodeName[k]) == ID_TRUE, ERR_REPLICA_SET );
-                        IDE_TEST( executeRemoteSQL( aStatement,
-                                                    sBeforeToNodeName[k],
-                                                    SDI_INTERNAL_OP_NORMAL,
-                                                    QCI_STMT_MASK_DDL,
-                                                    aSQLBuf,
-                                                    aSQLBufSize,
-                                                    "alter replication "QCM_SQL_STRING_SKIP_FMT" drop table from "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" "
-                                                    "to "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT"",
-                                                    sBeforeRepName[k],
-                                                    sUserName,
-                                                    sBufferNameStr,
-                                                    sUserName,
-                                                    sTableName ) //check
-                                    != IDE_SUCCESS );
+                            /* This function should only be called when there is something to be moved. */
+                            IDE_TEST_RAISE( SDI_IS_NULL_NAME(sBeforeFromNodeName[k]) == ID_TRUE, ERR_REPLICA_SET );
+                            IDE_TEST( executeRemoteSQL( aStatement,
+                                                        sBeforeFromNodeName[k],
+                                                        SDI_INTERNAL_OP_NORMAL,
+                                                        QCI_STMT_MASK_DDL,
+                                                        aSQLBuf,
+                                                        aSQLBufSize,
+                                                        "alter replication "QCM_SQL_STRING_SKIP_FMT" drop table from "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" "
+                                                        "to "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT"",
+                                                        sBeforeRepName[k],
+                                                        sUserName,
+                                                        sTableName,
+                                                        sUserName,
+                                                        sBufferNameStr )
+                                        != IDE_SUCCESS );
+
+                            IDE_TEST_RAISE( SDI_IS_NULL_NAME(sBeforeToNodeName[k]) == ID_TRUE, ERR_REPLICA_SET );
+                            IDE_TEST( executeRemoteSQL( aStatement,
+                                                        sBeforeToNodeName[k],
+                                                        SDI_INTERNAL_OP_NORMAL,
+                                                        QCI_STMT_MASK_DDL,
+                                                        aSQLBuf,
+                                                        aSQLBufSize,
+                                                        "alter replication "QCM_SQL_STRING_SKIP_FMT" drop table from "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" "
+                                                        "to "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT"",
+                                                        sBeforeRepName[k],
+                                                        sUserName,
+                                                        sBufferNameStr,
+                                                        sUserName,
+                                                        sTableName ) //check
+                                        != IDE_SUCCESS );
+
+                        }
 
                         if( SDI_IS_NULL_NAME(sAfterFromNodeName[k]) != ID_TRUE )
                         {
@@ -7489,6 +8529,123 @@ IDE_RC qdsd::truncateAllBackupData( qcStatement * aStatement,
 
     return IDE_FAILURE;
 }
+
+IDE_RC qdsd::truncateAllPrimaryData( qcStatement * aStatement,
+                                    SChar * aSQLBuf,
+                                    UInt    aSQLBufSize,
+                                    SChar * aNodeName,
+                                    qdReShardAttribute * aReShardAttr,
+                                    ZKPendingJobType  aPendingJobType )
+{
+    qdReShardAttribute * sReShardAttr = NULL;
+    SChar                sUserName[QC_MAX_OBJECT_NAME_LEN] = {0,};
+    SChar                sTableName[QC_MAX_OBJECT_NAME_LEN] = {0,};
+    SChar                sPartitionName[QC_MAX_OBJECT_NAME_LEN] = {0,};
+    sdiShardObjectType   sShardTableType = SDI_NON_SHARD_OBJECT;
+    SChar                sBufferNameStr[QC_MAX_OBJECT_NAME_LEN + 1];
+    
+    for ( sReShardAttr = aReShardAttr;
+          sReShardAttr != NULL;
+          sReShardAttr = sReShardAttr->next )
+    {
+        IDE_DASSERT(QC_IS_NULL_NAME(sReShardAttr->mUserName) != ID_TRUE);
+        IDE_DASSERT(sReShardAttr->mShardObjectInfo != NULL);
+        if(sReShardAttr->mObjectType == 'T')
+        {
+            QC_STR_COPY(sUserName, sReShardAttr->mUserName);
+            QC_STR_COPY(sTableName, sReShardAttr->mObjectName);
+            sShardTableType = sdi::getShardObjectType(&sReShardAttr->mShardObjectInfo->mTableInfo );
+
+            idlOS::snprintf( sBufferNameStr,
+                             QC_MAX_OBJECT_NAME_LEN + 1,
+                             "%s",
+                             sTableName );
+
+            switch (sShardTableType)
+            {
+                case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
+                    IDE_DASSERT( QC_IS_NULL_NAME(sReShardAttr->mPartitionName) != ID_TRUE );
+                    QC_STR_COPY(sPartitionName, sReShardAttr->mPartitionName);
+                    if ( aPendingJobType == ZK_PENDING_JOB_NONE )
+                    {
+                        /* no pending job, immediately execute to remote */
+                        IDE_TEST( executeRemoteSQL( aStatement,
+                                                    aNodeName,
+                                                    SDI_INTERNAL_OP_NORMAL,
+                                                    QCI_STMT_MASK_DDL,
+                                                    aSQLBuf,
+                                                    aSQLBufSize,
+                                                    "ALTER TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" TRUNCATE PARTITION "QCM_SQL_STRING_SKIP_FMT"",
+                                                    sUserName,
+                                                    sBufferNameStr,
+                                                    sPartitionName ) != IDE_SUCCESS );
+                    }
+                    else
+                    {
+                        idlOS::snprintf(aSQLBuf,
+                                        aSQLBufSize,
+                                        "ALTER TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT" TRUNCATE PARTITION "QCM_SQL_STRING_SKIP_FMT"",
+                                        sUserName,
+                                        sBufferNameStr,
+                                        sPartitionName);
+                        
+                        sdiZookeeper::addPendingJob(aSQLBuf,
+                                                    aNodeName,
+                                                    aPendingJobType,
+                                                    QCI_STMT_MASK_MAX );
+                    }
+                    break;
+                case SDI_SOLO_DIST_OBJECT:
+                case SDI_CLONE_DIST_OBJECT:
+                    sShardTableType = sdi::getShardObjectType(&sReShardAttr->mShardObjectInfo->mTableInfo );
+
+                    if ( aPendingJobType == ZK_PENDING_JOB_NONE )
+                    {
+                        /* no pending job, immediately execute to remote */
+                        IDE_TEST( executeRemoteSQL( aStatement,
+                                                    aNodeName,
+                                                    SDI_INTERNAL_OP_NORMAL,
+                                                    QCI_STMT_MASK_DDL,
+                                                    aSQLBuf,
+                                                    aSQLBufSize,
+                                                    "TRUNCATE TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT"",
+                                                    sUserName,
+                                                    sBufferNameStr ) != IDE_SUCCESS );
+                    }
+                    else
+                    {
+                        idlOS::snprintf(aSQLBuf,
+                                        aSQLBufSize,
+                                        "TRUNCATE TABLE "QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT"",
+                                        sUserName,
+                                        sBufferNameStr);
+                        
+                        sdiZookeeper::addPendingJob( aSQLBuf,
+                                                     aNodeName,
+                                                     aPendingJobType,
+                                                     QCI_STMT_MASK_MAX );
+                    }
+                    break;
+                case SDI_NON_SHARD_OBJECT:
+                case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
+                default:
+                    IDE_DASSERT(0);
+                    break;
+            }
+        }
+        else
+        {
+            /* 'P' procedure: do noting */
+        }
+    }
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+}
+
 
 IDE_RC qdsd::isExistBackupDataForAllReshardAttr( qcStatement * aStatement,
                                                  SChar * aNodeName,
@@ -8542,7 +9699,7 @@ IDE_RC qdsd::executeReplicationForJoin( qcStatement * aStatement,
             else
             {
                 // current node replication start
-                IDE_TEST( startReplicationForInternal(
+                IDE_TEST( syncReplicationForInternal(
                               aStatement,
                               sCurrReplicaSetInfo.mReplicaSets[0].mPrimaryNodeName,
                               sCurrReplicaSetInfo.mReplicaSets[0].mFirstReplName )
@@ -8580,7 +9737,7 @@ IDE_RC qdsd::executeReplicationForJoin( qcStatement * aStatement,
                 else
                 {    
                     // current node replication start
-                    IDE_TEST( startReplicationForInternal(
+                    IDE_TEST( syncReplicationForInternal(
                                   aStatement,
                                   sCurrReplicaSetInfo.mReplicaSets[0].mPrimaryNodeName,
                                   sCurrReplicaSetInfo.mReplicaSets[0].mSecondReplName )
@@ -9705,6 +10862,8 @@ IDE_RC qdsd::failbackResetShardMeta( qcStatement        * aStatement,
 
     SChar               sObjectValue[SDI_RANGE_VARCHAR_MAX_PRECISION + 1];
 
+    sdiNode             sNode; 
+
     if ( idlOS::strncmp( aTargetNodeName,
                          aFailbackFromNodeName,
                          SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
@@ -9761,9 +10920,17 @@ IDE_RC qdsd::failbackResetShardMeta( qcStatement        * aStatement,
                                                       sTableInfo->mDefaultPartitionReplicaSetId,
                                                       aTargetNodeName ) == ID_TRUE )
                     {
+                        SDI_INIT_NODE(&sNode);
+                        IDE_TEST( sdm::getNodeByID( QC_SMI_STMT( aStatement ),
+                                                    sTableInfo->mDefaultNodeId,
+                                                    aSMN,
+                                                    &sNode )
+                                  != IDE_SUCCESS );
+
                         /* Send resetShardPartitioinNode to All Alive Node */
                         if ( sTableInfo->mObjectType == 'T' ) /* Table */
                         {
+
                             idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
                                              "exec dbms_shard.reset_shard_partition_node( '"
                                              QCM_SQL_STRING_SKIP_FMT"', '"
@@ -9774,7 +10941,7 @@ IDE_RC qdsd::failbackResetShardMeta( qcStatement        * aStatement,
                                              QCM_SQL_UINT32_FMT") ", // TASK-7307
                                              sTableInfo->mUserName,
                                              sTableInfo->mObjectName,
-                                             aFailbackFromNodeName,
+                                             sNode.mNodeName,
                                              aTargetNodeName,
                                              sTableInfo->mDefaultPartitionName,
                                              SDM_CALLED_BY_SHARD_FAILBACK );
@@ -9792,7 +10959,7 @@ IDE_RC qdsd::failbackResetShardMeta( qcStatement        * aStatement,
                                              QCM_SQL_UINT32_FMT" )",
                                              sTableInfo->mUserName,
                                              sTableInfo->mObjectName,
-                                             aFailbackFromNodeName,
+                                             sNode.mNodeName,
                                              aTargetNodeName,
                                              "",
                                              "",
@@ -9835,6 +11002,13 @@ IDE_RC qdsd::failbackResetShardMeta( qcStatement        * aStatement,
                                                           sRangeInfos.mRanges[j].mReplicaSetId,
                                                           aTargetNodeName ) == ID_TRUE )
                         {
+                            SDI_INIT_NODE(&sNode);
+                            IDE_TEST( sdm::getNodeByID( QC_SMI_STMT( aStatement ),
+                                                        sRangeInfos.mRanges[j].mNodeId,
+                                                        aSMN,
+                                                        &sNode )
+                                      != IDE_SUCCESS );
+
                             switch ( sShardTableType )
                             {
                                 case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
@@ -9852,7 +11026,7 @@ IDE_RC qdsd::failbackResetShardMeta( qcStatement        * aStatement,
                                                          QCM_SQL_UINT32_FMT") ", // TASK-7307
                                                          sTableInfo->mUserName,
                                                          sTableInfo->mObjectName,
-                                                         aFailbackFromNodeName,
+                                                         sNode.mNodeName,
                                                          aTargetNodeName,
                                                          sRangeInfos.mRanges[j].mPartitionName,
                                                          SDM_CALLED_BY_SHARD_FAILBACK );
@@ -9901,7 +11075,7 @@ IDE_RC qdsd::failbackResetShardMeta( qcStatement        * aStatement,
                                                          QCM_SQL_VARCHAR_FMT" )",
                                                          sTableInfo->mUserName,
                                                          sTableInfo->mObjectName,
-                                                         aFailbackFromNodeName,
+                                                         sNode.mNodeName,
                                                          aTargetNodeName,
                                                          sObjectValue,
                                                          "" );
@@ -10432,6 +11606,13 @@ IDE_RC qdsd::failbackOrganizeReverseRP( qcStatement        * aStatement,
 
     sdiLocalMetaInfo  * sNodeMetaInfo = NULL;
 
+    UInt                sExecCount;
+    ULong               sCount = 0;
+
+    SChar               sSqlStr[QD_MAX_SQL_LENGTH + 1];
+
+    idBool              sFetchResult = ID_FALSE;
+
     sParseTree = (qdShardParseTree *)aStatement->myPlan->parseTree;
 
     ideLog::log( IDE_SD_0, "[SHARD_FAILBACK] Start REVERSE REP" );
@@ -10470,105 +11651,83 @@ IDE_RC qdsd::failbackOrganizeReverseRP( qcStatement        * aStatement,
                              SDM_NA_STR,
                              SDI_REPLICATION_NAME_MAX_SIZE + 1 ) != 0 )
         {
-            sNodeMetaInfo = sdiZookeeper::getNodeInfo( sParseTree->mNodeInfoList,
-                                                       aFailbackFromNodeName );
+            /* DROP FORCE의 추가로 ReverseRP가 존재한다고 확신할수 없다.
+             * 확인 해 보고 존재하면 ReverseRP를 처리한다. */
+            idlOS::snprintf( sSqlStr, 
+                             QD_MAX_SQL_LENGTH + 1,
+                             "select Count(*) from system_.sys_replications_ where replication_name='%s' ",
+                             sReverseReplName );
 
-            IDE_TEST( createReverseReplication( aStatement,
-                                                sdiZookeeper::mMyNodeName,
-                                                sReverseReplName,
-                                                sNodeMetaInfo->mNodeName,
-                                                sNodeMetaInfo->mInternalRPHostIP,
-                                                sNodeMetaInfo->mInternalRPPortNo,
-                                                SDI_REPL_RECEIVER )
+            IDE_TEST( sdi::shardExecDirect( aStatement,
+                                            aFailbackFromNodeName,
+                                            (SChar*)sSqlStr,
+                                            (UInt) idlOS::strlen(sSqlStr),
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            &sExecCount,
+                                            &sCount,
+                                            NULL,
+                                            ID_SIZEOF(sCount),
+                                            &sFetchResult )
                       != IDE_SUCCESS );
 
-            ideLog::log(IDE_SD_21,"[SHARD_FAILBACK] Reverser Replication Created : %s", sReverseReplName );
-
-            /* RP Add */
-            for ( sTmpTableInfoList = aTableInfoList;
-                  sTmpTableInfoList != NULL;
-                  sTmpTableInfoList = sTmpTableInfoList->mNext )
+            if ( sCount != 0 )
             {
-                sTableInfo = sTmpTableInfoList->mTableInfo;
-                if ( sTableInfo->mObjectType == 'T' )
+                sNodeMetaInfo = sdiZookeeper::getNodeInfo( sParseTree->mNodeInfoList,
+                                                           aFailbackFromNodeName );
+
+                IDE_TEST( createReverseReplication( aStatement,
+                                                    sdiZookeeper::mMyNodeName,
+                                                    sReverseReplName,
+                                                    sNodeMetaInfo->mNodeName,
+                                                    sNodeMetaInfo->mInternalRPHostIP,
+                                                    sNodeMetaInfo->mInternalRPPortNo,
+                                                    SDI_REPL_RECEIVER )
+                          != IDE_SUCCESS );
+
+                ideLog::log(IDE_SD_21,"[SHARD_FAILBACK] Reverser Replication Created : %s", sReverseReplName );
+
+                /* RP Add */
+                for ( sTmpTableInfoList = aTableInfoList;
+                      sTmpTableInfoList != NULL;
+                      sTmpTableInfoList = sTmpTableInfoList->mNext )
                 {
-                    if ( sTableInfo->mDefaultPartitionReplicaSetId == sReplicaSet->mReplicaSetId )
+                    sTableInfo = sTmpTableInfoList->mTableInfo;
+                    if ( sTableInfo->mObjectType == 'T' )
                     {
-                        IDE_TEST( sdm::addReplTable( aStatement,
-                                                     sdiZookeeper::mMyNodeName,
-                                                     sReverseReplName,
-                                                     sTableInfo->mUserName,
-                                                     sTableInfo->mObjectName,
-                                                     sTableInfo->mDefaultPartitionName,
-                                                     SDM_REPL_CLONE,
-                                                     ID_TRUE )
-                                  != IDE_SUCCESS );
-                    }
-                    /* Range Info Check */
-                    IDE_TEST( sdm::getRangeInfo( aStatement,
-                                                 QC_SMI_STMT( aStatement ),
-                                                 aSMN,
-                                                 sTableInfo,
-                                                 &sRangeInfos,
-                                                 ID_FALSE )
-                              != IDE_SUCCESS );
-
-                    sShardTableType = sdi::getShardObjectType( sTableInfo );
-
-                    /* CLONE은 Failover 시에 CLONES_에서 제거 되었기 때문에 따로 처리한다. */
-                    if ( sShardTableType == SDI_CLONE_DIST_OBJECT )
-                    {
-                        /* 원래 연결되어 있던 ReplicaSet일때만 Clone 처리한다. */
-                        if ( aMainReplicaSetId == sReplicaSet->mReplicaSetId )
+                        if ( sTableInfo->mDefaultPartitionReplicaSetId == sReplicaSet->mReplicaSetId )
                         {
-                            /* CLONE은 PartitionName이 없다. */
-                            idlOS::strncpy( sPartitionName,
-                                            SDM_NA_STR,
-                                            QC_MAX_OBJECT_NAME_LEN + 1 );
-
                             IDE_TEST( sdm::addReplTable( aStatement,
                                                          sdiZookeeper::mMyNodeName,
                                                          sReverseReplName,
                                                          sTableInfo->mUserName,
                                                          sTableInfo->mObjectName,
-                                                         sPartitionName,
+                                                         sTableInfo->mDefaultPartitionName,
                                                          SDM_REPL_CLONE,
                                                          ID_TRUE )
                                       != IDE_SUCCESS );
                         }
-                    }
-                    else
-                    {
-                        for ( j = 0; j< sRangeInfos.mCount; j++ )
-                        {
-                            if ( sRangeInfos.mRanges[j].mReplicaSetId == sReplicaSet->mReplicaSetId )
-                            {
-                                switch( sShardTableType )
-                                {
-                                    case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
-                                        /* Range는 Partition이 존재한다. */
-                                        idlOS::strncpy( sPartitionName,
-                                                        sRangeInfos.mRanges[j].mPartitionName,
-                                                        QC_MAX_OBJECT_NAME_LEN + 1 );
-                                        break;
-                                    case SDI_SOLO_DIST_OBJECT:
-                                        /* SOLO은 PartitionName이 없다. */
-                                        idlOS::strncpy( sPartitionName,
-                                                        SDM_NA_STR,
-                                                        QC_MAX_OBJECT_NAME_LEN + 1 );
+                        /* Range Info Check */
+                        IDE_TEST( sdm::getRangeInfo( aStatement,
+                                                     QC_SMI_STMT( aStatement ),
+                                                     aSMN,
+                                                     sTableInfo,
+                                                     &sRangeInfos,
+                                                     ID_FALSE )
+                                  != IDE_SUCCESS );
 
-                                        break;
-                                    case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
-                                        /* Composite는 HA를 제공하지 않기 때문에 RP add 하지 않음. */
-                                        continue;
-                                    case SDI_CLONE_DIST_OBJECT:
-                                        /* Clone은 따로 처리 하였음. */
-                                    case SDI_NON_SHARD_OBJECT:
-                                    default:
-                                        /* Non Shard Table이 오면 안됨. */
-                                        IDE_DASSERT( 0 );
-                                        break;
-                                }
+                        sShardTableType = sdi::getShardObjectType( sTableInfo );
+
+                        /* CLONE은 Failover 시에 CLONES_에서 제거 되었기 때문에 따로 처리한다. */
+                        if ( sShardTableType == SDI_CLONE_DIST_OBJECT )
+                        {
+                            /* 원래 연결되어 있던 ReplicaSet일때만 Clone 처리한다. */
+                            if ( aMainReplicaSetId == sReplicaSet->mReplicaSetId )
+                            {
+                                /* CLONE은 PartitionName이 없다. */
+                                idlOS::strncpy( sPartitionName,
+                                                SDM_NA_STR,
+                                                QC_MAX_OBJECT_NAME_LEN + 1 );
+
                                 IDE_TEST( sdm::addReplTable( aStatement,
                                                              sdiZookeeper::mMyNodeName,
                                                              sReverseReplName,
@@ -10580,40 +11739,86 @@ IDE_RC qdsd::failbackOrganizeReverseRP( qcStatement        * aStatement,
                                           != IDE_SUCCESS );
                             }
                         }
+                        else
+                        {
+                            for ( j = 0; j< sRangeInfos.mCount; j++ )
+                            {
+                                if ( sRangeInfos.mRanges[j].mReplicaSetId == sReplicaSet->mReplicaSetId )
+                                {
+                                    switch( sShardTableType )
+                                    {
+                                        case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
+                                            /* Range는 Partition이 존재한다. */
+                                            idlOS::strncpy( sPartitionName,
+                                                            sRangeInfos.mRanges[j].mPartitionName,
+                                                            QC_MAX_OBJECT_NAME_LEN + 1 );
+                                            break;
+                                        case SDI_SOLO_DIST_OBJECT:
+                                            /* SOLO은 PartitionName이 없다. */
+                                            idlOS::strncpy( sPartitionName,
+                                                            SDM_NA_STR,
+                                                            QC_MAX_OBJECT_NAME_LEN + 1 );
+
+                                            break;
+                                        case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
+                                            /* Composite는 HA를 제공하지 않기 때문에 RP add 하지 않음. */
+                                            continue;
+                                        case SDI_CLONE_DIST_OBJECT:
+                                            /* Clone은 따로 처리 하였음. */
+                                        case SDI_NON_SHARD_OBJECT:
+                                        default:
+                                            /* Non Shard Table이 오면 안됨. */
+                                            IDE_DASSERT( 0 );
+                                            break;
+                                    }
+                                    IDE_TEST( sdm::addReplTable( aStatement,
+                                                                 sdiZookeeper::mMyNodeName,
+                                                                 sReverseReplName,
+                                                                 sTableInfo->mUserName,
+                                                                 sTableInfo->mObjectName,
+                                                                 sPartitionName,
+                                                                 SDM_REPL_CLONE,
+                                                                 ID_TRUE )
+                                              != IDE_SUCCESS );
+                                }
+                            }
+                        }
                     }
                 }
-            }
 
-            /* Reverse RP Create와 Item Add 가 끝났으면 Flush 받아야 한다. */
-            /* Receiver Create이기 때문에 Sender가 이미 Send 중일수 있다. Flush로 확인 한다.
-             * Reverse RP는 Sender 생성시 Start 해두지 않지만
-             * Failback에서 Start 요청 후 KILL 된 후 다시 시도일수 있다. */
-            if( flushReplicationForInternal( aStatement,
-                                             aFailbackFromNodeName,
-                                             sReverseReplName )
-                == IDE_SUCCESS )
-            {
-                ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] FLUSH REVERSE REP COMPLETE %s", sReverseReplName);
-            }
-            else
-            {
-                /* Flush가 실패하였다면 start 안되어 있는걸로 보고 Start 시킨다. */
-                IDE_TEST( startReplicationForInternal( aStatement,
-                                                       aFailbackFromNodeName,
-                                                       sReverseReplName )
-                          != IDE_SUCCESS );
+                /* Reverse RP Create와 Item Add 가 끝났으면 Flush 받아야 한다. */
+                /* Receiver Create이기 때문에 Sender가 이미 Send 중일수 있다. Flush로 확인 한다.
+                 * Reverse RP는 Sender 생성시 Start 해두지 않지만
+                 * Failback에서 Start 요청 후 KILL 된 후 다시 시도일수 있다. */
+                if( flushReplicationForInternal( aStatement,
+                                                 aFailbackFromNodeName,
+                                                 sReverseReplName )
+                    == IDE_SUCCESS )
+                {
+                    ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] FLUSH REVERSE REP COMPLETE %s", sReverseReplName);
+                }
+                else
+                {
+                    /* Flush가 실패하였다면 start 안되어 있는걸로 보고 Start 시킨다. */
+                    IDE_TEST( startReplicationForInternal( aStatement,
+                                                           aFailbackFromNodeName,
+                                                           sReverseReplName )
+                              != IDE_SUCCESS );
 
-                ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] FLUSH REVERSE REP, %s \n", sReverseReplName );
-                
-                IDE_TEST( flushReplicationForInternal( aStatement,
-                                                       aFailbackFromNodeName,
-                                                       sReverseReplName )
-                          != IDE_SUCCESS );
+                    ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] FLUSH REVERSE REP, %s \n", sReverseReplName );
+                    
+                    IDE_TEST( flushReplicationForInternal( aStatement,
+                                                           aFailbackFromNodeName,
+                                                           sReverseReplName )
+                              != IDE_SUCCESS );
 
-                ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] FLUSH REVERSE REP COMPLETE %s", sReverseReplName);
+                    ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] FLUSH REVERSE REP COMPLETE %s", sReverseReplName);
+                }
+
             }
         }
     }
+
 
     return IDE_SUCCESS;
 
@@ -10634,6 +11839,11 @@ IDE_RC qdsd::failbackOrganizeReverseRPAfterLock( qcStatement        * aStatement
     sdiReplicaSet     * sReplicaSet = NULL;
 
     UInt                i;
+
+    UInt                sExecCount;
+    ULong               sCount = 0;
+
+    idBool              sFetchResult = ID_FALSE;
 
     ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] Start REVERSE REP After Lock" );
 
@@ -10670,53 +11880,75 @@ IDE_RC qdsd::failbackOrganizeReverseRPAfterLock( qcStatement        * aStatement
                              SDM_NA_STR,
                              SDI_REPLICATION_NAME_MAX_SIZE + 1 ) != 0 )
         {
-            /* Lock 잡은 후에 그 사이 있었던 내용을 Flush 받아온다. */
-            IDE_TEST( flushReplicationForInternal( aStatement,
-                                                   aFailbackFromNodeName,
-                                                   sReverseReplName )
-                      != IDE_SUCCESS );
 
-            ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] AFTER LOCK FLUSH REVERSE REP COMPLETE %s", sReverseReplName);
-
-            /* Flush 끝났으면 Stop 해둔다. */
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" STOP ", 
+            /* DROP FORCE의 추가로 ReverseRP가 존재한다고 확신할수 없다.
+             * 확인 해 보고 존재하면 ReverseRP를 처리한다. */
+            idlOS::snprintf( sSqlStr,
+                             QD_MAX_SQL_LENGTH + 1,
+                             "select Count(*) from system_.sys_replications_ where replication_name='%s' ",
                              sReverseReplName );
 
-            IDE_TEST( executeRemoteSQL( aStatement, 
-                                        aFailbackFromNodeName,
-                                        SDI_INTERNAL_OP_FAILBACK,
-                                        QCI_STMT_MASK_DCL,
-                                        sSqlStr,
-                                        QD_MAX_SQL_LENGTH,
-                                        NULL )
-                        != IDE_SUCCESS );
-
-            ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] STOP REVERSE REP %s", sReverseReplName);
-
-            /* Reverse RP는 Commit 시에 Drop은 TxDDL로 처리한다. */
-            /* Sender/Receiver 둘다 제거 해야 한다. */
-            idlOS::snprintf(sSqlStr,
-                            QD_MAX_SQL_LENGTH,
-                            "drop replication "QCM_SQL_STRING_SKIP_FMT"",
-                            sReverseReplName );
-
-            IDE_TEST( executeRemoteSQL( aStatement, 
-                                        aFailbackFromNodeName,
-                                        SDI_INTERNAL_OP_FAILBACK,
-                                        QCI_STMT_MASK_DDL,
-                                        sSqlStr,
-                                        QD_MAX_SQL_LENGTH,
-                                        NULL )
-                        != IDE_SUCCESS );
-
-            /* Local Receiver는 NewTrans로 지워야 한다. TxDDL로 하면 Local Start 에서 Lock 대기 발생
-             * Local Receiver는 Failback에서 생성한거라 이후 실패해도 다시 생성해서하니까 괜찮다. */
-            IDE_TEST( dropReplicationForInternal( aStatement,
-                                                  sdiZookeeper::mMyNodeName,
-                                                  sReverseReplName )
+            IDE_TEST( sdi::shardExecDirect( aStatement,
+                                            aFailbackFromNodeName,
+                                            (SChar*)sSqlStr,
+                                            (UInt) idlOS::strlen(sSqlStr),
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            &sExecCount,
+                                            &sCount,
+                                            NULL,
+                                            ID_SIZEOF(sCount),
+                                            &sFetchResult )
                       != IDE_SUCCESS );
 
+            if ( sCount != 0 )
+            {
+                /* Lock 잡은 후에 그 사이 있었던 내용을 Flush 받아온다. */
+                IDE_TEST( flushReplicationForInternal( aStatement,
+                                                       aFailbackFromNodeName,
+                                                       sReverseReplName )
+                          != IDE_SUCCESS );
+
+                ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] AFTER LOCK FLUSH REVERSE REP COMPLETE %s", sReverseReplName);
+
+                /* Flush 끝났으면 Stop 해둔다. */
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" STOP ", 
+                                 sReverseReplName );
+
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            aFailbackFromNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DCL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL )
+                            != IDE_SUCCESS );
+
+                ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] STOP REVERSE REP %s", sReverseReplName);
+
+                /* Reverse RP는 Commit 시에 Drop은 TxDDL로 처리한다. */
+                /* Sender/Receiver 둘다 제거 해야 한다. */
+                idlOS::snprintf(sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                "drop replication "QCM_SQL_STRING_SKIP_FMT"",
+                                sReverseReplName );
+
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            aFailbackFromNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DDL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL )
+                            != IDE_SUCCESS );
+
+                /* Local Receiver는 NewTrans로 지워야 한다. TxDDL로 하면 Local Start 에서 Lock 대기 발생
+                 * Local Receiver는 Failback에서 생성한거라 이후 실패해도 다시 생성해서하니까 괜찮다. */
+                IDE_TEST( dropReplicationForInternal( aStatement,
+                                                      sdiZookeeper::mMyNodeName,
+                                                      sReverseReplName )
+                          != IDE_SUCCESS );
+            }
         }
     }
 
@@ -10740,6 +11972,7 @@ IDE_RC qdsd::failbackRecoverRPbeforeLock( qcStatement        * aStatement,
     SChar            sSqlStr[QD_MAX_SQL_LENGTH + 1];
     UInt              sShardDDLLockTryCount = QCG_GET_SESSION_SHARD_DDL_LOCK_TRY_COUNT(aStatement);
     UInt              sRemoteLockTimeout = QCG_GET_SESSION_SHARD_DDL_LOCK_TIMEOUT(aStatement);
+    idBool            sIsAlive = ID_FALSE;
 
     /* Failback Start RP */
     for ( i = 0; i < aFailoverHistoryInfoWithOtherNode->mCount; i++ )
@@ -10761,9 +11994,17 @@ IDE_RC qdsd::failbackRecoverRPbeforeLock( qcStatement        * aStatement,
                                  "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" RESET ",
                                  sReplicaSet->mFirstReplName );
 
+                /* R2HA RESET이 DDL이라 DDL로 수행하려 하였으나 문제 발생해서 일단 분석안하고
+                 * 정상 동작하는 DMLOrDCL로 수행하도록 해둠 추후 분석 필요.
+                IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                             sdiZookeeper::mMyNodeName,
+                                                             sSqlStr,
+                                                             idlOS::strlen( sSqlStr ) )
+                          != IDE_SUCCESS );*/
                 IDE_TEST( sdi::shardExecTempDMLOrDCLWithNewTrans( aStatement,
                                                                   sSqlStr )
                           != IDE_SUCCESS );
+
 
                 idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
                                  "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" START ",
@@ -10850,10 +12091,18 @@ IDE_RC qdsd::failbackRecoverRPbeforeLock( qcStatement        * aStatement,
                 idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
                                  "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" RESET ",
                                  sReplicaSet->mSecondReplName );
+                /* R2HA RESET이 DDL이라 DDL로 수행하려 하였으나 문제 발생해서 일단 분석안하고
+                 * 정상 동작하는 DMLOrDCL로 수행하도록 해둠 추후 분석 필요.
+                IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                             sdiZookeeper::mMyNodeName,
+                                                             sSqlStr,
+                                                             idlOS::strlen( sSqlStr ) )
+                          != IDE_SUCCESS );*/
 
                 IDE_TEST( sdi::shardExecTempDMLOrDCLWithNewTrans( aStatement,
                                                                   sSqlStr )
                           != IDE_SUCCESS );
+
 
                 idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
                                  "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" START ",
@@ -10883,133 +12132,144 @@ IDE_RC qdsd::failbackRecoverRPbeforeLock( qcStatement        * aStatement,
         }
 
         /* Receive RP Start */
-        if ( idlOS::strncmp( sReplicaSet->mFirstBackupNodeName,
-                             sdiZookeeper::mMyNodeName,
-                             SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+        /* DROP FORCE로 인해 FailoverHistory에 기록된 PrimaryNode가 Alive일 거라는 보장이 없다.
+         * Alive 상태라면 Failback 시에 Start 요청하면 되고
+         * Alive 상태가 아니라면 해당 Node의 Failback 수행시 Start 될 것이다. */
+
+        IDE_TEST( sdiZookeeper::checkNodeAlive( sReplicaSet->mPrimaryNodeName,
+                                                &sIsAlive ) != IDE_SUCCESS );
+
+        if ( sIsAlive == ID_TRUE )
         {
-            /* Failback_Failedover에서 Receive RP는 Stop 되어 있어야 한다.
-             * Failback 에서 Start 시킨후 Kill 등으로 Failback 재시도시 Start되어 있을수 있다 */
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" STOP ",
+
+            if ( idlOS::strncmp( sReplicaSet->mFirstBackupNodeName,
+                                 sdiZookeeper::mMyNodeName,
+                                 SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            {
+                /* Failback_Failedover에서 Receive RP는 Stop 되어 있어야 한다.
+                 * Failback 에서 Start 시킨후 Kill 등으로 Failback 재시도시 Start되어 있을수 있다 */
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" STOP ",
+                                 sReplicaSet->mFirstReplName );
+
+                (void)executeRemoteSQL( aStatement, 
+                                        sReplicaSet->mPrimaryNodeName,
+                                        SDI_INTERNAL_OP_FAILBACK,
+                                        QCI_STMT_MASK_DCL,
+                                        sSqlStr,
+                                        QD_MAX_SQL_LENGTH,
+                                        NULL );
+
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" START ",
+                                 sReplicaSet->mFirstReplName );
+
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            sReplicaSet->mPrimaryNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DCL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL )
+                            != IDE_SUCCESS );
+
+                idlOS::snprintf(sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                "alter replication "QCM_SQL_STRING_SKIP_FMT" stop",
+                                sReplicaSet->mFirstReplName );
+
+                (void)sdiZookeeper::addPendingJob( sSqlStr,
+                                                   sReplicaSet->mPrimaryNodeName,
+                                                   ZK_PENDING_JOB_AFTER_ROLLBACK,
+                                                   QCI_STMT_MASK_MAX );
+
+                ideLog::log( IDE_SD_0,
+                             "[SHARD_FAILBACK] Failback Receive Start RP : %s", 
                              sReplicaSet->mFirstReplName );
 
-            (void)executeRemoteSQL( aStatement, 
-                                    sReplicaSet->mPrimaryNodeName,
-                                    SDI_INTERNAL_OP_FAILBACK,
-                                    QCI_STMT_MASK_DCL,
-                                    sSqlStr,
-                                    QD_MAX_SQL_LENGTH,
-                                    NULL );
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" FLUSH WAIT %"ID_UINT32_FMT,
+                                 sReplicaSet->mFirstReplName,
+                                 (sShardDDLLockTryCount * sRemoteLockTimeout) );
 
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" START ",
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            sReplicaSet->mPrimaryNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DCL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL )
+                            != IDE_SUCCESS );
+
+                ideLog::log( IDE_SD_0,
+                             "[SHARD_FAILBACK] Failback Receive FLUSH RP : %s", 
                              sReplicaSet->mFirstReplName );
 
-            IDE_TEST( executeRemoteSQL( aStatement, 
+
+            }
+            if ( idlOS::strncmp( sReplicaSet->mSecondBackupNodeName,
+                                 sdiZookeeper::mMyNodeName,
+                                 SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            {
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" STOP ",
+                                 sReplicaSet->mSecondReplName );
+
+                (void)executeRemoteSQL( aStatement, 
                                         sReplicaSet->mPrimaryNodeName,
                                         SDI_INTERNAL_OP_FAILBACK,
                                         QCI_STMT_MASK_DCL,
                                         sSqlStr,
                                         QD_MAX_SQL_LENGTH,
-                                        NULL )
-                        != IDE_SUCCESS );
+                                        NULL );
 
-            idlOS::snprintf(sSqlStr,
-                            QD_MAX_SQL_LENGTH,
-                            "alter replication "QCM_SQL_STRING_SKIP_FMT" stop",
-                            sReplicaSet->mFirstReplName );
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" START ",
+                                 sReplicaSet->mSecondReplName );
 
-            (void)sdiZookeeper::addPendingJob( sSqlStr,
-                                               sReplicaSet->mPrimaryNodeName,
-                                               ZK_PENDING_JOB_AFTER_ROLLBACK,
-                                               QCI_STMT_MASK_MAX );
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            sReplicaSet->mPrimaryNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DCL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL )
+                            != IDE_SUCCESS );
 
-            ideLog::log( IDE_SD_0,
-                         "[SHARD_FAILBACK] Failback Receive Start RP : %s", 
-                         sReplicaSet->mFirstReplName );
+                idlOS::snprintf(sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                "alter replication "QCM_SQL_STRING_SKIP_FMT" stop",
+                                sReplicaSet->mSecondReplName );
 
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" FLUSH WAIT %"ID_UINT32_FMT,
-                             sReplicaSet->mFirstReplName,
-                             (sShardDDLLockTryCount * sRemoteLockTimeout) );
+                (void)sdiZookeeper::addPendingJob( sSqlStr,
+                                                   sReplicaSet->mPrimaryNodeName,
+                                                   ZK_PENDING_JOB_AFTER_ROLLBACK,
+                                                   QCI_STMT_MASK_MAX );
 
-            IDE_TEST( executeRemoteSQL( aStatement, 
-                                        sReplicaSet->mPrimaryNodeName,
-                                        SDI_INTERNAL_OP_FAILBACK,
-                                        QCI_STMT_MASK_DCL,
-                                        sSqlStr,
-                                        QD_MAX_SQL_LENGTH,
-                                        NULL )
-                        != IDE_SUCCESS );
-
-            ideLog::log( IDE_SD_0,
-                         "[SHARD_FAILBACK] Failback Receive FLUSH RP : %s", 
-                         sReplicaSet->mFirstReplName );
-
-
-        }
-        if ( idlOS::strncmp( sReplicaSet->mSecondBackupNodeName,
-                             sdiZookeeper::mMyNodeName,
-                             SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
-        {
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" STOP ",
+                ideLog::log( IDE_SD_0,
+                             "[SHARD_FAILBACK] Failback Receive Start RP : %s", 
                              sReplicaSet->mSecondReplName );
 
-            (void)executeRemoteSQL( aStatement, 
-                                    sReplicaSet->mPrimaryNodeName,
-                                    SDI_INTERNAL_OP_FAILBACK,
-                                    QCI_STMT_MASK_DCL,
-                                    sSqlStr,
-                                    QD_MAX_SQL_LENGTH,
-                                    NULL );
+                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                 "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" FLUSH WAIT %"ID_UINT32_FMT,
+                                 sReplicaSet->mSecondReplName,
+                                 (sShardDDLLockTryCount * sRemoteLockTimeout) );
 
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" START ",
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            sReplicaSet->mPrimaryNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DCL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL )
+                            != IDE_SUCCESS );
+
+                ideLog::log( IDE_SD_0,
+                             "[SHARD_FAILBACK] Failback Receive FLUSH RP : %s", 
                              sReplicaSet->mSecondReplName );
 
-            IDE_TEST( executeRemoteSQL( aStatement, 
-                                        sReplicaSet->mPrimaryNodeName,
-                                        SDI_INTERNAL_OP_FAILBACK,
-                                        QCI_STMT_MASK_DCL,
-                                        sSqlStr,
-                                        QD_MAX_SQL_LENGTH,
-                                        NULL )
-                        != IDE_SUCCESS );
 
-            idlOS::snprintf(sSqlStr,
-                            QD_MAX_SQL_LENGTH,
-                            "alter replication "QCM_SQL_STRING_SKIP_FMT" stop",
-                            sReplicaSet->mSecondReplName );
-
-            (void)sdiZookeeper::addPendingJob( sSqlStr,
-                                               sReplicaSet->mPrimaryNodeName,
-                                               ZK_PENDING_JOB_AFTER_ROLLBACK,
-                                               QCI_STMT_MASK_MAX );
-
-            ideLog::log( IDE_SD_0,
-                         "[SHARD_FAILBACK] Failback Receive Start RP : %s", 
-                         sReplicaSet->mSecondReplName );
-
-            idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                             "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" FLUSH WAIT %"ID_UINT32_FMT,
-                             sReplicaSet->mSecondReplName,
-                             (sShardDDLLockTryCount * sRemoteLockTimeout) );
-
-            IDE_TEST( executeRemoteSQL( aStatement, 
-                                        sReplicaSet->mPrimaryNodeName,
-                                        SDI_INTERNAL_OP_FAILBACK,
-                                        QCI_STMT_MASK_DCL,
-                                        sSqlStr,
-                                        QD_MAX_SQL_LENGTH,
-                                        NULL )
-                        != IDE_SUCCESS );
-
-            ideLog::log( IDE_SD_0,
-                         "[SHARD_FAILBACK] Failback Receive FLUSH RP : %s", 
-                         sReplicaSet->mSecondReplName );
-
-
+            }
         }
 
     }
@@ -11027,6 +12287,7 @@ IDE_RC qdsd::failbackRecoverRPbeforeLock( qcStatement        * aStatement,
 IDE_RC qdsd::failbackRecoverRPAfterLock( qcStatement        * aStatement,
                                          SChar              * aFailbackFromNodeName,
                                          sdiReplicaSet      * aMainReplicaSet,
+                                         sdiReplicaSetInfo  * aFailoverHistoryInfo,
                                          sdiReplicaSetInfo  * aFailoverHistoryInfoWithOtherNode )
 {
     UInt             i = 0;
@@ -11035,6 +12296,18 @@ IDE_RC qdsd::failbackRecoverRPAfterLock( qcStatement        * aStatement,
     SChar            sFailoverCreatedReplName[SDI_REPLICATION_NAME_MAX_SIZE + 1] = {0,};
     UInt             sShardDDLLockTryCount = QCG_GET_SESSION_SHARD_DDL_LOCK_TRY_COUNT(aStatement);
     UInt             sRemoteLockTimeout = QCG_GET_SESSION_SHARD_DDL_LOCK_TIMEOUT(aStatement);
+
+    UInt             sExecCount;
+    ULong            sCount = 0;
+    idBool           sFetchResult = ID_FALSE;
+
+    qdShardParseTree  * sParseTree = NULL;
+
+    sdiLocalMetaInfo  * sNodeMetaInfo = NULL;
+
+    idBool           sIsAlive = ID_FALSE; 
+
+
 
     /* Failover Created RP Stop */
     /* N1의 Failover에서 N1->N3를 N2->N3로 추가한 RP 제거 Stop/Drop 해야함. */
@@ -11188,6 +12461,165 @@ IDE_RC qdsd::failbackRecoverRPAfterLock( qcStatement        * aStatement,
         }
     }
 
+    /* DROP Force 에 의해 제거된 Node가 존재한다면 해당 Node로의 Send RP를 제거 해야 한다. */
+    /* K-Safety 0 등에 의해 존재할수 있는 상황이기 때문에 Select 먼저 해보고 있으면 제거 한다. */
+    for ( i = 0; i < aFailoverHistoryInfo->mCount; i++ )
+    {
+        sReplicaSet = &aFailoverHistoryInfo->mReplicaSets[i];
+
+        if ( ( idlOS::strncmp( sReplicaSet->mFirstBackupNodeName,
+                               SDM_NA_STR,
+                               SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 ) &&
+             ( idlOS::strncmp( sReplicaSet->mStopFirstBackupNodeName,
+                               SDM_NA_STR,                                       
+                               SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 ) )
+        {
+            idlOS::snprintf( sSqlStr, 
+                             QD_MAX_SQL_LENGTH + 1,
+                             "select Count(*) from system_.sys_replications_ where replication_name='%s' ",
+                             sReplicaSet->mFirstReplName );
+
+            IDE_TEST( sdi::shardExecDirect( aStatement,
+                                            sReplicaSet->mPrimaryNodeName,
+                                            (SChar*)sSqlStr,
+                                            (UInt) idlOS::strlen(sSqlStr),
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            &sExecCount,
+                                            &sCount,
+                                            NULL,
+                                            ID_SIZEOF(sCount),
+                                            &sFetchResult )
+                      != IDE_SUCCESS );
+
+            if ( sCount != 0 )
+            {
+                idlOS::snprintf(sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                "drop replication "QCM_SQL_STRING_SKIP_FMT,
+                                sReplicaSet->mFirstReplName );
+
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            sReplicaSet->mPrimaryNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DDL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL )
+                            != IDE_SUCCESS );
+            }
+        }
+
+        if ( ( idlOS::strncmp( sReplicaSet->mSecondBackupNodeName,
+                               SDM_NA_STR,
+                               SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 ) &&
+             ( idlOS::strncmp( sReplicaSet->mStopSecondBackupNodeName,
+                               SDM_NA_STR,
+                               SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 ) )
+        {
+            idlOS::snprintf( sSqlStr, 
+                             QD_MAX_SQL_LENGTH + 1,
+                             "select Count(*) from system_.sys_replications_ where replication_name='%s' ",
+                             sReplicaSet->mSecondReplName );
+
+            IDE_TEST( sdi::shardExecDirect( aStatement,
+                                            sReplicaSet->mPrimaryNodeName,
+                                            (SChar*)sSqlStr,
+                                            (UInt) idlOS::strlen(sSqlStr),
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            &sExecCount,
+                                            &sCount,
+                                            NULL,
+                                            ID_SIZEOF(sCount),
+                                            &sFetchResult )
+                      != IDE_SUCCESS );
+
+            if ( sCount != 0 )
+            {
+                idlOS::snprintf(sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                "drop replication "QCM_SQL_STRING_SKIP_FMT,
+                                sReplicaSet->mSecondReplName );
+
+                IDE_TEST( executeRemoteSQL( aStatement, 
+                                            sReplicaSet->mPrimaryNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DDL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL )
+                            != IDE_SUCCESS );
+            }
+        }
+    }
+
+    /* DropForce 된 Node로 부터의 Receive이면 Drop 해야 함.
+     * ReplicaSetID == NodeID 이기 때문에 해당 ReplicaSetId와 같은 NodeID가 존재하는지 확인. */
+    /* failbackFailedover 함수에서 getAllNodeInfo를 수행하여 ParseTree에 NodeInfo가 저장되어 있다. */
+    for ( i = 0; i < aFailoverHistoryInfoWithOtherNode->mCount; i++ )
+    {
+        sReplicaSet = &aFailoverHistoryInfoWithOtherNode->mReplicaSets[i];
+
+        IDE_TEST( sdiZookeeper::checkNodeAlive( sReplicaSet->mPrimaryNodeName,
+                                                &sIsAlive ) != IDE_SUCCESS );
+
+        if ( sIsAlive == ID_FALSE )
+        {
+            sParseTree = (qdShardParseTree *)aStatement->myPlan->parseTree;
+
+            sNodeMetaInfo = sdiZookeeper::getNodeInfoByID( sParseTree->mNodeInfoList,
+                                                           sReplicaSet->mReplicaSetId );
+
+            if ( sNodeMetaInfo == NULL )
+            {
+                if ( idlOS::strncmp( sReplicaSet->mFirstBackupNodeName,
+                                     sdiZookeeper::mMyNodeName,
+                                     SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+                {
+                    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                     "DROP REPLICATION "QCM_SQL_STRING_SKIP_FMT,
+                                     sReplicaSet->mFirstReplName );
+
+                    (void)executeRemoteSQL( aStatement, 
+                                            sdiZookeeper::mMyNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DDL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL );
+
+                    ideLog::log( IDE_SD_0,
+                                 "[SHARD_FAILBACK] Failback Receive DROP RP : %s", 
+                                 sReplicaSet->mFirstReplName );
+
+                }
+                if ( idlOS::strncmp( sReplicaSet->mSecondBackupNodeName,
+                                     sdiZookeeper::mMyNodeName,
+                                     SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+                {
+                    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                     "DROP REPLICATION "QCM_SQL_STRING_SKIP_FMT,
+                                     sReplicaSet->mSecondReplName );
+
+                    (void)executeRemoteSQL( aStatement, 
+                                            sdiZookeeper::mMyNodeName,
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            QCI_STMT_MASK_DDL,
+                                            sSqlStr,
+                                            QD_MAX_SQL_LENGTH,
+                                            NULL );
+
+                    ideLog::log( IDE_SD_0,
+                                 "[SHARD_FAILBACK] Failback Receive DROP RP : %s", 
+                                 sReplicaSet->mSecondReplName );
+                }
+            }
+
+        }
+
+    }
+
+
+
     return IDE_SUCCESS;
 
     IDE_EXCEPTION_END;
@@ -11334,6 +12766,13 @@ IDE_RC qdsd::failbackFailedover( qcStatement        * aStatement,
 
     ZKState             sState = ZK_NONE;
 
+    idBool              sNeedSync = ID_FALSE;
+    qdShardParseTree  * sParseTree = NULL;
+
+    idBool              sSyncTables = ID_FALSE;
+
+    sParseTree = (qdShardParseTree *)aStatement->myPlan->parseTree;
+
     sUserName = QCG_GET_SESSION_USER_NAME( aStatement );
 
     /* Shard Meta Recovery From aFailbackFromNodeName
@@ -11351,6 +12790,15 @@ IDE_RC qdsd::failbackFailedover( qcStatement        * aStatement,
 
     /* Failback 과정에서 모든 Shard Meta의 조회는 SMN Update가 완료된 이후에 실행되어야 한다.
      * Lock이 잡히면 SMN Update에 실패할수 있기 때문 */
+
+    /* Failover 수행 이후 Drop Force가 수행되었는지 확인. */
+    IDE_TEST( sdi::checkFailoverHistoryOverSMN( aFailbackSMN,
+                                                &sNeedSync ) != IDE_SUCCESS );
+
+    if ( sNeedSync == ID_TRUE )
+    {
+        IDE_TEST_RAISE( sParseTree->mDDLType == SHARD_FAILBACK, needFailbackSync );
+    }
 
     /* SetNode 수행필요 한지 확인. */
     /* Shard Meta NodeInfo Check  */
@@ -11513,17 +12961,7 @@ IDE_RC qdsd::failbackFailedover( qcStatement        * aStatement,
      * FailbackNode에 여러개의 ReplicaSet의 연결되어 있을수 있기 때문에 그 중 연결할 Main을 찾아야한다. */
     for ( i = 0; i < sReplicaSetInfo.mCount; i++ )
     {
-        if ( idlOS::strncmp( sReplicaSetInfo.mReplicaSets[i].mFirstBackupNodeName,
-                             sMyNextNodeName,
-                             SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
-        {
-            sMainReplicaSet = &sReplicaSetInfo.mReplicaSets[i];
-            break;
-        }
-
-        if ( idlOS::strncmp( sReplicaSetInfo.mReplicaSets[i].mStopFirstBackupNodeName,
-                             sMyNextNodeName,
-                             SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+        if ( sLocalMetaInfo.mShardNodeId == sReplicaSetInfo.mReplicaSets[i].mReplicaSetId )
         {
             sMainReplicaSet = &sReplicaSetInfo.mReplicaSets[i];
             break;
@@ -11561,6 +12999,8 @@ IDE_RC qdsd::failbackFailedover( qcStatement        * aStatement,
 
     if ( sFailoverHistoryInfo.mCount != 0  )
     {
+        ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] RECOVER REVERSE REPLICATION START");
+
         IDE_TEST( failbackOrganizeReverseRP( aStatement,
                                              aFailbackFromNodeName,
                                              sTableInfoList,
@@ -11568,23 +13008,56 @@ IDE_RC qdsd::failbackFailedover( qcStatement        * aStatement,
                                              sReplicaSetId,
                                              sOldSMN ) != IDE_SUCCESS );
 
-        ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] RECOVER REPLICATION START");
+        ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] RECOVER REVERSE REPLICATION COMPLETE");
     }
     else
     {
-        /* ReverseRP가 맺어여 있다면 Clone Table을 Sync 받아 왔을 것이지만 없으면 Clone FullSync가 필요하다.
-         * ReverseRP 없이 ReplicaSet에 Failback 해야하는 Node의 ReplicaSet정보가 남아 있다면
-         * Clone Fullsync 대상이다. lock 잡고 한번만 하면 된다... 근데 너무 느릴듯 */
-        for ( i = 0 ; i < sReplicaSetInfo.mCount ; i++ )
+        /* Normal Failback일 경우에만 Clone Only Sync를 한다. 
+         * Failback Sync에서는 Clone 포함 모든 Table을 Sync 한다. */
+        if ( sParseTree->mDDLType == SHARD_FAILBACK )
         {
-            sReplicaSet = &sReplicaSetInfo.mReplicaSets[i];
-            if ( idlOS::strncmp( sReplicaSet->mPrimaryNodeName,
-                                 sdiZookeeper::mMyNodeName,
-                                 SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+            /* ReverseRP가 맺어여 있다면 Clone Table을 Sync 받아 왔을 것이지만 없으면 Clone FullSync가 필요하다.
+             * ReverseRP 없이 ReplicaSet에 Failback 해야하는 Node의 ReplicaSet정보가 남아 있다면
+             * Clone Fullsync 대상이다. lock 잡고 한번만 하면 된다... 근데 너무 느릴듯 */
+            for ( i = 0 ; i < sReplicaSetInfo.mCount ; i++ )
             {
-                /* CLONE FULLSYNC*/
+                sReplicaSet = &sReplicaSetInfo.mReplicaSets[i];
+                if ( idlOS::strncmp( sReplicaSet->mPrimaryNodeName,
+                                     sdiZookeeper::mMyNodeName,
+                                     SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+                {
+                    /* CLONE FULLSYNC*/
+                    IDE_TEST( syncFailbackData( aStatement,
+                                                aFailbackFromNodeName,
+                                                sdiZookeeper::mMyNodeName,
+                                                sTableInfoList,
+                                                &sReplicaSetInfo,
+                                                &sFailoverHistoryInfo,
+                                                sOldSMN,
+                                                ID_TRUE )
+                              != IDE_SUCCESS );
+
+                    sSyncTables = ID_TRUE;
+                }
             }
         }
+    }
+
+    /* Failback Sync에서는 Clone 포함 모든 Table을 Sync 한다. */
+    if ( sParseTree->mDDLType == SHARD_FAILBACK_SYNC )
+    {
+        /* TABLE FULLSYNC*/
+        IDE_TEST( syncFailbackData( aStatement,
+                                    aFailbackFromNodeName,
+                                    sdiZookeeper::mMyNodeName,
+                                    sTableInfoList,
+                                    &sReplicaSetInfo,
+                                    &sFailoverHistoryInfo,
+                                    sOldSMN,
+                                    ID_FALSE )
+                  != IDE_SUCCESS );
+
+        sSyncTables = ID_TRUE;
     }
 
     /* RP Stop/Start는 Lock 획득 후 하니까 실패하네 .. 어쩐다 */
@@ -11619,6 +13092,14 @@ IDE_RC qdsd::failbackFailedover( qcStatement        * aStatement,
     
     ideLog::log(IDE_SD_0,"[SHARD_FAILBACK] TargetTable Lock Acquired");
 
+    if ( sSyncTables == ID_TRUE ) 
+    {
+        IDE_TEST( syncFailbackDataAfterLock( aStatement,
+                                             aFailbackFromNodeName,
+                                             sdiZookeeper::mMyNodeName )
+                  != IDE_SUCCESS );
+    }
+
     IDE_TEST( failbackOrganizeReverseRPAfterLock( aStatement,
                                                   aFailbackFromNodeName,
                                                   &sFailoverHistoryInfo ) 
@@ -11627,6 +13108,7 @@ IDE_RC qdsd::failbackFailedover( qcStatement        * aStatement,
     IDE_TEST( failbackRecoverRPAfterLock( aStatement,
                                           aFailbackFromNodeName,
                                           sMainReplicaSet,
+                                          &sFailoverHistoryInfo,
                                           &sFailoverHistoryInfoWithOtherNode ) != IDE_SUCCESS );
 
     IDE_TEST( failbackTablePartitionSwap( aStatement,
@@ -11679,6 +13161,10 @@ IDE_RC qdsd::failbackFailedover( qcStatement        * aStatement,
 
     return IDE_SUCCESS;
 
+    IDE_EXCEPTION( needFailbackSync )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_DROP_FORCE_DETECTED ) );
+    }
     IDE_EXCEPTION( ERR_NODE_NOT_EXIST )
     {
         IDE_SET( ideSetErrorCode( sdERR_ABORT_SDM_SHARD_NODE_NOT_EXIST ) );
@@ -12602,3 +14088,1084 @@ IDE_RC qdsd::checkShardPIN( qcStatement * aStatement )
 
     return IDE_FAILURE;
 }
+
+IDE_RC qdsd::syncFailbackData( qcStatement        * aStatement,
+                               SChar              * aFromNodeName,
+                               SChar              * aToNodeName,
+                               sdiTableInfoList   * aTableInfoList,
+                               sdiReplicaSetInfo  * aReplicaSetInfo,
+                               sdiReplicaSetInfo  * aFailoverHistoryInfo,
+                               ULong                aSMN,
+                               idBool               aIsCloneOnly )
+{
+    sdiTableInfoList  * sTmpTableInfoList = NULL;    
+
+    sdiTableInfo      * sTableInfo  = NULL;
+    sdiRangeInfo        sRangeInfos;
+    sdiReplicaSet     * sFailoverHistory = NULL;
+    sdiReplicaSet     * sReplicaSet = NULL;
+
+    qdShardParseTree   * sParseTree = NULL;
+
+    sdiShardObjectType  sShardTableType = SDI_NON_SHARD_OBJECT;
+
+    UInt                i;
+    UInt                j;
+
+    SChar               sSqlStr[QD_MAX_SQL_LENGTH + 1];
+
+    SChar               sSyncReplicationName[SDI_REPLICATION_NAME_MAX_SIZE + 1] = { 0, };
+
+    UInt                sExecCount = 0;
+
+    sdiNode             sNode; 
+
+    SChar               sReverseReplName[SDI_REPLICATION_NAME_MAX_SIZE + 1];
+
+    ULong               sCount = 0;
+
+    idBool              sFetchResult = ID_FALSE;
+
+    idBool              sExistReverseRP = ID_FALSE;
+
+    idBool              sReverseRPInfo[SDI_NODE_MAX_COUNT] = { ID_FALSE, };
+
+    UInt                sAddCnt[SDI_NODE_MAX_COUNT] = {0, };
+
+    sParseTree = (qdShardParseTree *)aStatement->myPlan->parseTree;
+
+    idlOS::snprintf(sSyncReplicationName,
+                    SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                    "SYNC_%s_%s",                   /* nodename size = 10 *2 , + _ + _ + SYNC => 26 */
+                    aFromNodeName,
+                    aToNodeName);
+
+    /* Find Reverse RP */
+    for ( i = 0; i < aFailoverHistoryInfo->mCount; i++ )
+    {
+        sReplicaSet = &aFailoverHistoryInfo->mReplicaSets[i];
+
+        if ( idlOS::strncmp( sReplicaSet->mFirstBackupNodeName,
+                             aFromNodeName,
+                             SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+        {
+            idlOS::snprintf( sReverseReplName, 
+                             SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                             "R_%s", 
+                             sReplicaSet->mFirstReplName );
+        }
+        else if ( idlOS::strncmp( sReplicaSet->mSecondBackupNodeName,
+                                  aFromNodeName,
+                                  SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+        {
+            idlOS::snprintf( sReverseReplName, 
+                             SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                             "R_%s", 
+                             sReplicaSet->mSecondReplName );
+        }
+        else
+        {
+            idlOS::snprintf( sReverseReplName,
+                             SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                             SDM_NA_STR );
+        }
+
+        if ( idlOS::strncmp( sReverseReplName,
+                             SDM_NA_STR,
+                             SDI_REPLICATION_NAME_MAX_SIZE + 1 ) != 0 )
+        {
+            /* DROP FORCE의 추가로 ReverseRP가 존재한다고 확신할수 없다.
+             * 확인 해 보고 존재하면 ReverseRP를 처리한다. */
+            idlOS::snprintf( sSqlStr, 
+                             QD_MAX_SQL_LENGTH + 1,
+                             "select Count(*) from system_.sys_replications_ where replication_name='%s' ",
+                             sReverseReplName );
+
+            IDE_TEST( sdi::shardExecDirect( aStatement,
+                                            aFromNodeName,
+                                            (SChar*)sSqlStr,
+                                            (UInt) idlOS::strlen(sSqlStr),
+                                            SDI_INTERNAL_OP_FAILBACK,
+                                            &sExecCount,
+                                            &sCount,
+                                            NULL,
+                                            ID_SIZEOF(sCount),
+                                            &sFetchResult )
+                      != IDE_SUCCESS );
+
+            if ( sCount != 0 )
+            {
+                sExistReverseRP = ID_TRUE;
+                sReverseRPInfo[i] = ID_TRUE;
+            }
+            else
+            {
+                sReverseRPInfo[i] = ID_FALSE;
+            }
+        }
+    }
+   
+
+    /* clear Local Data */
+    for ( sTmpTableInfoList = aTableInfoList;
+          sTmpTableInfoList != NULL;
+          sTmpTableInfoList = sTmpTableInfoList->mNext )
+
+    {
+        sTableInfo = sTmpTableInfoList->mTableInfo;
+
+        if ( sTableInfo->mObjectType == 'T' )
+        {
+            /* check Table Type */
+            sShardTableType = sdi::getShardObjectType( sTableInfo );
+
+            if ( sShardTableType == SDI_CLONE_DIST_OBJECT )
+            {
+                /* ReverseRP가 없을 때에만 Sync를 수행한다.
+                 * Clone Fullsync의 경우에는 항상 ReverseRP가 없다. */
+                if ( sExistReverseRP == ID_FALSE )
+                {
+                    /* Failover 수행시 Clone은 Unset 되었기 때문에 기존 Shard Meta랑 비교해볼수가 없다.
+                     * 항상 Clone Sync 해야 한다. */
+                    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                     "TRUNCATE TABLE "
+                                     QCM_SQL_STRING_SKIP_FMT"."
+                                     QCM_SQL_STRING_SKIP_FMT"",
+                                     sTableInfo->mUserName,
+                                     sTableInfo->mObjectName );
+
+                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                 aToNodeName,/* LocalNodeName */
+                                                                 sSqlStr,
+                                                                 idlOS::strlen(sSqlStr)) 
+                              != IDE_SUCCESS );
+                }
+            }
+            else
+            {
+                if ( aIsCloneOnly == ID_TRUE )
+                {
+                    continue;
+                }
+
+                for ( i = 0; i < aFailoverHistoryInfo->mCount; i++ )
+                {
+                    /* ReverseRP가 없을때만 Sync를 수행한다. */
+                    if ( sReverseRPInfo[i] == ID_FALSE )
+                    {
+                        sFailoverHistory = &aFailoverHistoryInfo->mReplicaSets[i];
+
+                        /* Default Partition check */
+                        if ( sTableInfo->mDefaultPartitionReplicaSetId == sFailoverHistory->mReplicaSetId )
+                        {
+                            /* FailoverHistory의 Primary랑 비교하면 안됨,
+                             * 현재 ReplicaSet의 Primary랑 비교해야됨. */
+                            if ( sdm::checkFailbackAvailable( aReplicaSetInfo,
+                                                              sTableInfo->mDefaultPartitionReplicaSetId,
+                                                              sdiZookeeper::mMyNodeName ) == ID_TRUE )
+                            {
+                                SDI_INIT_NODE(&sNode);
+                                IDE_TEST( sdm::getNodeByID( QC_SMI_STMT( aStatement ),
+                                                            sTableInfo->mDefaultNodeId,
+                                                            aSMN,
+                                                            &sNode )
+                                          != IDE_SUCCESS );
+
+                                if ( idlOS::strncmp( aFromNodeName,
+                                                     sNode.mNodeName,
+                                                     SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+                                {
+                                    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                     "ALTER TABLE "
+                                                     QCM_SQL_STRING_SKIP_FMT"."
+                                                     QCM_SQL_STRING_SKIP_FMT" TRUNCATE PARTITION "
+                                                     QCM_SQL_STRING_SKIP_FMT"",
+                                                     sTableInfo->mUserName,
+                                                     sTableInfo->mObjectName,
+                                                     sTableInfo->mDefaultPartitionName);
+
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 aToNodeName,/* LocalNodeName */
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+                                }
+                            }
+                            else
+                            {
+                                /* ReplicaSet이 FailbackFromNode가 아니면 Failover시 DataFailover가 발생하지 않았다.
+                                 * DataSync 대상이 아니다. */
+                            }
+                        }
+
+                        /* Range Info Check */
+                        IDE_TEST( sdm::getRangeInfo( aStatement,
+                                                     QC_SMI_STMT( aStatement ),
+                                                     aSMN,
+                                                     sTableInfo,
+                                                     &sRangeInfos,
+                                                     ID_FALSE )
+                                  != IDE_SUCCESS );
+
+                        /* check Table Type */
+                        sShardTableType = sdi::getShardObjectType( sTableInfo );
+
+                        for ( j = 0; j < sRangeInfos.mCount; j++ )
+                        {
+                            if ( sRangeInfos.mRanges[j].mReplicaSetId == sFailoverHistory->mReplicaSetId )
+                            {
+                                if ( sdm::checkFailbackAvailable( aReplicaSetInfo,
+                                                                  sRangeInfos.mRanges[j].mReplicaSetId,
+                                                                  sdiZookeeper::mMyNodeName ) == ID_TRUE )
+                                {
+                                    SDI_INIT_NODE(&sNode);
+                                    IDE_TEST( sdm::getNodeByID( QC_SMI_STMT( aStatement ),
+                                                                sRangeInfos.mRanges[j].mNodeId,
+                                                                aSMN,
+                                                                &sNode )
+                                              != IDE_SUCCESS );
+
+                                    if ( idlOS::strncmp( aFromNodeName,
+                                                         sNode.mNodeName,
+                                                         SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+                                    {
+                                        switch ( sShardTableType )
+                                        {
+                                            case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
+                                                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                                 "ALTER TABLE "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."
+                                                                 QCM_SQL_STRING_SKIP_FMT" TRUNCATE PARTITION "
+                                                                 QCM_SQL_STRING_SKIP_FMT"",
+                                                                 sTableInfo->mUserName,
+                                                                 sTableInfo->mObjectName,
+                                                                 sRangeInfos.mRanges[j].mPartitionName );
+                                                break;
+                                            case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
+                                                /* Composite는 HA를 제공하지 않는다 */
+                                                continue;
+
+                                            case SDI_SOLO_DIST_OBJECT:
+                                                idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                                 "TRUNCATE TABLE "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."
+                                                                 QCM_SQL_STRING_SKIP_FMT"",
+                                                                 sTableInfo->mUserName,
+                                                                 sTableInfo->mObjectName );
+
+                                                break;
+                                            case SDI_CLONE_DIST_OBJECT:
+                                                /* Clone은 위에서 따로 처리하였다. */
+                                            case SDI_NON_SHARD_OBJECT:
+                                            default:
+                                                /* Non Shard Table이 오면 안됨. */
+                                                IDE_DASSERT( 0 );
+                                                break;
+                                        }
+
+                                        IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                     aToNodeName,/* LocalNodeName */
+                                                                                     sSqlStr,
+                                                                                     idlOS::strlen(sSqlStr)) 
+                                                  != IDE_SUCCESS );
+                                    }
+                                }
+                                else
+                                {
+                                    /* Failback 대상이 아니면 아무것도 안한다. */
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Procedure는 Truncate하지 않아도 된다. */
+        }
+    }
+
+    /* create RP + check RP Already Created */
+    IDE_TEST( createReplicationsWithNewTrans( aStatement,
+                                              sParseTree->mNodeInfoList,
+                                              aFromNodeName,
+                                              aToNodeName,
+                                              sSyncReplicationName ) != IDE_SUCCESS );
+
+    /* AddItem */
+    for ( sTmpTableInfoList = aTableInfoList;
+          sTmpTableInfoList != NULL;
+          sTmpTableInfoList = sTmpTableInfoList->mNext )
+
+    {
+        sTableInfo = sTmpTableInfoList->mTableInfo;
+
+        if ( sTableInfo->mObjectType == 'T' )
+        {
+            /* check Table Type */
+            sShardTableType = sdi::getShardObjectType( sTableInfo );
+
+            if ( sShardTableType == SDI_CLONE_DIST_OBJECT )
+            {
+                /* ReverseRp가 없을때만 Sync 한다. */
+                if ( sExistReverseRP == ID_FALSE )
+                {
+                    /* Failover 수행시 Clone은 Unset 되었기 때문에 기존 Shard Meta랑 비교해볼수가 없다.
+                     * 항상 Clone Sync 해야 한다. */
+                    idlOS::snprintf( sSqlStr, 
+                                     QD_MAX_SQL_LENGTH,
+                                     "alter replication "
+                                     QCM_SQL_STRING_SKIP_FMT
+                                     " add table from "
+                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                     " to "
+                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT,
+                                     sSyncReplicationName,             
+                                     sTableInfo->mUserName,            
+                                     sTableInfo->mObjectName,          
+                                     sTableInfo->mUserName,            
+                                     sTableInfo->mObjectName );
+
+                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                 aToNodeName,/* LocalNodeName */
+                                                                 sSqlStr,
+                                                                 idlOS::strlen(sSqlStr)) 
+                              != IDE_SUCCESS );
+
+                    idlOS::snprintf( sSqlStr, 
+                                     QD_MAX_SQL_LENGTH,
+                                     "alter replication "
+                                     QCM_SQL_STRING_SKIP_FMT
+                                     " add table from "
+                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                     " to "
+                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT,
+                                     sSyncReplicationName,             
+                                     sTableInfo->mUserName,            
+                                     sTableInfo->mObjectName,          
+                                     sTableInfo->mUserName,            
+                                     sTableInfo->mObjectName );
+
+                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                 aFromNodeName,
+                                                                 sSqlStr,
+                                                                 idlOS::strlen(sSqlStr)) 
+                              != IDE_SUCCESS );
+                }
+            }
+            else
+            {
+                if ( aIsCloneOnly == ID_TRUE )
+                {
+
+                    continue;
+                }
+
+                for ( i = 0; i < aFailoverHistoryInfo->mCount; i++ )
+                {
+                    /* ReverseRP가 없을때만 Sync 한다. */
+                    if ( sReverseRPInfo[i] == ID_FALSE )
+                    {
+                        sFailoverHistory = &aFailoverHistoryInfo->mReplicaSets[i];
+
+                        /* Default Partition check */
+                        if ( sTableInfo->mDefaultPartitionReplicaSetId == sFailoverHistory->mReplicaSetId )
+                        {
+                            /* FailoverHistory의 Primary랑 비교하면 안됨,
+                             * 현재 ReplicaSet의 Primary랑 비교해야됨. */
+                            if ( sdm::checkFailbackAvailable( aReplicaSetInfo,
+                                                              sTableInfo->mDefaultPartitionReplicaSetId,
+                                                              sdiZookeeper::mMyNodeName ) == ID_TRUE )
+                            {
+                                SDI_INIT_NODE(&sNode);
+                                IDE_TEST( sdm::getNodeByID( QC_SMI_STMT( aStatement ),
+                                                            sTableInfo->mDefaultNodeId,
+                                                            aSMN,
+                                                            &sNode )
+                                          != IDE_SUCCESS );
+
+                                if ( idlOS::strncmp( aFromNodeName,
+                                                     sNode.mNodeName,
+                                                     SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+                                {
+                                    sAddCnt[i]++;
+
+                                    idlOS::snprintf( sSqlStr, 
+                                                     QD_MAX_SQL_LENGTH,
+                                                     "alter replication "
+                                                     QCM_SQL_STRING_SKIP_FMT
+                                                     " add table from "
+                                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                     " partition "QCM_SQL_STRING_SKIP_FMT" to "
+                                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                     " partition "QCM_SQL_STRING_SKIP_FMT"",
+                                                     sSyncReplicationName,                   /* REPLICATION_NAME  */
+                                                     sTableInfo->mUserName,                  /* Src UserName      */
+                                                     sTableInfo->mObjectName,                /* Src TableName     */
+                                                     sTableInfo->mDefaultPartitionName,      /* Src PartitionName */
+                                                     sTableInfo->mUserName,                  /* Dst UserName      */
+                                                     sTableInfo->mObjectName,                /* Dst TableName     */
+                                                     sTableInfo->mDefaultPartitionName       /* Dst PartitionName */ );
+
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 aToNodeName,/* LocalNodeName */
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+
+                                    idlOS::snprintf( sSqlStr, 
+                                                     QD_MAX_SQL_LENGTH,
+                                                     "alter replication "
+                                                     QCM_SQL_STRING_SKIP_FMT
+                                                     " add table from "
+                                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                     " partition "QCM_SQL_STRING_SKIP_FMT" to "
+                                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                     " partition "QCM_SQL_STRING_SKIP_FMT"",
+                                                     sSyncReplicationName,                   /* REPLICATION_NAME  */
+                                                     sTableInfo->mUserName,                  /* Src UserName      */
+                                                     sTableInfo->mObjectName,                /* Src TableName     */
+                                                     sTableInfo->mDefaultPartitionName,      /* Src PartitionName */
+                                                     sTableInfo->mUserName,                  /* Dst UserName      */
+                                                     sTableInfo->mObjectName,                /* Dst TableName     */
+                                                     sTableInfo->mDefaultPartitionName       /* Dst PartitionName */ );
+
+
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 aFromNodeName,
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+
+                                }
+
+
+                            }
+                            else
+                            {
+                                /* ReplicaSet이 FailbackFromNode가 아니면 Failover시 DataFailover가 발생하지 않았다.
+                                 * DataSync 대상이 아니다. */
+                            }
+                        }
+
+                        /* Range Info Check */
+                        IDE_TEST( sdm::getRangeInfo( aStatement,
+                                                     QC_SMI_STMT( aStatement ),
+                                                     aSMN,
+                                                     sTableInfo,
+                                                     &sRangeInfos,
+                                                     ID_FALSE )
+                                  != IDE_SUCCESS );
+
+                        /* check Table Type */
+                        sShardTableType = sdi::getShardObjectType( sTableInfo );
+
+                        for ( j = 0; j < sRangeInfos.mCount; j++ )
+                        {
+                            if ( sRangeInfos.mRanges[j].mReplicaSetId == sFailoverHistory->mReplicaSetId )
+                            {
+                                if ( sdm::checkFailbackAvailable( aReplicaSetInfo,
+                                                                  sRangeInfos.mRanges[j].mReplicaSetId,
+                                                                  sdiZookeeper::mMyNodeName ) == ID_TRUE )
+                                {
+                                    SDI_INIT_NODE(&sNode);
+                                    IDE_TEST( sdm::getNodeByID( QC_SMI_STMT( aStatement ),
+                                                                sRangeInfos.mRanges[j].mNodeId,
+                                                                aSMN,
+                                                                &sNode )
+                                              != IDE_SUCCESS );
+
+                                    if ( idlOS::strncmp( aFromNodeName,
+                                                         sNode.mNodeName,
+                                                         SDI_NODE_NAME_MAX_SIZE + 1 ) == 0 )
+                                    {
+
+                                        switch ( sShardTableType )
+                                        {
+                                            case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
+                                                sAddCnt[i]++;
+
+                                                idlOS::snprintf( sSqlStr, 
+                                                                 QD_MAX_SQL_LENGTH,
+                                                                 "alter replication "
+                                                                 QCM_SQL_STRING_SKIP_FMT
+                                                                 " add table from "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                                 " partition "QCM_SQL_STRING_SKIP_FMT" to "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                                 " partition "QCM_SQL_STRING_SKIP_FMT"",
+                                                                 sSyncReplicationName,             
+                                                                 sTableInfo->mUserName,            
+                                                                 sTableInfo->mObjectName,          
+                                                                 sRangeInfos.mRanges[j].mPartitionName,
+                                                                 sTableInfo->mUserName,            
+                                                                 sTableInfo->mObjectName,          
+                                                                 sRangeInfos.mRanges[j].mPartitionName );
+
+                                                IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                             aToNodeName,/* LocalNodeName */
+                                                                                             sSqlStr,
+                                                                                             idlOS::strlen(sSqlStr)) 
+                                                          != IDE_SUCCESS );
+
+                                                idlOS::snprintf( sSqlStr, 
+                                                                 QD_MAX_SQL_LENGTH,
+                                                                 "alter replication "
+                                                                 QCM_SQL_STRING_SKIP_FMT
+                                                                 " add table from "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                                 " partition "QCM_SQL_STRING_SKIP_FMT" to "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                                 " partition "QCM_SQL_STRING_SKIP_FMT"",
+                                                                 sSyncReplicationName,             
+                                                                 sTableInfo->mUserName,            
+                                                                 sTableInfo->mObjectName,          
+                                                                 sRangeInfos.mRanges[j].mPartitionName,
+                                                                 sTableInfo->mUserName,            
+                                                                 sTableInfo->mObjectName,          
+                                                                 sRangeInfos.mRanges[j].mPartitionName );
+
+                                                IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                             aFromNodeName,
+                                                                                             sSqlStr,
+                                                                                             idlOS::strlen(sSqlStr)) 
+                                                          != IDE_SUCCESS );
+
+                                                break;
+                                            case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
+                                                /* Composite는 HA를 제공하지 않는다 */
+                                                continue;
+
+                                            case SDI_SOLO_DIST_OBJECT:
+                                                sAddCnt[i]++;
+
+                                                idlOS::snprintf( sSqlStr, 
+                                                                 QD_MAX_SQL_LENGTH,
+                                                                 "alter replication "
+                                                                 QCM_SQL_STRING_SKIP_FMT
+                                                                 " add table from "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                                 " to "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT,
+                                                                 sSyncReplicationName,             
+                                                                 sTableInfo->mUserName,            
+                                                                 sTableInfo->mObjectName,          
+                                                                 sTableInfo->mUserName,            
+                                                                 sTableInfo->mObjectName );
+
+                                                IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                             aToNodeName,/* LocalNodeName */
+                                                                                             sSqlStr,
+                                                                                             idlOS::strlen(sSqlStr)) 
+                                                          != IDE_SUCCESS );
+
+                                                idlOS::snprintf( sSqlStr, 
+                                                                 QD_MAX_SQL_LENGTH,
+                                                                 "alter replication "
+                                                                 QCM_SQL_STRING_SKIP_FMT
+                                                                 " add table from "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                                 " to "
+                                                                 QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT,
+                                                                 sSyncReplicationName,             
+                                                                 sTableInfo->mUserName,            
+                                                                 sTableInfo->mObjectName,          
+                                                                 sTableInfo->mUserName,            
+                                                                 sTableInfo->mObjectName );
+
+                                                IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                             aFromNodeName,
+                                                                                             sSqlStr,
+                                                                                             idlOS::strlen(sSqlStr)) 
+                                                          != IDE_SUCCESS );
+                                                break;
+
+                                            case SDI_CLONE_DIST_OBJECT:
+                                                /* Clone은 따로 처리 하였다. */
+                                            case SDI_NON_SHARD_OBJECT:
+                                            default:
+                                                /* Non Shard Table이 오면 안됨. */
+                                                IDE_DASSERT( 0 );
+                                                break;
+                                        }
+
+                                    }
+                                }
+                                else
+                                {
+                                    /* Failback 대상이 아니면 아무것도 안한다. */
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            /* Procedure */
+        }
+    }
+
+    /* Pending Add */
+    /* For Rollback */
+    idlOS::snprintf(sSqlStr,
+                    QD_MAX_SQL_LENGTH,
+                    "alter replication "QCM_SQL_STRING_SKIP_FMT" stop",
+                    sSyncReplicationName);
+    (void)sdiZookeeper::addPendingJob(sSqlStr,
+                                      aFromNodeName,
+                                      ZK_PENDING_JOB_AFTER_ROLLBACK,
+                                      QCI_STMT_MASK_MAX );
+    idlOS::snprintf(sSqlStr,
+                    QD_MAX_SQL_LENGTH,
+                    "drop replication "QCM_SQL_STRING_SKIP_FMT"",
+                    sSyncReplicationName);
+    (void)sdiZookeeper::addPendingJob(sSqlStr,
+                                      aFromNodeName,
+                                      ZK_PENDING_JOB_AFTER_ROLLBACK,
+                                      QCI_STMT_MASK_MAX );
+    (void)sdiZookeeper::addPendingJob( sSqlStr,
+                                       aToNodeName,
+                                       ZK_PENDING_JOB_AFTER_ROLLBACK,
+                                       QCI_STMT_MASK_MAX );
+
+    /* For Commit */
+    idlOS::snprintf(sSqlStr,
+                    QD_MAX_SQL_LENGTH,
+                    "alter replication "QCM_SQL_STRING_SKIP_FMT" stop",
+                    sSyncReplicationName);
+    (void)sdiZookeeper::addPendingJob(sSqlStr,
+                                      aFromNodeName,
+                                      ZK_PENDING_JOB_AFTER_COMMIT,
+                                      QCI_STMT_MASK_MAX );
+
+    idlOS::snprintf(sSqlStr,
+                    QD_MAX_SQL_LENGTH,
+                    "drop replication "QCM_SQL_STRING_SKIP_FMT"",
+                    sSyncReplicationName);
+
+    (void)sdiZookeeper::addPendingJob(sSqlStr,
+                                      aFromNodeName,
+                                      ZK_PENDING_JOB_AFTER_COMMIT,
+                                      QCI_STMT_MASK_MAX );
+    (void)sdiZookeeper::addPendingJob( sSqlStr,
+                                       aToNodeName,
+                                       ZK_PENDING_JOB_AFTER_COMMIT,
+                                       QCI_STMT_MASK_MAX );
+
+
+    /* Sync Data */
+    IDE_TEST( executeRemoteSQLWithNewTransArg( aStatement,
+                                               aFromNodeName,
+                                               SDI_INTERNAL_OP_FAILBACK,
+                                               QCI_STMT_MASK_DCL,
+                                               sSqlStr,
+                                               QD_MAX_SQL_LENGTH,
+                                               ID_FALSE,
+                                               "alter replication "QCM_SQL_STRING_SKIP_FMT" sync",
+                                               sSyncReplicationName) != IDE_SUCCESS );
+
+
+    /* Backup Sync - ReverseRP가 없고 DataSync가 없었다면
+     * 내 Data로 Service 해야 하는데 Backup이 최신일수 있다.
+     * 기존 Backup을 Truncate 하고 내 Data를 Backup으로 Sync 해야 한다. */
+    if ( aIsCloneOnly == ID_FALSE )
+    {
+        for ( i = 0; i < aFailoverHistoryInfo->mCount; i++ )
+        {
+            /* Sync 받아온게 없을때만 Backup Sync 한다. */
+            /* ReverseRP가 없을때만 Sync를 수행한다. */
+            if ( ( sReverseRPInfo[i] == ID_FALSE ) && ( sAddCnt[i] == 0 ) )
+            {
+                IDE_TEST( syncDataWithReplicaSet( aStatement,
+                                                  sdiZookeeper::mMyNodeName,
+                                                  aTableInfoList,
+                                                  &aFailoverHistoryInfo->mReplicaSets[i],
+                                                  aSMN ) != IDE_SUCCESS );
+            }
+        }
+    }
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+}
+
+IDE_RC qdsd::syncFailbackDataAfterLock( qcStatement        * aStatement,
+                                        SChar              * aFromNodeName,
+                                        SChar              * aToNodeName )
+{
+    SChar               sSqlStr[QD_MAX_SQL_LENGTH + 1];
+    SChar               sSyncReplicationName[SDI_REPLICATION_NAME_MAX_SIZE + 1] = { 0, };
+
+    idlOS::snprintf(sSyncReplicationName,
+                    SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                    "SYNC_%s_%s",                   /* nodename size = 10 *2 , + _ + _ + SYNC => 26 */
+                    aFromNodeName,
+                    aToNodeName);
+
+    /* After Remote Lock */
+    /* Flush Logs */
+    IDE_TEST( executeRemoteSQLWithNewTransArg( aStatement,
+                                aFromNodeName,
+                                SDI_INTERNAL_OP_FAILBACK,
+                                QCI_STMT_MASK_DCL,
+                                sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                ID_FALSE,
+                                "alter replication "QCM_SQL_STRING_SKIP_FMT" flush ",
+                                sSyncReplicationName ) != IDE_SUCCESS );
+
+    /* Remove RP */
+    IDE_TEST( executeRemoteSQLWithNewTransArg( aStatement,
+                                aFromNodeName,
+                                SDI_INTERNAL_OP_FAILBACK,
+                                QCI_STMT_MASK_DCL,
+                                sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                ID_FALSE,
+                                "alter replication "QCM_SQL_STRING_SKIP_FMT" stop",
+                                sSyncReplicationName) != IDE_SUCCESS );
+
+/*    IDE_TEST( executeRemoteSQL( aStatement,
+                                aFromNodeName,
+                                SDI_INTERNAL_OP_FAILBACK,
+                                QCI_STMT_MASK_DDL,
+                                sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                "drop replication "QCM_SQL_STRING_SKIP_FMT"",
+                                sSyncReplicationName) != IDE_SUCCESS );
+    IDE_TEST( executeRemoteSQL( aStatement,
+                                aToNodeName,
+                                SDI_INTERNAL_OP_FAILBACK,
+                                QCI_STMT_MASK_DDL,
+                                sSqlStr,
+                                QD_MAX_SQL_LENGTH,
+                                "drop replication "QCM_SQL_STRING_SKIP_FMT"",
+                                sSyncReplicationName) != IDE_SUCCESS );*/
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+}
+
+IDE_RC qdsd::syncDataWithReplicaSet( qcStatement        * aStatement,
+                                     SChar              * aFromNodeName,
+                                     sdiTableInfoList   * aTableInfoList,
+                                     sdiReplicaSet      * aReplicaSet,
+                                     ULong                aSMN )
+{
+    sdiTableInfoList  * sTmpTableInfoList = NULL;    
+
+    sdiTableInfo      * sTableInfo  = NULL;
+    sdiRangeInfo        sRangeInfos;
+
+    qdShardParseTree  * sParseTree = NULL;
+
+    sdiShardObjectType  sShardTableType = SDI_NON_SHARD_OBJECT;
+
+    UInt                j;
+    UInt                k;
+
+    SChar               sSqlStr[QD_MAX_SQL_LENGTH + 1];
+
+    SChar               sSyncReplicationName[SDI_REPLICATION_NAME_MAX_SIZE + 1] = { 0, };
+
+    SChar               sSyncToNodeName[SDI_NODE_NAME_MAX_SIZE + 1 ];
+
+    sParseTree = (qdShardParseTree *)aStatement->myPlan->parseTree;
+
+    for( k = 0; k < SDI_KSAFETY_MAX ; k++ )
+    {
+        if ( ( k == 0 ) &&
+             ( idlOS::strncmp( aReplicaSet->mFirstBackupNodeName,
+                               SDM_NA_STR,
+                               SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 ) )
+        {
+            idlOS::snprintf(sSyncReplicationName,
+                            SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                            "SYNC_%s_%s",  /* nodename size = 10 *2 , + _ + _ + SYNC => 26 */
+                            aFromNodeName,
+                            aReplicaSet->mFirstBackupNodeName );
+
+            idlOS::strncpy( sSyncToNodeName,
+                            aReplicaSet->mFirstBackupNodeName,
+                            SDI_NODE_NAME_MAX_SIZE + 1 );
+        }
+        else if ( ( k == 1 ) &&
+             ( idlOS::strncmp( aReplicaSet->mSecondBackupNodeName,
+                               SDM_NA_STR,
+                               SDI_NODE_NAME_MAX_SIZE + 1 ) != 0 ) )
+        {
+            idlOS::snprintf(sSyncReplicationName,
+                            SDI_REPLICATION_NAME_MAX_SIZE + 1,
+                            "SYNC_%s_%s",  /* nodename size = 10 *2 , + _ + _ + SYNC => 26 */
+                            aFromNodeName,
+                            aReplicaSet->mSecondBackupNodeName );
+
+            idlOS::strncpy( sSyncToNodeName,
+                            aReplicaSet->mSecondBackupNodeName,
+                            SDI_NODE_NAME_MAX_SIZE + 1 );
+        }
+        else
+        {
+            continue;
+        }
+
+        IDE_TEST( createReplicationsWithNewTrans( aStatement,
+                                                  sParseTree->mNodeInfoList,
+                                                  sdiZookeeper::mMyNodeName,
+                                                  sSyncToNodeName,
+                                                  sSyncReplicationName ) != IDE_SUCCESS );
+
+        for ( sTmpTableInfoList = aTableInfoList;
+              sTmpTableInfoList != NULL;
+              sTmpTableInfoList = sTmpTableInfoList->mNext )
+
+        {
+            sTableInfo = sTmpTableInfoList->mTableInfo;
+
+            if ( sTableInfo->mObjectType == 'T' )
+            {
+                /* check Table Type */
+                sShardTableType = sdi::getShardObjectType( sTableInfo );
+
+                if ( sShardTableType == SDI_CLONE_DIST_OBJECT )
+                {
+                    /* Clone은 Backup Sync 안해도 된다. */
+                }
+                else
+                {
+                    /* Default Partition check */
+                    if ( sTableInfo->mDefaultPartitionReplicaSetId == aReplicaSet->mReplicaSetId )
+                    {
+                        idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                         "ALTER TABLE "
+                                         QCM_SQL_STRING_SKIP_FMT"."
+                                         QCM_SQL_STRING_SKIP_FMT" TRUNCATE PARTITION "
+                                         QCM_SQL_STRING_SKIP_FMT"",
+                                         sTableInfo->mUserName,
+                                         sTableInfo->mObjectName,
+                                         sTableInfo->mDefaultPartitionName);
+
+                        IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                     sSyncToNodeName,
+                                                                     sSqlStr,
+                                                                     idlOS::strlen(sSqlStr)) 
+                                  != IDE_SUCCESS );
+
+                        idlOS::snprintf( sSqlStr, 
+                                         QD_MAX_SQL_LENGTH,
+                                         "alter replication "
+                                         QCM_SQL_STRING_SKIP_FMT
+                                         " add table from "
+                                         QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                         " partition "QCM_SQL_STRING_SKIP_FMT" to "
+                                         QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                         " partition "QCM_SQL_STRING_SKIP_FMT"",
+                                         sSyncReplicationName,                   /* REPLICATION_NAME  */
+                                         sTableInfo->mUserName,                  /* Src UserName      */
+                                         sTableInfo->mObjectName,                /* Src TableName     */
+                                         sTableInfo->mDefaultPartitionName,      /* Src PartitionName */
+                                         sTableInfo->mUserName,                  /* Dst UserName      */
+                                         sTableInfo->mObjectName,                /* Dst TableName     */
+                                         sTableInfo->mDefaultPartitionName       /* Dst PartitionName */ );
+
+                        IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                     sdiZookeeper::mMyNodeName,
+                                                                     sSqlStr,
+                                                                     idlOS::strlen(sSqlStr)) 
+                                  != IDE_SUCCESS );
+
+                        IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                     sSyncToNodeName,
+                                                                     sSqlStr,
+                                                                     idlOS::strlen(sSqlStr)) 
+                                  != IDE_SUCCESS );
+
+                    }
+
+                    /* Range Info Check */
+                    IDE_TEST( sdm::getRangeInfo( aStatement,
+                                                 QC_SMI_STMT( aStatement ),
+                                                 aSMN,
+                                                 sTableInfo,
+                                                 &sRangeInfos,
+                                                 ID_FALSE )
+                              != IDE_SUCCESS );
+
+                    /* check Table Type */
+                    sShardTableType = sdi::getShardObjectType( sTableInfo );
+
+                    for ( j = 0; j < sRangeInfos.mCount; j++ )
+                    {
+                        if ( sRangeInfos.mRanges[j].mReplicaSetId == aReplicaSet->mReplicaSetId )
+                        {
+                            switch ( sShardTableType )
+                            {
+                                case SDI_SINGLE_SHARD_KEY_DIST_OBJECT:
+                                    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                     "ALTER TABLE "
+                                                     QCM_SQL_STRING_SKIP_FMT"."
+                                                     QCM_SQL_STRING_SKIP_FMT" TRUNCATE PARTITION "
+                                                     QCM_SQL_STRING_SKIP_FMT"",
+                                                     sTableInfo->mUserName,
+                                                     sTableInfo->mObjectName,
+                                                     sRangeInfos.mRanges[j].mPartitionName );
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 sSyncToNodeName,
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+
+                                    idlOS::snprintf( sSqlStr, 
+                                                     QD_MAX_SQL_LENGTH,
+                                                     "alter replication "
+                                                     QCM_SQL_STRING_SKIP_FMT
+                                                     " add table from "
+                                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                     " partition "QCM_SQL_STRING_SKIP_FMT" to "
+                                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                     " partition "QCM_SQL_STRING_SKIP_FMT"",
+                                                     sSyncReplicationName,             
+                                                     sTableInfo->mUserName,            
+                                                     sTableInfo->mObjectName,          
+                                                     sRangeInfos.mRanges[j].mPartitionName,
+                                                     sTableInfo->mUserName,            
+                                                     sTableInfo->mObjectName,          
+                                                     sRangeInfos.mRanges[j].mPartitionName );
+
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 sdiZookeeper::mMyNodeName,
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 sSyncToNodeName,
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+
+
+                                    break;
+                                case SDI_COMPOSITE_SHARD_KEY_DIST_OBJECT:
+                                    /* Composite는 HA를 제공하지 않는다 */
+                                    continue;
+
+                                case SDI_SOLO_DIST_OBJECT:
+                                    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                                                     "TRUNCATE TABLE "
+                                                     QCM_SQL_STRING_SKIP_FMT"."
+                                                     QCM_SQL_STRING_SKIP_FMT"",
+                                                     sTableInfo->mUserName,
+                                                     sTableInfo->mObjectName );
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 sSyncToNodeName,
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+
+                                    idlOS::snprintf( sSqlStr, 
+                                                     QD_MAX_SQL_LENGTH,
+                                                     "alter replication "
+                                                     QCM_SQL_STRING_SKIP_FMT
+                                                     " add table from "
+                                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT
+                                                     " to "
+                                                     QCM_SQL_STRING_SKIP_FMT"."QCM_SQL_STRING_SKIP_FMT,
+                                                     sSyncReplicationName,             
+                                                     sTableInfo->mUserName,            
+                                                     sTableInfo->mObjectName,          
+                                                     sTableInfo->mUserName,            
+                                                     sTableInfo->mObjectName );
+
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 sdiZookeeper::mMyNodeName,
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+
+                                    IDE_TEST( sdi::shardExecTempDDLWithNewTrans( aStatement,
+                                                                                 sSyncToNodeName,
+                                                                                 sSqlStr,
+                                                                                 idlOS::strlen(sSqlStr)) 
+                                              != IDE_SUCCESS );
+
+
+                                    break;
+                                case SDI_CLONE_DIST_OBJECT:
+                                    /* Clone은 위에서 따로 처리하였다. */
+                                case SDI_NON_SHARD_OBJECT:
+                                default:
+                                    /* Non Shard Table이 오면 안됨. */
+                                    IDE_DASSERT( 0 );
+                                    break;
+                            }
+
+                        }
+                    }
+                }
+            }
+            else
+            {
+                /* Procedure는 하지 않아도 된다. */
+            }
+        }
+
+        /* Sync Replication */
+        IDE_TEST( executeRemoteSQLWithNewTransArg( aStatement,
+                                                   sdiZookeeper::mMyNodeName,
+                                                   SDI_INTERNAL_OP_FAILBACK,
+                                                   QCI_STMT_MASK_DCL,
+                                                   sSqlStr,
+                                                   QD_MAX_SQL_LENGTH,
+                                                   ID_FALSE,
+                                                   "alter replication "QCM_SQL_STRING_SKIP_FMT" sync ",
+                                                   sSyncReplicationName) != IDE_SUCCESS );
+
+        /* Stop & Drop Replication */
+        IDE_TEST( executeRemoteSQLWithNewTransArg( aStatement,
+                                    sdiZookeeper::mMyNodeName,
+                                    SDI_INTERNAL_OP_FAILBACK,
+                                    QCI_STMT_MASK_DCL,
+                                    sSqlStr,
+                                    QD_MAX_SQL_LENGTH,
+                                    ID_FALSE,
+                                    "alter replication "QCM_SQL_STRING_SKIP_FMT" stop",
+                                    sSyncReplicationName) != IDE_SUCCESS );
+
+        IDE_TEST( executeRemoteSQLWithNewTransArg( aStatement,
+                                    sdiZookeeper::mMyNodeName,
+                                    SDI_INTERNAL_OP_FAILBACK,
+                                    QCI_STMT_MASK_DCL,
+                                    sSqlStr,
+                                    QD_MAX_SQL_LENGTH,
+                                    ID_FALSE,
+                                    "drop replication "QCM_SQL_STRING_SKIP_FMT,
+                                    sSyncReplicationName) != IDE_SUCCESS );
+
+        IDE_TEST( executeRemoteSQLWithNewTransArg( aStatement,
+                                    sSyncToNodeName,
+                                    SDI_INTERNAL_OP_FAILBACK,
+                                    QCI_STMT_MASK_DCL,
+                                    sSqlStr,
+                                    QD_MAX_SQL_LENGTH,
+                                    ID_FALSE,
+                                    "drop replication "QCM_SQL_STRING_SKIP_FMT,
+                                    sSyncReplicationName) != IDE_SUCCESS );
+    }
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+}
+

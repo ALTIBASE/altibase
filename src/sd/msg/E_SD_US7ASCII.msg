@@ -1,4 +1,4 @@
-# $Id: E_SD_US7ASCII.msg 90667 2021-04-21 08:05:29Z jake.jang $
+# $Id: E_SD_US7ASCII.msg 91417 2021-08-03 06:35:26Z donghyun $
 #
 # Error Message File (used by genErrMsg)
 #
@@ -139,6 +139,10 @@ SECTION = 14
 28,sdERR_ABORT_SDM_UNSUPPORTED_SHARD_PROCEDURE_PARAMETER_TYPE = Unbindable data types are included in parameters of the shard procedure. <0%s>.<1%s>.<2%s>
 # *Cause: To be registered as a shard procedure, a procedure should use a parameter with primitive data type.
 # *Action: Check the data type of the parameter in the stored procedure.
+
+29,sdERR_ABORT_SDM_NOT_FAILEDOVER = DROP FORCE cannot be executed because the target node was not failed over.
+# *Cause: The target node was not failed over.
+# *Action: Fail over the target node before executing DROP FORCE.
 
 ###############################################################################
 #########                 SDA ERROR CODE (101~)                       #########

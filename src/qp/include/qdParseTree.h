@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdParseTree.h 90311 2021-03-24 09:46:45Z ahra.cho $
+ * $Id: qdParseTree.h 91417 2021-08-03 06:35:26Z donghyun $
  **********************************************************************/
 
 #ifndef _O_QD_PARSE_TREE_H_
@@ -2217,6 +2217,8 @@ typedef enum
     SHARD_FAILOVER_EXIT,
     SHARD_FAILOVER_FORCE,
     SHARD_FAILBACK,
+    SHARD_FAILBACK_SYNC,
+    SHARD_FAILBACK_INSTANT,
     SHARD_MOVE_TO,
     SHARD_MOVE_TO_INTERNAL_CLONE_COPY,
     SHARD_MOVE_REMOVE,
