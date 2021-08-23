@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smcRecord.cpp 91258 2021-07-19 06:52:13Z minku.kang $
+ * $Id: smcRecord.cpp 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #include <idl.h>
@@ -2303,16 +2303,16 @@ IDE_RC smcRecord::removeVersion( idvSQL               * /*aStatistics*/,
 
     /* remove의 target이 되는 row는 항상 mNext만 쓰이고 있다. */
     IDE_TEST( smcRecordUpdate::writeRemoveVersionLog(
-                  aTrans,
-                  aHeader,
-                  aRow,
-                  sNxtSCN,
-                  sDeleteSCN,
-                  sMakeLogOpt,
-                  &sImplFlagChange)
+                                                      aTrans,
+                                                      aHeader,
+                                                      aRow,
+                                                      sNxtSCN,
+                                                      sDeleteSCN,
+                                                      sMakeLogOpt,
+                                                      &sImplFlagChange)
               != IDE_SUCCESS );
 
-
+    IDU_FIT_POINT( "BUG-49063@smcRecord::removeVersion::setLimitSCN" );
     SM_SET_SCN( &(sSlotHeader->mLimitSCN), &sDeleteSCN );
 
     IDE_TEST( smmDirtyPageMgr::insDirtyPage(aHeader->mSpaceID,

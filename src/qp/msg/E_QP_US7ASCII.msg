@@ -15,7 +15,7 @@
 # 반드시 main trunk에서 번호를 할당받은 후 브랜치에서 사용하셔야 합니다.
 # 의문 사항이 있으시면 AK팀 혹은 QP(품질본부)팀에 문의 부탁드립니다.
 
-# Last Number = 1193
+# Last Number = 1194
 
 SECTION = 3
 
@@ -3765,6 +3765,10 @@ SECTION = 3
 1136,qpERR_ABORT_QDQ_NOT_EMPTY_QUEUE = A queue is not empty. Only empty queue can reset a msgid.
 # *Cause: Can not perform to reset a msgid because it is not a empty queue.
 # *Action: Check whether the queue is empty, otherwise remove the data from the queue.
+
+1194,qpERR_ABORT_QDQ_USE_QUEUE_TABLE_IN_DISK_TABLESPACE = Failed to create queue table in disk tablespace.
+# *Cause: Cannot create queue table in disk tablespace.
+# *Action: Create queue table in memory tablespace or volatile tablespace.
 
 ###############################################################################
 #########                 QDSD ERROR CODE                             #########

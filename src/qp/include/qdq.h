@@ -16,7 +16,7 @@
  
 
 /*********************************************************************** */
-/* $Id: qdq.h 82763 2018-04-10 05:02:33Z andrew.shin $ */
+/* $Id: qdq.h 91512 2021-08-21 07:50:50Z emlee $ */
 /**********************************************************************/
 #ifndef _O_QDQ_H_
 #define _O_QDQ_H_  1
@@ -60,6 +60,9 @@ public:
                                                smOID            aQueueSequenceOID,
                                                SInt             aColumnCount,
                                                UInt             aParallelDegree );
+
+    /* BUG-49063 DELETE ON/OFF */
+    static IDE_RC validateAlterAllowDelete( qcStatement * aStatement );
 };
 
 #endif // _O_QDQ_H_

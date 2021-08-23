@@ -17,7 +17,7 @@
 
 
 /***********************************************************************
- * $Id: smiMisc.h 91224 2021-07-14 05:36:12Z minku.kang $
+ * $Id: smiMisc.h 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #ifndef _O_SMI_MISC_H_
@@ -418,6 +418,9 @@ IDE_RC smiSBufferFlusherOnOff( idvSQL *aStatistics,
                                idBool aStart );
 
 IDE_RC smiUpdateIndexModule(void *aIndexModule);
+
+/* BUG-49063 */
+idBool smiIsAllowDeleteQueue( const void   * aTable );
 
 /* PROJ-1723 [MDW/INTEGRATOR] Altibase Plugin ∞≥πﬂ
    DDL Statement Text¿« ∑Œ±Î

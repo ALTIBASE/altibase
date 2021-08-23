@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qcply.y 91417 2021-08-03 06:35:26Z donghyun $
+ * $Id: qcply.y 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 /*
@@ -21195,6 +21195,40 @@ table_maxrows
       }
     ;
 
+opt_allow_delete
+    : /* empty */
+      {
+         $<tableAttrFlagList>$ = NULL;
+      }
+    | allow_delete
+      {
+        $<tableAttrFlagList>$ = $<tableAttrFlagList>1;
+      }
+    ;
+
+allow_delete
+    : TR_DELETE TR_ON
+      {
+         QCP_STRUCT_ALLOC($<tableAttrFlagList>$, qdTableAttrFlagList);
+
+         SET_POSITION( $<tableAttrFlagList>$->attrPosition, $<position>2 );
+
+         $<tableAttrFlagList>$->attrMask  = SMI_TABLE_QUEUE_ALLOW_DELETE_MASK;
+         $<tableAttrFlagList>$->attrValue = SMI_TABLE_QUEUE_ALLOW_DELETE_TRUE;
+         $<tableAttrFlagList>$->next      = NULL;
+      }
+    | TR_DELETE TR_OFF
+      {
+          QCP_STRUCT_ALLOC($<tableAttrFlagList>$, qdTableAttrFlagList);
+
+         SET_POSITION( $<tableAttrFlagList>$->attrPosition, $<position>2 );
+
+         $<tableAttrFlagList>$->attrMask  = SMI_TABLE_QUEUE_ALLOW_DELETE_MASK;
+         $<tableAttrFlagList>$->attrValue = SMI_TABLE_QUEUE_ALLOW_DELETE_FALSE;
+         $<tableAttrFlagList>$->next      = NULL;
+      }
+    ;
+
 // Proj-1360 Queue
 create_queue_statement
     : TR_CREATE
@@ -21206,6 +21240,7 @@ create_queue_statement
       opt_in_row
       TS_CLOSING_PARENTHESIS
       table_maxrows_option
+      opt_allow_delete
       tablespace_name_option
       {
           QCP_STRUCT_ALLOC($<tableParseTree>$, qdTableParseTree);
@@ -21248,11 +21283,18 @@ create_queue_statement
               $<tableParseTree>$->maxrows = 0;
           }
           
+          /* BUG-49063 DELETE ON/OFF */
+          if ( $<tableAttrFlagList>10 != NULL )
+          {
+              $<tableParseTree>$->tableAttrFlagList
+                  = $<tableAttrFlagList>10;
+          }
+
           /* TableSpace Name */
-          if ( $<positionPtr>10 != NULL )
+          if ( $<positionPtr>11 != NULL )
           {
               SET_POSITION( $<tableParseTree>$->TBSName,
-                            *($<positionPtr>10));
+                            *($<positionPtr>11));
           }
           else
           {
@@ -21288,6 +21330,7 @@ create_queue_statement
       column_def_commalist
       TS_CLOSING_PARENTHESIS
       table_maxrows_option
+      opt_allow_delete
       tablespace_name_option
       {
           QCP_STRUCT_ALLOC($<tableParseTree>$, qdTableParseTree);
@@ -21339,11 +21382,18 @@ create_queue_statement
               $<tableParseTree>$->maxrows = 0;
           }
 
+          /* BUG-49063 DELETE ON/OFF */
+          if ( $<tableAttrFlagList>8 != NULL )
+          {
+              $<tableParseTree>$->tableAttrFlagList
+                  = $<tableAttrFlagList>8;
+          }
+
           /* TableSpace Name */
-          if ( $<positionPtr>8 != NULL )
+          if ( $<positionPtr>9 != NULL )
           {
               SET_POSITION( $<tableParseTree>$->TBSName,
-                            *($<positionPtr>8));
+                            *($<positionPtr>9));
           }
           else
           {
@@ -21483,6 +21533,39 @@ alter_queue_statement
         $<queueSequenceParseTree>$->common.optimize = qcc::optimize;
         $<queueSequenceParseTree>$->common.execute  = qdq::executeAlterQueueSequence;
     }
+    /* BUG-49063 */
+    | TR_ALTER TR_QUEUE user_object_name allow_delete
+      /* ALTER QUEUE IDENTIFIER DELETE ON */
+      /* ALTER QUEUE IDENTIFIER DELETE OFF */
+      {
+          QCP_STRUCT_ALLOC($<tableParseTree>$, qdTableParseTree);
+          QC_SET_INIT_PARSE_TREE($<tableParseTree>$, $<position>1);
+          QD_TABLE_PARSE_TREE_INIT($<tableParseTree>$);
+
+          /* set userName position */
+          SET_POSITION($<tableParseTree>$->userName,
+                       $<userNObjName>3->userName);
+          /* set tableName position */
+          SET_POSITION($<tableParseTree>$->tableName,
+                       $<userNObjName>3->objectName);
+
+          $<tableParseTree>$->flag = 0;
+          $<tableParseTree>$->flag &= ~QDQ_QUEUE_MASK;
+          $<tableParseTree>$->flag |= QDQ_QUEUE_TRUE;
+
+          /* BUG-49063 DELETE ON/OFF */
+          if ( $<tableAttrFlagList>4 != NULL )
+          {
+              $<tableParseTree>$->tableAttrFlagList
+                  = $<tableAttrFlagList>4;
+          }
+
+          $<tableParseTree>$->common.parse    = qcc::parse;
+          $<tableParseTree>$->common.validate =
+              qdq::validateAlterAllowDelete;
+          $<tableParseTree>$->common.optimize = qcc::optimize;
+          $<tableParseTree>$->common.execute  = qdbAlter::executeAttrFlag;
+      }
     ;
 
 // Proj - 1360 Queue

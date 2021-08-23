@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdbAlter.cpp 90824 2021-05-13 05:35:21Z minku.kang $
+ * $Id: qdbAlter.cpp 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #include <idl.h>
@@ -19006,10 +19006,14 @@ IDE_RC qdbAlter::validateAttrFlag( qcStatement * aStatement )
 }
 
 /*
-    Table의 Flag를 변경하는 Alter구문에 대한 Validation
+    Table의 Flag를 변경하는 Alter구문에 대한 Execution
 
     ex> ALTER TABLE TABLENAME COMPRESSED LOGGING
     ex> ALTER TABLE TABLENAME UNCOMPRESSED LOGGING
+
+    BUG-49063
+    ex> ALTER QUEUE TABLENAME DELETE ON
+    ex> ALTER QUEUE TABLENAME DELETE OFF
 
     [IN] aStatement - Validation을 수행할 Statement
  */

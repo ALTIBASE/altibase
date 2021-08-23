@@ -16,7 +16,7 @@
  
 
 /***********************************************************************/
-/* $Id: qdq.cpp 90270 2021-03-21 23:20:18Z bethy $ */
+/* $Id: qdq.cpp 91512 2021-08-21 07:50:50Z emlee $ */
 /**********************************************************************/
 
 #include <idl.h>
@@ -59,10 +59,11 @@ IDE_RC qdq::executeCreateQueue(qcStatement *aStatement)
      * [1] Create Queue Table   *
      * ======================== */
 
-    //BUG-48230: Queue Table은 MEMORY 기반 테이블 이어야만 함
     sParseTree = (qdTableParseTree *) aStatement->myPlan->parseTree;
 
-    IDE_TEST_RAISE( smiTableSpace::isDiskTableSpace(sParseTree->TBSAttr.mID),
+    //BUG-48230: Queue Table은 MEMORY,VOLATILE 기반 테이블 이어야만 함
+    IDE_TEST_RAISE( !( (sctTableSpaceMgr::isMemTableSpace(sParseTree->TBSAttr.mID)) ||
+                       (sctTableSpaceMgr::isVolatileTableSpace(sParseTree->TBSAttr.mID)) ),
                     ERR_NO_MEMORY_OR_VOLATILE_TABLE );
 
     IDE_TEST( qdbCreate::executeCreateTable(aStatement) != IDE_SUCCESS );
@@ -147,7 +148,7 @@ IDE_RC qdq::executeCreateQueue(qcStatement *aStatement)
 
     IDE_EXCEPTION(ERR_NO_MEMORY_OR_VOLATILE_TABLE)
     {
-        IDE_SET(ideSetErrorCode(qpERR_ABORT_QDB_NO_MEMORY_OR_VOLATILE_TABLE));
+        IDE_SET( ideSetErrorCode(qpERR_ABORT_QDQ_USE_QUEUE_TABLE_IN_DISK_TABLESPACE) );
     }
     IDE_EXCEPTION_END;
 
@@ -756,6 +757,156 @@ IDE_RC qdq::updateQueueSequenceFromMeta( qcStatement    * aStatement,
     IDE_EXCEPTION( ERR_META_CRASH )
     {
         IDE_SET(ideSetErrorCode( qpERR_ABORT_QCM_META_CRASH ) );
+    }
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+}
+
+IDE_RC qdq::validateAlterAllowDelete( qcStatement * aStatement )
+{
+/***********************************************************************
+ *
+ * Description : ALTER QUEUE queue_name DELETE ON/OFF 구문의 validation
+ *
+ * Implementation :
+ *
+ ***********************************************************************/    
+    qdTableParseTree    * sParseTree = NULL;
+    UInt                  sTableType;
+    qcuSqlSourceInfo      sqlInfo;
+    qdTableAttrFlagList * sAttrFlag = NULL;
+
+    sParseTree = (qdTableParseTree *)aStatement->myPlan->parseTree;
+
+    /* BUG-30059 */
+    if ( qdbCommon::containDollarInName( &(sParseTree->tableName) ) == ID_TRUE )
+    {
+        sqlInfo.setSourceInfo( aStatement,
+                               &(sParseTree->tableName) );
+
+        IDE_RAISE( CANT_USE_RESERVED_WORD );
+    }
+
+    //----------------------------
+    // Queue 가 존재하는지 검사
+    //----------------------------
+    if ( qdbCommon::checkTableInfo( aStatement,
+                                    sParseTree->userName,
+                                    sParseTree->tableName,
+                                    &(sParseTree->userID),
+                                    &(sParseTree->tableInfo),
+                                    &(sParseTree->tableHandle),
+                                    &(sParseTree->tableSCN))
+         == IDE_SUCCESS )
+    {
+        // tableInfo가 있는 경우
+        if ( sParseTree->tableInfo->tableType == QCM_QUEUE_TABLE )
+        {
+            // Queue Table인지 검사
+        }
+        else
+        {
+            IDE_RAISE( ERR_NOT_FOUND_QUEUE );
+        }
+    }
+    else
+    {
+        IDE_RAISE( ERR_NOT_FOUND_QUEUE );
+    }
+
+    //----------------------------
+    // 테이블에 LOCK(IS)
+    //----------------------------
+    IDE_TEST( qcm::lockTableForDDLValidation( aStatement,
+                                              sParseTree->tableHandle,
+                                              sParseTree->tableSCN )
+              != IDE_SUCCESS );
+
+    /* 권한 검사 1 */
+    if ( QCG_GET_SESSION_USER_ID( aStatement ) != QC_SYSTEM_USER_ID )
+    {
+        // sParseTree->userID is a owner of table
+        IDE_TEST_RAISE( sParseTree->userID == QC_SYSTEM_USER_ID,
+                        ERR_NOT_ALTER_META );
+    }
+    else
+    {
+        IDE_TEST_RAISE( ( aStatement->session->mQPSpecific.mFlag & QC_SESSION_ALTER_META_MASK )
+                        == QC_SESSION_ALTER_META_DISABLE,
+                        ERR_NOT_ALTER_META );
+    }
+
+    /* 권한 검사 2 */
+    IDE_TEST( qdpRole::checkDDLAlterTablePriv( aStatement,
+                                               sParseTree->tableInfo )
+              != IDE_SUCCESS );
+
+    //----------------------------
+    // PROJ-1723 [MDW/INTEGRATOR] Altibase Plugin 개발
+    //   DDL Statement Text의 로깅
+    //----------------------------
+    if ( QCU_DDL_SUPPLEMENTAL_LOG == 1 )
+    {
+        IDE_TEST( qciMisc::writeDDLStmtTextLog( aStatement,
+                                                sParseTree->tableInfo->tableOwnerID,
+                                                sParseTree->tableInfo->name )
+                  != IDE_SUCCESS );
+    }
+
+    //----------------------------
+    // Queue Table은 MEMORY,VOLATILE 기반 테이블 이어야만 함
+    //----------------------------
+    sTableType = sParseTree->tableInfo->tableFlag & SMI_TABLE_TYPE_MASK;
+    IDE_TEST_RAISE( !( (sTableType == SMI_TABLE_MEMORY) ||
+                       (sTableType == SMI_TABLE_VOLATILE) ), 
+                    ERR_NO_MEMORY_OR_VOLATILE_TABLE );
+
+    //----------------------------
+    // check Attribute
+    //----------------------------
+    sAttrFlag = sParseTree->tableAttrFlagList;
+
+    /* 변경할 속성은 반드시 존재해야한다. */
+    IDE_TEST_RAISE( sAttrFlag == NULL, ERR_NOT_ALLOW_ATTRIBUTE );
+    /* List내에 오직 하나의 Attribuate Flag만 있어야 함 */
+    IDE_TEST_RAISE( sAttrFlag->next != NULL, ERR_NOT_ALLOW_ATTRIBUTE );
+    /* QUEUE 관련 attribute인지 MASK 확인 */
+    IDE_TEST_RAISE( sAttrFlag->attrMask != SMI_TABLE_QUEUE_ALLOW_DELETE_MASK,
+                    ERR_NOT_ALLOW_ATTRIBUTE );
+
+    sParseTree->tableAttrMask = 0;
+    sParseTree->tableAttrValue = 0;
+
+    sParseTree->tableAttrMask  |= sAttrFlag->attrMask;
+    sParseTree->tableAttrValue |= sAttrFlag->attrValue;
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( ERR_NOT_FOUND_QUEUE )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDQ_NOT_FOUND_QUEUE ) );
+    }
+    IDE_EXCEPTION( ERR_NOT_ALTER_META )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDD_NO_DROP_META_TABLE ) );
+    }
+    IDE_EXCEPTION( ERR_NO_MEMORY_OR_VOLATILE_TABLE )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDB_NO_MEMORY_OR_VOLATILE_TABLE ) );
+    }
+    IDE_EXCEPTION( CANT_USE_RESERVED_WORD );
+    {
+        (void)sqlInfo.init(aStatement->qmeMem);
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDB_RESERVED_WORD_IN_OBJECT_NAME,
+                                  sqlInfo.getErrMessage() ) );
+        (void)sqlInfo.fini();
+    }
+    IDE_EXCEPTION( ERR_NOT_ALLOW_ATTRIBUTE )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QMC_UNEXPECTED_ERROR,
+                                  "qdq::validateAlterAllowDelete",
+                                  "Invalid table attribute in QUEUE" ) );
     }
     IDE_EXCEPTION_END;
 

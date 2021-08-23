@@ -1462,6 +1462,8 @@ IDE_RC svcRecord::removeVersion( idvSQL               * /*aStatistics*/,
                                SMP_SLOT_GET_OFFSET( sSlotHeader ) );
     SMX_GET_SCN_AND_TID( sSlotHeader->mLimitSCN, sNxtSCN, sNxtTID );
 
+    /* BUG-48230: 자신이 이미 lock row를 잡았으면 record lock validation 
+     *            할 필요가 없다. */  
     if (( SM_SCN_IS_NOT_LOCK_ROW( sNxtSCN ) ) ||
         ( smxTrans::getTransID( aTrans ) != sNxtTID ))
     {
@@ -1517,6 +1519,8 @@ IDE_RC svcRecord::removeVersion( idvSQL               * /*aStatistics*/,
     SM_SET_SCN( &sDeleteSCN, &aInfinite );
     SM_SET_SCN_DELETE_BIT( &sDeleteSCN );
 
+    /* BUG-48230: deQueue일 경우 row에 lock이 되어 있다. undo시에 이 lock row를 
+     *            제거해주어야 한다. */
     if ( aIsDequeue == ID_FALSE )
     {
         SM_SET_SCN( &sNxtSCN,  &( sSlotHeader->mLimitSCN ) );
@@ -1536,6 +1540,7 @@ IDE_RC svcRecord::removeVersion( idvSQL               * /*aStatistics*/,
 
     IDL_MEM_BARRIER;
 
+    IDU_FIT_POINT( "BUG-49063@svcRecord::removeVersion::setLimitSCN" );
     SM_SET_SCN( &(sSlotHeader->mLimitSCN), &sDeleteSCN );
 
     if( sLockState == 1 )

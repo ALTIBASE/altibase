@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smcDef.h 90259 2021-03-19 01:22:22Z emlee $
+ * $Id: smcDef.h 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #ifndef _O_SMC_DEF_H_
@@ -314,7 +314,7 @@ typedef struct smcTBSOnlineActionArgs
 typedef struct  smcTableInfoPerfV
 {
     scSpaceID    mSpaceID;
-    UInt         mType;
+    UInt         mTableType;
     //for memory  table.
     smOID        mTableOID;
     vULong       mMemPageCnt;
@@ -356,11 +356,17 @@ typedef struct  smcTableInfoPerfV
     UInt        mCompressedLogging;
 
     idBool      mIsConsistent; /* PROJ-2162 */
+    
+     /* BUG-49063 */
+    UInt        mIsQueue;         
+    UInt        mDeleteON;
+    ULong       mFixedRecordCnt;
+
 }smcTableInfoPerfV;
 
 typedef struct  smcSequence4PerfV
 {
-    smOID        mSeqOID;
+    smOID             mSeqOID;
     smcSequenceInfo   mSequence;
 }smcSequence4PerfV;
 

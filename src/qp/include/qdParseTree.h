@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdParseTree.h 91417 2021-08-03 06:35:26Z donghyun $
+ * $Id: qdParseTree.h 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #ifndef _O_QD_PARSE_TREE_H_
@@ -753,6 +753,7 @@ typedef struct qdTableParseTree
 
     // TASK-2398 Log Compression
     // Create/Alter Table구문을 통해 Table의 Flag설정/변경
+    // BUG-49063 Create/Alter Queue구문을 통해 Table의 Flag설정/변경
     qdTableAttrFlagList      * tableAttrFlagList;
 
     // 하나 이상의 Attribute Flag들의 Mask와 Value를 OR한 값

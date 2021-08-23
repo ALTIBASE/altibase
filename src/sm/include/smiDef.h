@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smiDef.h 90899 2021-05-27 08:55:20Z jiwon.kim $
+ * $Id: smiDef.h 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #ifndef _O_SMI_DEF_H_
@@ -1303,13 +1303,28 @@ typedef enum smiDMLType
 # define SMI_TABLE_SUPPLEMENTAL_LOGGING_FALSE   (0x00000000)
 # define SMI_TABLE_SUPPLEMENTAL_LOGGING_TRUE    (0x00200000)
 
+// BUG-49063 QUEUE DELETE ON/OFF
+// TRUE  : BUG-48230 적용 전과 동일하게 수행
+// FALSE : BUG-48230 적용으로 수행 
+# define SMI_TABLE_QUEUE_ALLOW_DELETE_MASK      (0x00400000)
+# define SMI_TABLE_QUEUE_ALLOW_DELETE_TRUE      (0x00000000)
+# define SMI_TABLE_QUEUE_ALLOW_DELETE_FALSE     (0x00400000)
+
 // PROJ-2264
-// dictionary table 여부를 판단하데 필요한 flag 정보
+// dictionary table 여부를 판단하는데 필요한 flag 정보
 // debug 용도로 사용하는 flag
 // altibase.properties 에서 __FORCE_COMPRESSION_COLUMN = 1 일때 작동하는 flag
 # define SMI_TABLE_DICTIONARY_MASK         (0x00800000)
 # define SMI_TABLE_DICTIONARY_FALSE        (0x00000000)
 # define SMI_TABLE_DICTIONARY_TRUE         (0x00800000)
+
+// BUG-49063 
+// Queue table 여부를 판단하는데 필요한 flag 정보
+# define SMI_TABLE_QUEUE_MASK              (0x01000000)
+# define SMI_TABLE_QUEUE_FALSE             (0x00000000)
+# define SMI_TABLE_QUEUE_TRUE              (0x01000000)
+
+
 
 /* aFlag VON smiTable::createIndex                   */
 # define SMI_INDEX_UNIQUE_MASK             (0x00000001)

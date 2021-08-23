@@ -20,7 +20,7 @@
  **********************************************************************/
 
 /***********************************************************************
- * $Id: smiMisc.cpp 91224 2021-07-14 05:36:12Z minku.kang $
+ * $Id: smiMisc.cpp 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #include <smErrorCode.h>
@@ -2767,6 +2767,38 @@ void smiGetTableModifyCount( const void   * aTable,
     sTableHeader = ( smcTableHeader * )SMI_MISC_TABLE_HEADER( aTable );
 
     *aModifyCount = idCore::acpAtomicGet64( &sTableHeader->mSequence.mCurSequence );
+}
+
+/***********************************************************************
+ * BUG-49063: QUEUE Table 속도 향상 여부
+ * 
+ * SMI_TABLE_QUEUE_ALLOW_DELETE_TRUE : delete는 허용, 성능은 떨어지는 Queue
+ * SMI_TABLE_QUEUE_ALLOW_DELETE_FALSE: delete 허용 X, 성능은 상승하는 Queue
+  **********************************************************************/
+idBool smiIsAllowDeleteQueue( const void   * aTable )
+{
+    smcTableHeader      * sTableHdr;
+    idBool                sIsAllowDelete;
+
+    IDE_DASSERT( aTable != NULL );
+
+    sTableHdr = (smcTableHeader *)SMI_MISC_TABLE_HEADER(aTable);
+
+    if ( ( sTableHdr->mFlag & SMI_TABLE_QUEUE_ALLOW_DELETE_MASK )
+         == SMI_TABLE_QUEUE_ALLOW_DELETE_FALSE )
+    {
+        sIsAllowDelete = ID_FALSE;
+    }
+    else
+    {
+        sIsAllowDelete = ID_TRUE;        
+
+        /* delete 가 허용되는 QUEUE 라면 QUEUE TABLE 설정이 되어 있어야 함. */
+        IDE_DASSERT( ( sTableHdr->mFlag & SMI_TABLE_QUEUE_MASK )
+                     == SMI_TABLE_QUEUE_TRUE )
+    }
+
+    return sIsAllowDelete;
 }
 
 IDE_RC smiWriteXaStartReqLog( ID_XID * aGlobalXID,

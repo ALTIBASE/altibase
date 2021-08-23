@@ -15,7 +15,7 @@
  */
  
 /***********************************************************************
- * $Id: qcmPerformanceView.cpp 91159 2021-07-07 06:47:36Z jinku.ko $
+ * $Id: qcmPerformanceView.cpp 91512 2021-08-21 07:50:50Z emlee $
  *
  * Description :
  *
@@ -820,7 +820,14 @@ SChar * gQcmPerformanceViews[] =
             "FROM X$TABLE_INFO "
             "WHERE TABLE_TYPE = 12288 ",
 
-    // lock performance view.
+    (SChar*) "CREATE VIEW V$QUEUE "
+            "( TABLE_OID, DELETE_ON, QUEUED ) "
+            "AS SELECT  "
+            "  TABLE_OID, DECODE(DELETE_ON, 1, 'T', 0, 'F') as DELETE_ON, FIXED_RECORD_CNT "
+            "  FROM X$TABLE_INFO "
+            "  WHERE IS_QUEUE = 1 ", 
+      
+        // lock performance view.
     (SChar*)"CREATE VIEW V$LOCK "
                "( LOCK_ITEM_TYPE, TBS_ID, TABLE_OID, DBF_ID, TRANS_ID, "
                "LOCK_DESC, LOCK_CNT, IS_GRANT ) "

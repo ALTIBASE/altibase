@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: smiTableCursor.h 89495 2020-12-14 05:19:22Z emlee $
+ * $Id: smiTableCursor.h 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #ifndef _O_SMI_TABLE_CURSOR_H_
@@ -241,9 +241,6 @@ class smiTableCursor
     SChar                  * mLstInsRowPtr;
 
 public:
-
-    /* 삭제될 함수 입니다. 사용을 금지합니다.       */
-    idBool isOpened( void ) { return ID_TRUE; }
 
     void initialize();
 

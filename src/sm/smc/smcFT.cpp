@@ -477,10 +477,10 @@ smcFT::buildRecordForTempTableInfo(idvSQL              * /*aStatistics*/,
 
     /* BUG-16351: X$Table_info에 Catalog Table에 대한 정보는 나오지
      * 않습니다. */
-    IDE_TEST( buildEachRecordForTableInfo(
-                  aHeader,
-                  sCatTblHdr,
-                  aMemory) != IDE_SUCCESS );
+    IDE_TEST( buildEachRecordForTableInfo( aHeader,
+                                           sCatTblHdr,
+                                           aMemory ) 
+              != IDE_SUCCESS );
 
     while(1)
     {
@@ -526,10 +526,9 @@ smcFT::buildRecordForTempTableInfo(idvSQL              * /*aStatistics*/,
         if( sctTableSpaceMgr::hasState( sTgtTblHeader->mSpaceID,
                                         SCT_SS_INVALID_DISK_TBS ) == ID_FALSE )
         {
-            IDE_TEST( buildEachRecordForTableInfo(
-                          aHeader,
-                          sTgtTblHeader,
-                          aMemory)
+            IDE_TEST( buildEachRecordForTableInfo( aHeader,
+                                                   sTgtTblHeader,
+                                                   aMemory )
                       != IDE_SUCCESS );
         }
 
@@ -558,18 +557,20 @@ smcFT::buildRecordForTempTableInfo(idvSQL              * /*aStatistics*/,
  *
  **********************************************************************/
 IDE_RC smcFT::buildEachRecordForTableInfo(
-    void                *aFixedTblHeader,
-    smcTableHeader      *aTargetTblHeader,
-    iduFixedTableMemory *aMemory)
+                                    void                *aFixedTblHeader,
+                                    smcTableHeader      *aTargetTblHeader,
+                                    iduFixedTableMemory *aMemory)
 {
     smcTableInfoPerfV sTableInfo;
     UInt              i;
-    ULong             sSlotCnt=0;
+    ULong             sSlotCnt   = 0;
+    ULong             sFixedRecordCnt = 0;
     UInt              sTableType;
     sdpSegInfo        sSegInfo;
     sdpSegMgmtOp     *sSegMgmtOp;
     scPageID          sSegPID;
     smpSlotHeader    *sTargetSlotPtr = ((smpSlotHeader *)aTargetTblHeader - 1);
+    
 
     /* BUG-45654
      * Droped slot 의 경우 IDE_TEST_RAISE( SMP_SLOT_IS_DROP ) 으로
@@ -592,10 +593,33 @@ IDE_RC smcFT::buildEachRecordForTableInfo(
     /* aTarget Table에 대해서는 Lock을 잡지 않는다. 왜냐하면
        한번 생성된 Table의 Table Header는 Server가 종료될때
        까지 정리되지 않는다. */
+    sTableInfo.mTableType        = sTableType;
     sTableInfo.mTableOID         = aTargetTblHeader->mSelfOID;
     sTableInfo.mSpaceID          = aTargetTblHeader->mSpaceID;
-    sTableInfo.mType             = sTableType;
     sTableInfo.mIsConsistent     = aTargetTblHeader->mIsConsistent;
+    
+    /* BUG-49063 */
+    if ( (aTargetTblHeader->mFlag & SMI_TABLE_QUEUE_MASK ) 
+         == SMI_TABLE_QUEUE_FALSE )
+    {
+       sTableInfo.mIsQueue = 0; 
+    }
+    else
+    {
+       sTableInfo.mIsQueue = 1; 
+    }
+
+    if ( (aTargetTblHeader->mFlag & SMI_TABLE_QUEUE_ALLOW_DELETE_MASK ) 
+         == SMI_TABLE_QUEUE_ALLOW_DELETE_TRUE )
+    {
+       sTableInfo.mDeleteON = 1; 
+    }
+    else
+    {
+       sTableInfo.mDeleteON = 0; 
+    }
+    sTableInfo.mFixedRecordCnt = 0;
+
 
     // TASK-2398 Log Compression
     //           Table의 로그 압축 여부 설정
@@ -631,6 +655,9 @@ IDE_RC smcFT::buildEachRecordForTableInfo(
             /* Table의 Record갯수를 가져온다. */
             IDE_TEST( smcTable::getRecordCount( aTargetTblHeader, &(sSlotCnt))
                       != IDE_SUCCESS);
+            /* V$QUEUE 에서 record 수 구하는 용도
+               variable slot 계산 하지 않음  */
+            sFixedRecordCnt += sSlotCnt;
 
             sTableInfo.mFixedUsedMem = sSlotCnt * sTableInfo.mMemSlotSize;
             sTableInfo.mVarUsedMem   = 0;
@@ -640,18 +667,18 @@ IDE_RC smcFT::buildEachRecordForTableInfo(
             for(i= 0; i < SM_VAR_PAGE_LIST_COUNT ; i++ )
             {
                 sSlotCnt = smpVarPageList::getRecordCount( &(aTargetTblHeader->mVar.mMRDB[i]) );
-                sTableInfo.mVarUsedMem +=
-                    sSlotCnt * aTargetTblHeader->mVar.mMRDB[i].mSlotSize;
+                sTableInfo.mVarUsedMem += sSlotCnt * aTargetTblHeader->mVar.mMRDB[i].mSlotSize;
             }//for
 
             //BUG-17371 [MMDB] Aging이 밀릴경우 System에 과부화 및 Aging이 밀리는 현상이 더 심화됨
             sTableInfo.mUniqueViolationCount =
-                aTargetTblHeader->mFixed.mMRDB.mRuntimeEntry->mUniqueViolationCount;
+                            aTargetTblHeader->mFixed.mMRDB.mRuntimeEntry->mUniqueViolationCount;
             sTableInfo.mUpdateRetryCount =
-                aTargetTblHeader->mFixed.mMRDB.mRuntimeEntry->mUpdateRetryCount;
+                            aTargetTblHeader->mFixed.mMRDB.mRuntimeEntry->mUpdateRetryCount;
             sTableInfo.mDeleteRetryCount =
-                aTargetTblHeader->mFixed.mMRDB.mRuntimeEntry->mDeleteRetryCount;
+                            aTargetTblHeader->mFixed.mMRDB.mRuntimeEntry->mDeleteRetryCount;
         }
+        sTableInfo.mFixedRecordCnt += sFixedRecordCnt;
     }//if
     else if (sTableType == SMI_TABLE_VOLATILE)
     {
@@ -662,15 +689,18 @@ IDE_RC smcFT::buildEachRecordForTableInfo(
         if (aTargetTblHeader->mFixed.mVRDB.mRuntimeEntry != NULL)
         {
             sTableInfo.mMemPageCnt  =
-                svpManager::getAllocPageCount(&(aTargetTblHeader->mFixed.mVRDB));
+                                svpManager::getAllocPageCount(&(aTargetTblHeader->mFixed.mVRDB));
             sTableInfo.mMemVarPageCnt =
-                svpManager::getAllocPageCount(aTargetTblHeader->mVar.mVRDB);
+                                svpManager::getAllocPageCount(aTargetTblHeader->mVar.mVRDB);
             sTableInfo.mMemPageHead =
-                svpManager::getFirstAllocPageID(&(aTargetTblHeader->mFixed.mVRDB));
+                                svpManager::getFirstAllocPageID(&(aTargetTblHeader->mFixed.mVRDB));
 
             /* Table의 Record갯수를 가져온다. */
             IDE_TEST( smcTable::getRecordCount( aTargetTblHeader, &(sSlotCnt))
-                      != IDE_SUCCESS);
+                      != IDE_SUCCESS );
+            /* V$QUEUE 에서 record 수 구하는 용도
+               variable slot 계산 하지 않음  */
+            sFixedRecordCnt += sSlotCnt;
 
             sTableInfo.mFixedUsedMem = sSlotCnt * sTableInfo.mMemSlotSize;
             sTableInfo.mVarUsedMem   = 0;
@@ -680,8 +710,7 @@ IDE_RC smcFT::buildEachRecordForTableInfo(
             for(i= 0; i < SM_VAR_PAGE_LIST_COUNT ; i++ )
             {
                 sSlotCnt = svpVarPageList::getRecordCount( &(aTargetTblHeader->mVar.mVRDB[i]) );
-                sTableInfo.mVarUsedMem +=
-                    sSlotCnt * aTargetTblHeader->mVar.mVRDB[i].mSlotSize;
+                sTableInfo.mVarUsedMem += sSlotCnt * aTargetTblHeader->mVar.mVRDB[i].mSlotSize;
             }
             //BUG-17371 [MMDB] Aging이 밀릴경우 System에 과부화 및 Aging이 밀리는 현상이 더 심화됨
             /* PROJ-1381 미구현 기능으로 0으로 설정함 (mStatementRebuildCount)
@@ -690,12 +719,13 @@ IDE_RC smcFT::buildEachRecordForTableInfo(
             */
             sTableInfo.mStatementRebuildCount = 0;
             sTableInfo.mUniqueViolationCount =
-                aTargetTblHeader->mFixed.mVRDB.mRuntimeEntry->mUniqueViolationCount;
+                            aTargetTblHeader->mFixed.mVRDB.mRuntimeEntry->mUniqueViolationCount;
             sTableInfo.mUpdateRetryCount =
-                aTargetTblHeader->mFixed.mVRDB.mRuntimeEntry->mUpdateRetryCount;
+                            aTargetTblHeader->mFixed.mVRDB.mRuntimeEntry->mUpdateRetryCount;
             sTableInfo.mDeleteRetryCount =
-                aTargetTblHeader->mFixed.mVRDB.mRuntimeEntry->mDeleteRetryCount;
+                            aTargetTblHeader->mFixed.mVRDB.mRuntimeEntry->mDeleteRetryCount;
         }
+        sTableInfo.mFixedRecordCnt += sFixedRecordCnt;
     }
     else if ( sTableType == SMI_TABLE_DISK )
     {
@@ -707,12 +737,11 @@ IDE_RC smcFT::buildEachRecordForTableInfo(
         IDE_TEST_CONT( sSegPID == SD_NULL_PID, TABLE_IS_DROPPED );
 
         /* BUGBUG: 여기서 제거 해야함. */
-        IDE_TEST( sSegMgmtOp->mGetSegInfo(
-                      NULL,
-                      aTargetTblHeader->mSpaceID,
-                      sSegPID,
-                      aTargetTblHeader,
-                      &sSegInfo )
+        IDE_TEST( sSegMgmtOp->mGetSegInfo( NULL,
+                                           aTargetTblHeader->mSpaceID,
+                                           sSegPID,
+                                           aTargetTblHeader,
+                                           &sSegInfo )
                   != IDE_SUCCESS );
 
         IDE_TEST_CONT( sSegInfo.mSegHdrPID == SD_NULL_PID, TABLE_IS_DROPPED );
@@ -729,40 +758,36 @@ IDE_RC smcFT::buildEachRecordForTableInfo(
             sdpSegDescMgr::getSegPID( &(aTargetTblHeader->mFixed.mDRDB) );
 
         sTableInfo.mDiskPctFree =
-            sdpSegDescMgr::getSegAttr(
-                &(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mPctFree;
+            sdpSegDescMgr::getSegAttr(&(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mPctFree;
         sTableInfo.mDiskPctUsed =
-            sdpSegDescMgr::getSegAttr(
-                &(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mPctUsed;
+            sdpSegDescMgr::getSegAttr(&(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mPctUsed;
 
         sTableInfo.mDiskInitTrans =
-            sdpSegDescMgr::getSegAttr(
-                &(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mInitTrans;
+            sdpSegDescMgr::getSegAttr(&(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mInitTrans;
         sTableInfo.mDiskMaxTrans =
-            sdpSegDescMgr::getSegAttr(
-                &(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mMaxTrans;
+            sdpSegDescMgr::getSegAttr(&(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mMaxTrans;
 
         sTableInfo.mDiskInitExtents =
-            sdpSegDescMgr::getSegStoAttr(
-                &(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mInitExtCnt;
+            sdpSegDescMgr::getSegStoAttr(&(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mInitExtCnt;
 
         sTableInfo.mDiskNextExtents =
-            sdpSegDescMgr::getSegStoAttr(
-                &(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mNextExtCnt;
+            sdpSegDescMgr::getSegStoAttr(&(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mNextExtCnt;
 
         sTableInfo.mDiskMinExtents =
-            sdpSegDescMgr::getSegStoAttr(
-                &(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mMinExtCnt;
+            sdpSegDescMgr::getSegStoAttr(&(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mMinExtCnt;
 
         sTableInfo.mDiskMaxExtents =
-            sdpSegDescMgr::getSegStoAttr(
-                &(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mMaxExtCnt;
+            sdpSegDescMgr::getSegStoAttr(&(aTargetTblHeader->mFixed.mDRDB.mSegDesc))->mMaxExtCnt;
 
         //BUG-17371 [MMDB] Aging이 밀릴경우 System에 과부화 및 Aging이 밀리는 현상이 더 심화됨
         sTableInfo.mStatementRebuildCount = 0;
         sTableInfo.mUniqueViolationCount =  0;
         sTableInfo.mUpdateRetryCount =      0;
         sTableInfo.mDeleteRetryCount =      0;
+        smcTable::getRecordCount( aTargetTblHeader, &sFixedRecordCnt );
+        /* V$QUEUE 에서 record 수 구하는 용도
+           DISK QUEUE 는 없음  그냥 레코드를 기록함 */ 
+        sTableInfo.mFixedRecordCnt += sFixedRecordCnt;
     }
     else
     {
@@ -1454,8 +1479,8 @@ static iduFixedTableColDesc  gTableInfoColDesc[]=
 
     {
         (SChar*)"TABLE_TYPE",
-        offsetof(smcTableInfoPerfV,mType),
-        IDU_FT_SIZEOF(smcTableInfoPerfV,mType),
+        offsetof(smcTableInfoPerfV,mTableType),
+        IDU_FT_SIZEOF(smcTableInfoPerfV,mTableType),
         IDU_FT_TYPE_UINTEGER | IDU_FT_COLUMN_INDEX,
         NULL,
         0, 0,NULL // for internal use
@@ -1736,6 +1761,30 @@ static iduFixedTableColDesc  gTableInfoColDesc[]=
         0, 0,NULL // for internal use
     },
     {
+        (SChar*)"IS_QUEUE",
+        offsetof(smcTableInfoPerfV,mIsQueue ),
+        IDU_FT_SIZEOF(smcTableInfoPerfV,mIsQueue),
+        IDU_FT_TYPE_UINTEGER,
+        NULL,
+        0, 0,NULL // for internal use
+    },
+    {
+        (SChar*)"DELETE_ON",
+        offsetof(smcTableInfoPerfV,mDeleteON ),
+        IDU_FT_SIZEOF(smcTableInfoPerfV,mDeleteON),
+        IDU_FT_TYPE_UINTEGER,
+        NULL,
+        0, 0,NULL // for internal use
+    },
+    {
+        (SChar*)"FIXED_RECORD_CNT",
+        offsetof(smcTableInfoPerfV,mFixedRecordCnt),
+        IDU_FT_SIZEOF(smcTableInfoPerfV,mFixedRecordCnt),
+        IDU_FT_TYPE_UBIGINT,
+        NULL,
+        0, 0,NULL // for internal use
+    },
+    {
         NULL,
         0,
         0,
@@ -1773,8 +1822,8 @@ static iduFixedTableColDesc gTempTableInfoColDesc[]=
 
     {
         (SChar*)"TABLE_TYPE",
-        offsetof(smcTableInfoPerfV,mType),
-        IDU_FT_SIZEOF(smcTableInfoPerfV,mType),
+        offsetof(smcTableInfoPerfV,mTableType),
+        IDU_FT_SIZEOF(smcTableInfoPerfV,mTableType),
         IDU_FT_TYPE_UINTEGER,
         NULL,
         0, 0,NULL // for internal use
@@ -2126,10 +2175,9 @@ IDE_RC smcFT::buildRecordForTableInfo(idvSQL              * /*aStatistis*/,
     {
         /* BUG-16351: X$Table_info에 Catalog Table에 대한 정보는 나오지
          * 않습니다. */
-        IDE_TEST( buildEachRecordForTableInfo(
-                      aHeader,
-                      sCatTblHdr,
-                      aMemory)
+        IDE_TEST( buildEachRecordForTableInfo( aHeader,
+                                               sCatTblHdr,
+                                               aMemory)
                   != IDE_SUCCESS );
     }
     else
@@ -2226,10 +2274,9 @@ IDE_RC smcFT::buildRecordForTableInfo(idvSQL              * /*aStatistis*/,
                 {
                     IDU_FIT_POINT( "BUG-42805@smcFT::buildRecordForTableInfo::afterMutexOfLockItem" );
 
-                    IDE_TEST( buildEachRecordForTableInfo(
-                                  aHeader,
-                                  sTgtTblHeader,
-                                  aMemory)
+                    IDE_TEST( buildEachRecordForTableInfo( aHeader,
+                                                           sTgtTblHeader,
+                                                           aMemory )
                               != IDE_SUCCESS );
                 }
             }

@@ -22,6 +22,8 @@
 #include <ide.h>
 #include <mtdTypes.h>
 #include <smi.h>
+#include <smiMisc.h>
+#include <smDef.h>
 #include <qci.h>
 #include <qcg.h>
 #include <qmx.h>
@@ -29,8 +31,6 @@
 #include <qcuProperty.h>
 #include <qcm.h>
 #include <qdnForeignKey.h>
-#include <smiMisc.h>
-#include <smDef.h>
 #include <qmoPartition.h>
 
 // BUG-43843
@@ -2742,10 +2742,12 @@ IDE_RC qmxSimple::executeFastSelect( smiTrans     * aSmiTrans,
     // PROJ-1618
     sCursor.setDumpObject( sSCAN->dumpObject );
 
-    //BUG-48230: DEQUEUE 성능 개선
     if ( ( aStatement->myPlan->parseTree->stmtKind == QCI_STMT_DEQUEUE ) &&
+         ( smiIsAllowDeleteQueue(sSCAN->table) == ID_FALSE ) &&
          ( sIsMoveAndDelete == ID_FALSE ) )
     {
+        //BUG-48230: DEQUEUE 성능 개선
+        //BUG-49063: delete off 상태인 QUEUE 만 BUG-48230 적용으로 수행
         sIsDequeue = ID_TRUE;
     }
    

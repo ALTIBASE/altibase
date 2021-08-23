@@ -15,7 +15,7 @@
  */
 
 /***********************************************************************
- * $Id: qmv.cpp 91235 2021-07-16 00:41:05Z donovan.seo $
+ * $Id: qmv.cpp 91512 2021-08-21 07:50:50Z emlee $
  **********************************************************************/
 
 #include <idl.h>
@@ -4520,6 +4520,13 @@ IDE_RC qmv::validateDelete(qcStatement * aStatement)
                                      sDeleteTableRef )
               != IDE_SUCCESS );
 
+    /* BUG-49063 */
+    if ( sDeleteTableInfo->tableType == QCM_QUEUE_TABLE )
+    {
+        IDE_TEST_RAISE( smiIsAllowDeleteQueue( sDeleteTableInfo->tableHandle ) == ID_FALSE,
+                        ERR_DML_ON_QUEUE );
+    }
+
     /* PROJ-2211 Materialized View */
     if ( sDeleteTableInfo->tableType == QCM_MVIEW_TABLE )
     {
@@ -4672,6 +4679,10 @@ IDE_RC qmv::validateDelete(qcStatement * aStatement)
     IDE_EXCEPTION( ERR_NOT_DNL_READ_ONLY_VIEW );
     {
         IDE_SET(ideSetErrorCode(qpERR_ABORT_QMV_NOT_DML_READ_ONLY_VIEW));
+    }
+    IDE_EXCEPTION(ERR_DML_ON_QUEUE);
+    {
+        IDE_SET(ideSetErrorCode(qpERR_ABORT_QDQ_QUEUE_DML_DENIED));
     }
     IDE_EXCEPTION_END;
     
@@ -13621,6 +13632,13 @@ IDE_RC qmv::validateMultiDelete( qcStatement * aStatement )
                                          sTmp->mTableRef )
                   != IDE_SUCCESS );
 
+        /* BUG-49063 */
+        if ( sDeleteTableInfo->tableType == QCM_QUEUE_TABLE )
+        {
+            IDE_TEST_RAISE( smiIsAllowDeleteQueue( sDeleteTableInfo->tableHandle ) == ID_FALSE,
+                            ERR_DML_ON_QUEUE );
+        }
+
         /* PROJ-2211 Materialized View */
         if ( sDeleteTableInfo->tableType == QCM_MVIEW_TABLE )
         {
@@ -13802,6 +13820,10 @@ IDE_RC qmv::validateMultiDelete( qcStatement * aStatement )
     IDE_EXCEPTION(ERR_TABLE_NOT_FOUND);
     {
         IDE_SET(ideSetErrorCode(qpERR_ABORT_QMV_TABLE_NOT_FOUND));
+    }
+    IDE_EXCEPTION(ERR_DML_ON_QUEUE);
+    {
+        IDE_SET(ideSetErrorCode(qpERR_ABORT_QDQ_QUEUE_DML_DENIED));
     }
     IDE_EXCEPTION_END;
 

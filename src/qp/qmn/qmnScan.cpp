@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qmnScan.cpp 91237 2021-07-16 04:28:37Z donovan.seo $
+ * $Id: qmnScan.cpp 91512 2021-08-21 07:50:50Z emlee $
  *
  * Description :
  *     SCAN Plan Node
@@ -29,6 +29,7 @@
 
 #include <idl.h>
 #include <ide.h>
+#include <smiMisc.h>
 #include <qcuProperty.h>
 #include <qtc.h>
 #include <qmoKeyRange.h>
@@ -2097,12 +2098,15 @@ qmnSCAN::openCursor( qcTemplate * aTemplate,
         // PROJ-1618
         aDataPlan->cursor->setDumpObject( aCodePlan->dumpObject );
 
-        //BUG-48230: DEQUEUE 성능 개선
         if ( ( (aCodePlan->flag & QMNC_SCAN_TABLE_QUEUE_MASK)
-             == QMNC_SCAN_TABLE_QUEUE_TRUE ) &&
+             == QMNC_SCAN_TABLE_QUEUE_TRUE ) && 
+             ( smiIsAllowDeleteQueue(aCodePlan->table)  
+             == ID_FALSE ) && 
              ( ( (aCodePlan->flag & QMNC_SCAN_MOVE_AND_DELETE_MASK) /*BUG-49127*/
              == QMNC_SCAN_MOVE_AND_DELETE_FALSE ) ) )
         {
+            //BUG-48230: DEQUEUE 성능 개선
+            //BUG-49063: delete off 상태인 QUEUE 만 BUG-48230 적용으로 수행
             sIsDequeue = ID_TRUE;
         }
         else

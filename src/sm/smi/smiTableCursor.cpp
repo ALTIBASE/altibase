@@ -16,7 +16,7 @@
  
 
 /*******************************************************************************
- * $Id: smiTableCursor.cpp 90083 2021-02-26 00:58:48Z et16 $
+ * $Id: smiTableCursor.cpp 91512 2021-08-21 07:50:50Z emlee $
  ******************************************************************************/
 
 #include <idl.h>
@@ -33,10 +33,7 @@
 #include <sct.h>
 #include <smm.h>
 #include <smn.h>
-#include <smnbModule.h>
 #include <sdn.h>
-#include <sdnnDef.h>
-#include <sm2x.h>
 #include <sma.h>
 #include <smi.h>
 #include <smu.h>
@@ -1395,7 +1392,8 @@ IDE_RC smiTableCursor::beforeFirst( void )
 
     if ( mIsDequeue == ID_FALSE )
     {
-        // Queue 아닐 때
+        // 1.Queue 아닐 때  
+        // 2.Queue 면서 delete on 일때 
         IDE_TEST( mSeekFunc[SMI_FIND_BEFORE]( mIterator,
                                               (const void**)&mSeekFunc )
                   != IDE_SUCCESS );  
@@ -1405,7 +1403,7 @@ IDE_RC smiTableCursor::beforeFirst( void )
     }
     else
     {
-        //BUG-48230: Queue 일 때
+        //BUG-48230: Queue 면서 delete Off 일때 
         if ( ( mFlag & SMI_TRAVERSE_MASK ) == SMI_TRAVERSE_FORWARD )
         {
             //SMI_TRAVERSE_FORWARD
@@ -3636,19 +3634,18 @@ IDE_RC smiTableCursor::openMRVRDB( smiTableCursor *    aCursor,
     // 트랜잭션의 oid list 중에서 cursor open 당시 마지막 oid node 정보 설정
     //---------------------------------
 
-    aCursor->mFstOidNode =
-        aCursor->mTrans->getCurNodeOfNVL();
+    aCursor->mFstOidNode = aCursor->mTrans->getCurNodeOfNVL();
 
     if( aCursor->mFstOidNode != NULL )
     {
         aCursor->mFstOidCount = ((smxOIDNode*)aCursor->mFstOidNode)->mOIDCnt;
     }
 
-    if(aCursor->mIndex != NULL)
+    if( aCursor->mIndex != NULL )
     {
-        IDE_TEST_RAISE((((smnIndexHeader*)aCursor->mIndex)->mFlag &
-                        SMI_INDEX_USE_MASK)
-                       != SMI_INDEX_USE_ENABLE, err_disabled_index);
+        IDE_TEST_RAISE( ( ((smnIndexHeader*)aCursor->mIndex)->mFlag & SMI_INDEX_USE_MASK )
+                        != SMI_INDEX_USE_ENABLE, 
+                        err_disabled_index );
     }
 
     IDE_TEST( ((smnIndexModule*)aCursor->mIndexModule)->mInitIterator( aCursor->mIterator,
@@ -4665,11 +4662,11 @@ IDE_RC smiTableCursor::openDRDB( smiTableCursor *    aCursor,
                     ERR_MODIFIED );
 
     /* Iterator 초기화 */
-    if(aCursor->mIndex != NULL)
+    if( aCursor->mIndex != NULL )
     {
-        IDE_TEST_RAISE( ( ((smnIndexHeader*)aCursor->mIndex)->mFlag &
-                          SMI_INDEX_USE_MASK )
-                        != SMI_INDEX_USE_ENABLE, err_disabled_index );
+        IDE_TEST_RAISE( ( ((smnIndexHeader*)aCursor->mIndex)->mFlag & SMI_INDEX_USE_MASK )
+                        != SMI_INDEX_USE_ENABLE, 
+                        err_disabled_index );
 
         IDE_TEST_RAISE( smnManager::getIsConsistentOfIndexHeader(
                                               (void*)aCursor->mIndex ) == ID_FALSE, 
@@ -5604,8 +5601,9 @@ IDE_RC smiTableCursor::deleteRowDRDB( smiTableCursor        * aCursor,
 
     IDE_TEST_RAISE( SC_GRID_IS_NULL(aCursor->mIterator->mRowGRID),
                     ERR_NO_SELECTED_ROW );
-
-    IDE_TEST( aCursor->mIsDequeue == ID_TRUE );
+    
+    /* DISK QUEUE 는 지원하지 않음 */
+    IDE_ERROR_RAISE( aCursor->mIsDequeue == ID_FALSE, ERR_NOT_SUPPORT_QUEUE );
 
     IDE_TEST( aCursor->mRemove( aCursor->mIterator->properties->mStatistics,
                                 aCursor->mTrans,
@@ -5641,6 +5639,11 @@ IDE_RC smiTableCursor::deleteRowDRDB( smiTableCursor        * aCursor,
     {
         IDE_SET( ideSetErrorCode( smERR_FATAL_smiNoSelectedRow ) );
     }
+    IDE_EXCEPTION( ERR_NOT_SUPPORT_QUEUE );
+    {
+        IDE_SET( ideSetErrorCode( smERR_ABORT_INTERNAL ) );
+    }
+
     IDE_EXCEPTION_END;
 
     return IDE_FAILURE;
