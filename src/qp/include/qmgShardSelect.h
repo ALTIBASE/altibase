@@ -85,6 +85,7 @@ typedef struct qmgTransformInfo
     qtcNode           * mWhere;
     qmsSortColumns    * mOrderBy;
     qmsLimit          * mLimit;
+    qmsForUpdate      * mForUpdate; /* BUG-48961 */
     qcParamOffsetInfo * mParamOffsetInfo;
     idBool              mNeedWrapSet;
     idBool              mUseShardKwd; /* TASK-7219 Shard Transformer Refactoring */
@@ -147,6 +148,8 @@ private:
     static IDE_RC pushOrderByOptimize( qmgTransformInfo * aInfo );
 
     static IDE_RC pushLimitOptimize( qmgTransformInfo * aInfo );
+
+    static IDE_RC pushForUpdate( qmgTransformInfo * aInfo );
 
     static IDE_RC pushSeriesOptimize( qcStatement    * aStatement,
                                       const qmgGraph * aParent,

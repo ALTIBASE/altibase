@@ -6874,15 +6874,22 @@ IDE_RC sda::setAnalysisFlag4ParseTree( qmsParseTree * aParseTree,
             // TABLE 하나만 확인하면 된다.
             //   [ERR-31235 : JOIN is not allowed in SELECT FOR UPDATE statements.]
             //   View 가 simple view merging 되지 않고 남아 있는 경우, for update 가 동작하지 않는다. (BUGBUG)
-            if ( aParseTree->querySet->SFWGH->from->tableRef->mShardObjInfo != NULL )
+            if ( aParseTree->querySet->SFWGH->from->tableRef->view == NULL )
             {
-                sdi::getShardObjInfoForSMN( aSMN,
-                                            aParseTree->querySet->SFWGH->from->tableRef->mShardObjInfo,
-                                            &( sShardObjInfo ) );
-
-                if ( sShardObjInfo != NULL )
+                if ( aParseTree->querySet->SFWGH->from->tableRef->mShardObjInfo != NULL )
                 {
-                    sShardAnalysis->mAnalysisFlag.mTopQueryFlag[ SDI_TQ_FOR_UPDATE_EXISTS ] = ID_TRUE;
+                    sdi::getShardObjInfoForSMN( aSMN,
+                                                aParseTree->querySet->SFWGH->from->tableRef->mShardObjInfo,
+                                                &( sShardObjInfo ) );
+                    
+                    if ( sShardObjInfo != NULL )
+                    {
+                        sShardAnalysis->mAnalysisFlag.mTopQueryFlag[ SDI_TQ_FOR_UPDATE_EXISTS ] = ID_TRUE;
+                    }
+                    else
+                    {
+                        /* Nothing to do. */
+                    }
                 }
                 else
                 {
@@ -6891,7 +6898,15 @@ IDE_RC sda::setAnalysisFlag4ParseTree( qmsParseTree * aParseTree,
             }
             else
             {
-                /* Nothing to do. */
+                /* BUG-48961 */
+                if ( aParseTree->querySet->SFWGH->from->tableRef->view->myPlan->parseTree->stmtShard == QC_STMT_SHARD_DATA )
+                {
+                    sShardAnalysis->mAnalysisFlag.mTopQueryFlag[ SDI_TQ_FOR_UPDATE_EXISTS ] = ID_TRUE;
+                }
+                else
+                {
+                    /* Nothing to do */
+                }
             }
         }
         else

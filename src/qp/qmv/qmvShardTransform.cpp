@@ -6015,6 +6015,16 @@ IDE_RC qmvShardTransform::makeShardForStatement( qcStatement * aStatement,
                                                        &( sAnalyzeInfo ) )
               != IDE_SUCCESS );
 
+    /* BUG-49209 */
+    if ( aParseTree->stmtKind == QCI_STMT_SELECT_FOR_UPDATE )
+    {
+        sAnalyzeInfo->mTopQueryFlag[ SDI_TQ_FOR_UPDATE_EXISTS ] = ID_TRUE;
+    }
+    else
+    {
+        /* Nothing to do. */
+    }
+
     IDE_TEST( qmg::makeShardParamOffsetArray( aStatement,
                                               sStmtPos,
                                               &( sParamCount ),

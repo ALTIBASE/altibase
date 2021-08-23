@@ -15,7 +15,7 @@
  */
 
 /***********************************************************************
- * $Id: qmvQuerySet.cpp 90409 2021-04-01 04:19:46Z donovan.seo $
+ * $Id: qmvQuerySet.cpp 91515 2021-08-23 06:57:58Z jayce.park $
  **********************************************************************/
 
 #include <idl.h>
@@ -5315,6 +5315,40 @@ IDE_RC qmvQuerySet::validateView(
 
         ((qmsParseTree *)(aTableRef->view->myPlan->parseTree))->forUpdate =
             sParseTree->forUpdate;
+    }
+
+    /* BUG-48961 FOR UPDATE WITH NON-SHARD QUERY */
+    if ( ( aStatement->myPlan->parseTree->stmtKind == QCI_STMT_SELECT ) ||
+         ( aStatement->myPlan->parseTree->stmtKind == QCI_STMT_SELECT_FOR_UPDATE ) )
+    {  
+        if ( ( ( (qmsParseTree*)aStatement->myPlan->parseTree )->forUpdate != NULL ) &&
+             ( aStatement->mShardQuerySetList != NULL ) )
+        {
+            /* Shard Analysis 중이거나(SDI_QUERYSET_LIST_STATE_DUMMY_MAKE),
+             * Shard Analysis 완료인 경우(SDI_QUERYSET_LIST_STATE_MAIN_ANALYZE_DONE )
+             * View 내부로 for update 를 전달한다.
+             */
+            if ( ( SDI_CHECK_QUERYSET_LIST_STATE( aStatement->mShardQuerySetList,
+                                                  SDI_QUERYSET_LIST_STATE_DUMMY_MAKE ) == ID_TRUE ) ||
+                 ( SDI_CHECK_QUERYSET_LIST_STATE( aStatement->mShardQuerySetList,
+                                                  SDI_QUERYSET_LIST_STATE_MAIN_ANALYZE_DONE ) == ID_TRUE ) )
+            {
+                ((qmsParseTree *)(aTableRef->view->myPlan->parseTree))->forUpdate =
+                    ((qmsParseTree*)aStatement->myPlan->parseTree )->forUpdate;
+            }
+            else
+            {
+                /* Nothing to do. */
+            }
+        }
+        else
+        {
+            /* Nothing to do. */
+        }
+    }
+    else
+    {
+        /* Nothing to do. */
     }
     
     // set member of qcStatement

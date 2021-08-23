@@ -1977,6 +1977,73 @@ IDE_RC qmgShardSelect::pushLimitOptimize( qmgTransformInfo * aInfo )
     return IDE_FAILURE;
 }
 
+
+IDE_RC qmgShardSelect::pushForUpdate( qmgTransformInfo * aInfo )
+{
+/****************************************************************************************
+ *
+ * Description : Plan String Buffer로 FOR UPDATE절을 Push, Query Set Text를 복제한다.
+ *               수행 시 Shard Select Plan에서 수행 대상 노드들에 FOR UPDATE가 전달된다.
+ *
+ * Implementation :
+ *
+ ****************************************************************************************/
+
+    IDE_TEST_RAISE( aInfo == NULL, ERR_NULL_INFO );
+    IDE_TEST_RAISE( aInfo->mString == NULL, ERR_NULL_PLAN_STRING );
+
+    if ( aInfo->mForUpdate != NULL )
+    {
+        if ( aInfo->mForUpdate->isQueue == ID_FALSE )
+        {
+            IDE_TEST( iduVarStringAppend( aInfo->mString,
+                                          " FOR UPDATE" )
+                      != IDE_SUCCESS );
+        }
+        else
+        {
+            if ( aInfo->mForUpdate->isMoveAndDelete == ID_TRUE  )
+            {
+                IDE_TEST( iduVarStringAppend( aInfo->mString,
+                                              " FOR MOVE AND DELETE" )
+                          != IDE_SUCCESS );
+            }
+            else
+            {
+                IDE_RAISE(ERR_UNSUPPORTED_FOR_UPDATE_TYPE);
+            }
+        }
+    }
+    else
+    {
+        /* Nothing to do. */
+    }
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( ERR_NULL_INFO )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QMC_UNEXPECTED_ERROR,
+                                  "qmgShardSelect::pushForUpdate",
+                                  "info is null" ) );
+    }
+    IDE_EXCEPTION( ERR_NULL_PLAN_STRING )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QMC_UNEXPECTED_ERROR,
+                                  "qmgShardSelect::pushForUpdate",
+                                  "plan string is null" ) );
+    }
+    IDE_EXCEPTION( ERR_UNSUPPORTED_FOR_UPDATE_TYPE )
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QMC_UNEXPECTED_ERROR,
+                                  "qmgShardSelect::pushForUpdate",
+                                  "Unsupported shard object type in Altibase Sharding" ) );
+    }
+    IDE_EXCEPTION_END;
+
+    return IDE_FAILURE;
+}
+
 IDE_RC qmgShardSelect::pushSeriesOptimize( qcStatement    * aStatement,
                                            const qmgGraph * aParent,
                                            qmgShardSELT   * aMyGraph )
@@ -1999,11 +2066,12 @@ IDE_RC qmgShardSelect::pushSeriesOptimize( qcStatement    * aStatement,
  *                  8.  Group By Having 절을 복제한다
  *                  9.  Bind 정보를 수집한다.
  *                  10. Push Limit를 수행한다.
- *                  11. 변환한 Query를 Buffer에 출력한다.
- *                  12. 변환한 Query로 Tuple Column를 설정한다.
- *                  13. 변환한 Query로 Shard Key Value를 설정한다.
- *                  14. 변환한 Query로 Shard Parameter를 설정
- *                  15. 변환한 Query를 Shard Query로 설정한다.
+ *                  11. Push FOR UPDATE를 수행한다. (BUG-48961)
+ *                  12. 변환한 Query를 Buffer에 출력한다.
+ *                  13. 변환한 Query로 Tuple Column를 설정한다.
+ *                  14. 변환한 Query로 Shard Key Value를 설정한다.
+ *                  15. 변환한 Query로 Shard Parameter를 설정
+ *                  16. 변환한 Query를 Shard Query로 설정한다.
  *
  ****************************************************************************************/
 
@@ -2065,7 +2133,10 @@ IDE_RC qmgShardSelect::pushSeriesOptimize( qcStatement    * aStatement,
 
         IDE_TEST( pushLimitOptimize( &( sTransformInfo ) ) != IDE_SUCCESS );
 
-        /* 11. 변환한 Query를 Buffer에 출력한다. */
+        /* 11. Push FOR UPDATE를 수행한다. */
+        IDE_TEST( pushForUpdate( &( sTransformInfo ) ) != IDE_SUCCESS );
+
+        /* 12. 변환한 Query를 Buffer에 출력한다. */
         aMyGraph->mShardQueryLength = iduVarStringGetLength( sTransformInfo.mString );
 
         IDE_TEST( QC_QMP_MEM( aStatement )->alloc( aMyGraph->mShardQueryLength + 1,
@@ -2081,16 +2152,16 @@ IDE_RC qmgShardSelect::pushSeriesOptimize( qcStatement    * aStatement,
                                         ID_TRUE )
                   != IDE_SUCCESS );
 
-        /* 12. 변환한 Query로 Tuple Column를 t정한다. */
+        /* 13. 변환한 Query로 Tuple Column를 t정한다. */
         IDE_TEST( setShardTupleColumn( &( sTransformInfo ) ) != IDE_SUCCESS );
 
-        /* 13. 변환한 Query로 Shard Key Value를 설정한다. */
+        /* 14. 변환한 Query로 Shard Key Value를 설정한다. */
         IDE_TEST( setShardKeyValue( &( sTransformInfo ) ) != IDE_SUCCESS );
 
-        /* 14. 변환한 Query로 Shard Parameter를 설정한다. */
+        /* 15. 변환한 Query로 Shard Parameter를 설정한다. */
         IDE_TEST( setShardParameter( &( sTransformInfo ) ) != IDE_SUCCESS );
 
-        /* 15. 변환한 Query를 Shard Query로 설정한다. */
+        /* 16. 변환한 Query를 Shard Query로 설정한다. */
         aMyGraph->shardQuery.stmtText = aMyGraph->mShardQueryBuf;
         aMyGraph->shardQuery.offset   = 0;
         aMyGraph->shardQuery.size     = aMyGraph->mShardQueryLength;
@@ -2455,7 +2526,6 @@ IDE_RC qmgShardSelect::setShardTupleColumn( qmgTransformInfo * aInfo )
     UShort      sIdx         = 0;
     UShort      sTable       = 0;
     UShort      sColumnCount = 0;
-    UInt        sOffset      = 0;
 
     IDE_TEST_RAISE( aInfo == NULL, ERR_NULL_INFO );
 
@@ -2467,7 +2537,6 @@ IDE_RC qmgShardSelect::setShardTupleColumn( qmgTransformInfo * aInfo )
     sTuple       = & QC_SHARED_TMPLATE( aInfo->mStatement )->tmplate.rows[ sTable ];    
     sColumnCount = sTuple->columnCount;
     sColumn      = sTuple->columns;
-    sOffset      = sColumn->column.offset;
 
     /* 2. 사용중인 Target은 Tuple의 앞부분을 사용하도록 Offset를 조정한다. */
     for ( sIdx = 0, sColumn = sTuple->columns, sTarget = aInfo->mTarget;
@@ -3152,6 +3221,7 @@ IDE_RC qmgShardSelect::checkAndGetPushSeries( qcStatement      * aStatement,
     qtcNode           * sWhere           = NULL;
     qmsSortColumns    * sOrderBy         = NULL;
     qmsLimit          * sLimit           = NULL;
+    qmsForUpdate      * sForUpdate       = NULL; /* BUG-48961 */
     idBool              sNeedWrapSet     = ID_FALSE;
     idBool              sUseShardKwd     = ID_FALSE; /* TASK-7219 Shard Transformer Refactoring */
     idBool              sIsTransform     = ID_FALSE;
@@ -3174,6 +3244,20 @@ IDE_RC qmgShardSelect::checkAndGetPushSeries( qcStatement      * aStatement,
         sViewQuerySet  = sViewParseTree->querySet;
 
         sOuterQuery = aMyGraph->graph.myQuerySet->SFWGH->outerQuery;
+
+        /* BUG-48961
+         * PUSH FOR UPDATE는 optimization이 아닌, 정합성을 위해 반드시 수행해야 하는 transformation이기 때문에
+         * NORMAL_EXIT 검사 전에 수집한다.
+         */
+        if ( ((qmsParseTree*)aStatement->myPlan->parseTree)->forUpdate != NULL )
+        {
+            sForUpdate = ((qmsParseTree*)aStatement->myPlan->parseTree)->forUpdate;
+            sIsTransform = ID_TRUE;
+        }
+        else
+        {
+            /* Nothing to do. */
+        }
 
         /* 2. 키워드를 사용했다면, 최적화하지 않는다. */
         IDE_TEST_CONT( sViewParseTree->common.stmtShard != QC_STMT_SHARD_ANALYZE, NORMAL_EXIT );
@@ -3252,6 +3336,8 @@ IDE_RC qmgShardSelect::checkAndGetPushSeries( qcStatement      * aStatement,
         /* Nothing to do */
     }
 
+    IDE_EXCEPTION_CONT( NORMAL_EXIT );
+
     if ( sIsTransform == ID_TRUE )
     {
         IDE_TEST( STRUCT_ALLOC( QC_QMP_MEM( aStatement ),
@@ -3266,7 +3352,6 @@ IDE_RC qmgShardSelect::checkAndGetPushSeries( qcStatement      * aStatement,
         /* Nothing to do */
     }
 
-    IDE_EXCEPTION_CONT( NORMAL_EXIT );
 
     aInfo->mString          = sString;
     aInfo->mGraph           = aMyGraph;
@@ -3277,6 +3362,7 @@ IDE_RC qmgShardSelect::checkAndGetPushSeries( qcStatement      * aStatement,
     aInfo->mWhere           = sWhere;
     aInfo->mOrderBy         = sOrderBy;
     aInfo->mLimit           = sLimit;
+    aInfo->mForUpdate       = sForUpdate;
     aInfo->mParamOffsetInfo = sParamOffsetInfo;
     aInfo->mNeedWrapSet     = sNeedWrapSet;
     aInfo->mUseShardKwd     = sUseShardKwd; /* TASK-7219 Shard Transformer Refactoring */
