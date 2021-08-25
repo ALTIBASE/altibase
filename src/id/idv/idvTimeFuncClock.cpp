@@ -4,7 +4,7 @@
  **********************************************************************/
 
 /***********************************************************************
- * $Id: idvTimeFuncClock.cpp 81514 2017-11-02 06:29:05Z donghyun1 $
+ * $Id: idvTimeFuncClock.cpp 91519 2021-08-24 05:09:06Z kclee $
  **********************************************************************/
 
 #include <idl.h>
@@ -36,12 +36,28 @@ static void   gClockGet(idvTime *aValue)
 // call by callback. convert to micro second.
 static ULong  gClockDiff(idvTime *aBefore, idvTime *aAfter)
 {
-    return (aAfter->iTime.mClock - aBefore->iTime.mClock) / idvManager::getClock();
+    ULong  sClock = idvManager::getClock();
+
+    //BUG-49253  : fix divide by zero
+    if(sClock == 0) 
+    {
+        sClock = 1;
+    }
+    
+    return (aAfter->iTime.mClock - aBefore->iTime.mClock) / sClock;
 }
 
 static ULong  gClockMicro(idvTime *aValue)
 {
-    return (aValue->iTime.mClock / idvManager::getClock());
+    ULong  sClock = idvManager::getClock();
+
+    //BUG-49253  : fix divide by zero
+    if(sClock == 0) 
+    {
+        sClock = 1;
+    }
+
+    return (aValue->iTime.mClock / sClock);
 }
 
 static idBool gClockIsOlder(idvTime *aBefore, idvTime *aAfter)
