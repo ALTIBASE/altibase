@@ -1,2 +1,0 @@
-cp profile ~/.profile
-. ~/.profile

@@ -1,2 +1,0 @@
-.PHONY: cdbc
-cdbc: lib

@@ -1,8 +1,0 @@
-LIBRARY "mt_so"
-
-EXPORTS
-?mtdChar@@3UmtdModule@@A
-?mtdInteger@@3UmtdModule@@A
-?makeNameInSQL@mtl@@SAXPEAD0H@Z
-?makeNameInFunc@mtl@@SAXPEAD0H@Z
-?makeQuotedName@mtl@@SAXPEAD0H@Z

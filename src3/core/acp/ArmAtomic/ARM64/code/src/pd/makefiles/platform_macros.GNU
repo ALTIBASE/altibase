@@ -1,1 +1,0 @@
-platform_amd64_linux_lxpthread.GNU

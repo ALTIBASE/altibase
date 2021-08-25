@@ -1,2 +1,0 @@
-bin\altipkg.exe -v
-
