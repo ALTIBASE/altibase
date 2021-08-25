@@ -82,6 +82,7 @@ typedef struct rpcDDLSyncInfo
     idBool                 mDDLSyncExitFlag;
     rpcDDLSyncInfoType     mDDLSyncInfoType;
     idBool                 mIsBuildNewMeta;
+    idBool                 mIsSetSavePoint;
     iduListNode            mNode;
 } rpcDDLSyncInfo;
 

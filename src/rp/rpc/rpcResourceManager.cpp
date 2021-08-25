@@ -381,15 +381,7 @@ void rpcResourceManager::ddlSyncException( rpcDDLSyncManager    * aDDLSyncMgr,
 
     sDDLSyncMgr = aDDLSyncMgr;
 
-    IDU_LIST_ITERATE( &( sDDLSyncInfo->mDDLReplInfoList ), sNode )
-    {
-        sDDLReplInfo = (rpcDDLReplInfo*)sNode->mObj;
-
-        if ( sDDLReplInfo->mHBT != NULL )
-        {
-            sDDLSyncMgr->sendDDLSyncCancel( sDDLSyncInfo );
-        }
-    }
+    sDDLSyncMgr->sendDDLSyncCancel( sDDLSyncInfo );
 
     smiStmtEndAll();
 

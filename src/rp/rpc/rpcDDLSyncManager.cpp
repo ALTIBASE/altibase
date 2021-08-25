@@ -369,8 +369,6 @@ IDE_RC rpcDDLSyncManager::ddlSyncEndCommon( smiTrans * aDDLTrans, rpcDDLSyncInfo
 
     if ( aDDLSyncInfo->mIsBuildNewMeta == ID_TRUE )
     {
-        aDDLSyncInfo->mIsBuildNewMeta = ID_FALSE;
-
         IDE_TEST( buildReceiverNewMeta( aDDLTrans, aDDLSyncInfo ) != IDE_SUCCESS );
     }
 
@@ -404,6 +402,7 @@ IDE_RC rpcDDLSyncManager::allocAndInitDDLSyncInfo( rpcDDLSyncInfoType    aDDLSyn
     sDDLSyncInfo->mDDLSyncExitFlag = ID_FALSE;
     sDDLSyncInfo->mDDLSyncInfoType = aDDLSyncInfoType;
     sDDLSyncInfo->mIsBuildNewMeta = ID_FALSE;
+    sDDLSyncInfo->mIsSetSavePoint = ID_FALSE;
 
     IDU_LIST_INIT( &( sDDLSyncInfo->mDDLTableInfo.mPartInfoList ) );
 
@@ -668,6 +667,7 @@ IDE_RC rpcDDLSyncManager::setDDLSyncRollbackInfoAndTableAccessRecoverCommon( smi
     IDU_FIT_POINT_RAISE( "rpcDDLSyncManager::setDDLSyncRollbackInfoAndTableAccessRecoverCommon::savepoint::aDDLTrans", 
                          ERR_SET_SVP );
     IDE_TEST_RAISE( aDDLTrans->savepoint( RP_DDL_SYNC_SAVEPOINT_NAME ) != IDE_SUCCESS, ERR_SET_SVP );
+    aDDLSyncInfo->mIsSetSavePoint = ID_TRUE;
 
     IDE_TEST( ddlSyncTableLock( aDDLTrans, 
                                 aDDLSyncInfo,
@@ -991,9 +991,12 @@ IDE_RC rpcDDLSyncManager::ddlSyncRollback( smiTrans * aDDLTrans, rpcDDLSyncInfo 
 
     if ( aDDLTrans->isBegin() == ID_TRUE )
     {
-        IDE_TEST( aDDLTrans->rollback( RP_DDL_SYNC_SAVEPOINT_NAME ) != IDE_SUCCESS );
-        ideLog::log( IDE_RP_0, "[DDLSyncManager] Rollback to savepoint <%s> success", RP_DDL_SYNC_SAVEPOINT_NAME );
-
+        if ( aDDLSyncInfo->mIsSetSavePoint == ID_TRUE )
+        {
+            IDE_TEST( aDDLTrans->rollback( RP_DDL_SYNC_SAVEPOINT_NAME ) != IDE_SUCCESS );
+            ideLog::log( IDE_RP_0, "[DDLSyncManager] Rollback to savepoint <%s> success", RP_DDL_SYNC_SAVEPOINT_NAME );
+        }
+        
         if ( aDDLSyncInfo->mDDLSyncInfoType != RP_MASTER_DDL )
         {
             IDE_ASSERT( aDDLTrans->rollback() == IDE_SUCCESS );
@@ -1811,11 +1814,14 @@ void rpcDDLSyncManager::removeReceiverNewMeta( rpcDDLSyncInfo * aDDLSyncInfo )
 
     IDE_DASSERT( aDDLSyncInfo != NULL );
 
-    IDU_LIST_ITERATE( &( aDDLSyncInfo->mDDLReplInfoList ), sNode )
+    if ( aDDLSyncInfo->mIsBuildNewMeta == ID_TRUE )
     {
-        sInfo = (rpcDDLReplInfo*)sNode->mObj;
+        IDU_LIST_ITERATE( &( aDDLSyncInfo->mDDLReplInfoList ), sNode )
+        {
+            sInfo = (rpcDDLReplInfo*)sNode->mObj;
 
-        rpcManager::removeReceiverNewMeta( sInfo->mRepName );
+            rpcManager::removeReceiverNewMeta( sInfo->mRepName );
+        }
     }
 }
 
@@ -3096,26 +3102,29 @@ void rpcDDLSyncManager::sendDDLSyncCancel( rpcDDLSyncInfo * aDDLSyncInfo )
     {
         sInfo = (rpcDDLReplInfo*)sNode->mObj;
 
-        if( connect( sInfo, &sProtocolContext ) == IDE_SUCCESS )
-        {
-            if( rpnComm::sendDDLSyncCancel( sInfo->mHBT,
-                                            sProtocolContext,
-                                            sInfo->mDDLSyncExitFlag,
-                                            sInfo->mRepName,
-                                            RPU_REPLICATION_SENDER_SEND_TIMEOUT )
-                != IDE_SUCCESS )
+        if ( sInfo->mHBT != NULL )
+        {        
+            if( connect( sInfo, &sProtocolContext ) == IDE_SUCCESS )
             {
-                /* nothing to do */
+                if( rpnComm::sendDDLSyncCancel( sInfo->mHBT,
+                                                sProtocolContext,
+                                                sInfo->mDDLSyncExitFlag,
+                                                sInfo->mRepName,
+                                                RPU_REPLICATION_SENDER_SEND_TIMEOUT )
+                    != IDE_SUCCESS )
+                {
+                    /* nothing to do */
+                }
+                else
+                {
+                    ideLog::log( IDE_RP_0, "[DDLSyncManager] Send to replication <%s> DDL sync cancel", 
+                                 sInfo->mRepName );
+                }
             }
             else
             {
-                ideLog::log( IDE_RP_0, "[DDLSyncManager] Send to replication <%s> DDL sync cancel", 
-                             sInfo->mRepName );
+                IDE_ERRLOG( IDE_RP_0 );
             }
-        }
-        else
-        {
-            IDE_ERRLOG( IDE_RP_0 );
         }
     }
 
