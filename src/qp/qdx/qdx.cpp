@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdx.cpp 91206 2021-07-12 07:33:20Z seulki $
+ * $Id: qdx.cpp 91517 2021-08-24 01:25:47Z bethy $
  **********************************************************************/
 
 #include <idl.h>
@@ -50,6 +50,7 @@
 #include <qcpUtil.h>
 #include <qcmAudit.h>
 #include <qdpRole.h>
+#include <qcc.h>
 #include <sdi.h>
 
 /***********************************************************************
@@ -408,10 +409,19 @@ IDE_RC qdx::parse(qcStatement * aStatement)
         sTableParseTree->createIndexParseTree = sParseTree;
         sTableParseTree->addHiddenColumn = ID_TRUE;
         
-        sTableParseTree->common.validate = qdbAlter::validateAddCol;
-        sTableParseTree->common.execute  = qdbAlter::executeAddCol;
+        /* PROJ-2757 Advanced Global DDL */
+        if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+             ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aStatement ) == ID_TRUE ) )
+        {
+            sParseTree->common.validate = qcc::validate;
+        }
+        else
+        {
+            sTableParseTree->common.validate = qdbAlter::validateAddCol;
+            sTableParseTree->common.execute  = qdbAlter::executeAddCol;
 
-        aStatement->myPlan->parseTree = (qcParseTree *)sTableParseTree;
+            aStatement->myPlan->parseTree = (qcParseTree *)sTableParseTree;
+        }
     }
     else
     {
@@ -543,7 +553,11 @@ IDE_RC qdx::validate(qcStatement * aStatement)
     else
     {
         /* BUG-48290 shard object에 대한 DDL 차단 */
-        IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_INDEX ) != IDE_SUCCESS );
+        IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                               SDI_DDL_TYPE_INDEX,
+                                               ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                               ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+                  != IDE_SUCCESS );
     }
 
     IDE_TEST(qcm::lockTableForDDLValidation(aStatement,
@@ -1992,7 +2006,7 @@ IDE_RC qdx::validateAlter(qcStatement * aStatement)
              != IDE_SUCCESS);
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_INDEX ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_INDEX) != IDE_SUCCESS );
 
     IDE_TEST(qcm::getTableInfoByID(aStatement,
                                    sTableID,
@@ -6546,6 +6560,8 @@ IDE_RC qdx::validateAlterRename( qcStatement * aStatement )
     /* BUG-48290 shard object에 대한 DDL 차단 */
     IDE_TEST( sdi::checkShardObjectForDDL( aStatement, 
                                            SDI_DDL_TYPE_INDEX, 
+                                           ID_FALSE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_FALSE, /* aIsGlobalDDLAllowedOnShardObj */
                                            sParseTree->tableInfo->name ) != IDE_SUCCESS );
 
     IDE_TEST(qcm::lockTableForDDLValidation(aStatement,

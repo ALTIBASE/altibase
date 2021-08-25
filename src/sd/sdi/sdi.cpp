@@ -28,6 +28,8 @@
 #include <qcm.h>
 #include <qcmProc.h>
 #include <qcg.h>
+#include <qdd.h>
+#include <qdbCopySwap.h>
 #include <qmn.h>
 #include <qdsd.h>
 #include <sdl.h>
@@ -41,6 +43,7 @@
 #include <qmxShard.h>
 #include <sdiZookeeper.h>
 #include <sdo.h>    /* TASK-7219 Shard Transformer Refactoring */
+#include <sdiGlobalDDL.h>
 
 #include <qcd.h>
 
@@ -9044,6 +9047,18 @@ IDE_RC sdi::setShardSessionProperty( qcSession      * aSession,
             }
         }
 
+        /* PROJ-2757 Advanced Global DDL */
+        if ( ( aConnectInfo->mCoordPropertyFlag & QC_SESSION_ATTR_GLOBAL_DDL_MASK )
+             == QC_SESSION_ATTR_GLOBAL_DDL_TRUE )
+        {
+            IDE_TEST( sdl::setConnAttr( aConnectInfo,
+                                        SDL_ALTIBASE_GLOBAL_DDL,
+                                        qci::mSessionCallback.mGlobalDDL( aSession->mMmSession ),
+                                        NULL,
+                                        &(aConnectInfo->mLinkFailure) )
+                      != IDE_SUCCESS );
+        }
+
         // BUG-47765
         aConnectInfo->mFlag &= ~SDI_CONNECT_ATTR_CHANGE_MASK;
         aConnectInfo->mFlag |= SDI_CONNECT_ATTR_CHANGE_FALSE;
@@ -9368,8 +9383,10 @@ IDE_RC sdi::setSessionPropertyFlag( qcSession * aSession,
                 aSession->mQPSpecific.mPropertyFlag &= ~QC_SESSION_ATTR___OPTIMIZER_ELIMINATE_COMMON_SUBEXPRESSION_MASK;
                 aSession->mQPSpecific.mPropertyFlag |= QC_SESSION_ATTR___OPTIMIZER_ELIMINATE_COMMON_SUBEXPRESSION_TRUE;
                 break;
-            /* 전송하지 않을 프로퍼티는 플래그를 세팅해주지 않는다. */
+            /* PROJ-2757 */
             case CMP_DB_PROPERTY_GLOBAL_DDL:
+                aSession->mQPSpecific.mPropertyFlag &= ~QC_SESSION_ATTR_GLOBAL_DDL_MASK;
+                aSession->mQPSpecific.mPropertyFlag |= QC_SESSION_ATTR_GLOBAL_DDL_TRUE;
                 break;
             default:
                 IDE_RAISE( ERR_NOT_EXIST_PROPERTY );
@@ -12722,6 +12739,8 @@ IDE_RC sdi::clearPsmSvp( sdiClientInfo * aClientInfo )
 
 IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
                                     sdiDDLType    aDDLType,
+                                    idBool        aIsGlobalDDLAllowedOnNonShardObj,
+                                    idBool        aIsGlobalDDLAllowedOnShardObj,
                                     SChar       * aObjectName )
 {
     qdTableParseTree  * sQdParseTree = NULL;
@@ -12733,10 +12752,13 @@ IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
 
     qcNamePosition    * sUserNamePos = NULL;
     qcNamePosition    * sObjectNamePos = NULL;
+    idBool              sIsShardObject = ID_FALSE;
 
     switch( aDDLType )
     {
         case SDI_DDL_TYPE_TABLE:
+        case SDI_DDL_TYPE_TABLE_PARTITION:
+        case SDI_DDL_TYPE_TABLE_SPLIT_PARTITION:
             sQdParseTree = (qdTableParseTree *)aQcStmt->myPlan->parseTree;
             sUserNamePos = &(sQdParseTree->userName);
             sObjectNamePos = &(sQdParseTree->tableName);
@@ -12783,10 +12805,40 @@ IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
             break;
     }
 
-    IDE_TEST( checkShardObjectForDDLInternal( aQcStmt,
-                                              *sUserNamePos,
-                                              *sObjectNamePos,
-                                               aObjectName ) != IDE_SUCCESS );
+    IDE_TEST( checkShardObjectForDDLInternal(
+                        aQcStmt,
+                        *sUserNamePos,
+                        *sObjectNamePos,
+                        aObjectName,
+                        aIsGlobalDDLAllowedOnNonShardObj,
+                        aIsGlobalDDLAllowedOnShardObj,
+                        &sIsShardObject )
+              != IDE_SUCCESS );
+
+    // Global DDL 수행과 관련된 정보 셋팅
+    if ( ( QCG_GET_SESSION_GLOBAL_DDL( aQcStmt ) == ID_TRUE ) &&
+         ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aQcStmt ) == ID_TRUE ) )
+    {
+        sdiGlobalDDL::setInfo( aQcStmt,
+                               sIsShardObject,
+                               aDDLType,
+                               sUserNamePos,
+                               sObjectNamePos );
+
+        // rewrite
+        if ( aDDLType == SDI_DDL_TYPE_INDEX_DROP )
+        {
+            sDropParseTree->common.execute = sdiGlobalDDL::executeDropIndex;
+        }
+        else
+        {
+            /* Nothing to do */
+        }
+    }
+    else
+    {
+        /* Nothing to do */
+    }
 
     IDE_EXCEPTION_CONT( NORMAL_EXIT );
 
@@ -12800,7 +12852,10 @@ IDE_RC sdi::checkShardObjectForDDL( qcStatement * aQcStmt,
 IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement    * aQcStmt,
                                             qcNamePosition   aUserNamePos,
                                             qcNamePosition   aObjectNamePos,
-                                            SChar          * aObjectName )
+                                            SChar          * aObjectName,
+                                            idBool           aIsGlobalDDLAllowedOnNonShardObj,
+                                            idBool           aIsGlobalDDLAllowedOnShardObj,
+                                            idBool         * aIsShardObject )
 {
     qcNamePosition    * sUserNamePos = NULL;
     qcNamePosition    * sObjectNamePos = NULL;
@@ -12818,6 +12873,7 @@ IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement    * aQcStmt,
     smiStatement        sSmiStmt;
     UInt                sSmiStmtFlag = 0;
     idBool              sIsObjectFound = ID_FALSE;
+    idBool              sIsNamedBackup = ID_FALSE;
 
     sUserNamePos = &aUserNamePos;
     sObjectNamePos = &aObjectNamePos;
@@ -12866,6 +12922,8 @@ IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement    * aQcStmt,
                 sBakObjectNamePos.size -= 5;
 
                 QC_STR_COPY( sObjectName, sBakObjectNamePos );
+
+                sIsNamedBackup = ID_TRUE;
             }
             else
             {
@@ -12913,7 +12971,7 @@ IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement    * aQcStmt,
                                  &sIsObjectFound )
               != IDE_SUCCESS );
 
-    IDE_TEST_RAISE( sIsObjectFound == ID_TRUE, ERR_SHARD_OBJECT );
+    //IDE_TEST_RAISE( sIsObjectFound == ID_TRUE, ERR_SHARD_OBJECT );
 
     /* restore */
     sState = 3;
@@ -12928,6 +12986,63 @@ IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement    * aQcStmt,
     sState = 0;
     IDE_TEST( sSmiTrans.destroy( aQcStmt->mStatistics ) != IDE_SUCCESS );
 
+/***********************************************************************
+ *
+ * Description :
+ *    PROJ-2757 Advanced Global DDL
+ *
+ *    DDL 구문의 validation에서 호출되며 DDL 또는 Global DDL이 가능한지 검사한다.
+ *
+ * Implementation :
+        1. user session에서 backup용 테이블이면 에러
+ *      2. GLOBAL_DDL 이면,
+ *        2-1. Shard 객체이면,
+ *          Shard 객체에 허용되는 Global DDL이면 Global DDL 가능
+ *          아니면, 에러
+ *        2-2. Shard 객체가 아니면,
+ *          Non-Shard 객체에 허용되는 Global DDL이면 Global DDL 가능
+ *          아니면, 에러
+ *
+ *      3. GLOBAL_DDL 아니면,
+ *        3-1. Shard 객체이면, 에러
+ *
+ ***********************************************************************/
+
+    /* 1. backup용 테이블이면 에러 */
+    // 1
+    IDE_TEST_RAISE( ( sIsNamedBackup == ID_TRUE ) &&
+                    ( sIsObjectFound == ID_TRUE ) &&
+                    ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aQcStmt ) == ID_TRUE ),
+                    ERR_SHARD_OBJECT );
+
+    if ( QCG_GET_SESSION_GLOBAL_DDL( aQcStmt ) == ID_TRUE )
+    {
+        if ( sIsObjectFound == ID_TRUE )
+        {
+            // 2-1
+            IDE_TEST_RAISE( aIsGlobalDDLAllowedOnShardObj == ID_FALSE, ERR_GLOBAL_DDL );
+        }
+        else
+        {
+            // 2-2
+            IDE_TEST_RAISE( aIsGlobalDDLAllowedOnNonShardObj == ID_FALSE, ERR_GLOBAL_DDL );
+        }
+    }
+    else
+    {
+        // 3-1
+        IDE_TEST_RAISE( sIsObjectFound == ID_TRUE, ERR_SHARD_OBJECT );
+    }
+
+    if ( aIsShardObject != NULL )
+    {
+        *aIsShardObject = sIsObjectFound;
+    }
+    else
+    {
+        /* Nothing to do */
+    }
+
     IDE_EXCEPTION_CONT( NORMAL_EXIT );
 
     return IDE_SUCCESS;
@@ -12935,6 +13050,10 @@ IDE_RC sdi::checkShardObjectForDDLInternal( qcStatement    * aQcStmt,
     IDE_EXCEPTION(ERR_SHARD_OBJECT)
     {
         IDE_SET( ideSetErrorCode( sdERR_ABORT_SDI_SHARD_OBJECT_CANNOT_EXEC_DDL ) );
+    }
+    IDE_EXCEPTION(ERR_GLOBAL_DDL)
+    {
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDI_UNSUPPORTED_GLOBAL_DDL ) );
     }
     IDE_EXCEPTION_END;
 

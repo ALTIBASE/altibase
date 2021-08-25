@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qc.h 91102 2021-06-30 04:35:30Z jayce.park $
+ * $Id: qc.h 91517 2021-08-24 01:25:47Z bethy $
  **********************************************************************/
 
 #ifndef _O_QC_H_
@@ -29,7 +29,6 @@
 #include <iduVarMemList.h>
 #include <idv.h>
 #include <mtcDef.h>
-#include <sdiTypes.h>
 #include <qcuError.h>
 #include <qmcCursor.h>
 #include <qmcTempTableMgr.h>
@@ -37,6 +36,7 @@
 #include <mtlTerritory.h>
 #include <mtuProperty.h>
 #include <qciStmtType.h>
+#include <sdiTypes.h>
 
 struct qtcNode;
 struct qtcCacheObj;
@@ -442,6 +442,12 @@ typedef struct qcCondValueCharBuffer {
 #define QC_SESSION_SAHRD_ADD_CLONE_FALSE (0x00000000)
 #define QC_SESSION_SAHRD_ADD_CLONE_TRUE  (0x01000000)
 
+/* PROJ-2757 */
+// for qcSession.flag
+#define QC_SESSION_GLOBAL_DDL_MASK          (0x02000000)
+#define QC_SESSION_GLOBAL_DDL_FALSE         (0x00000000)
+#define QC_SESSION_GLOBAL_DDL_TRUE          (0x02000000)
+
 // for qcSession mPropertylFlag 
 #define QC_SESSION_ATTR___OPTIMIZER_DEFAULT_TEMP_TBS_TYPE_MASK   ID_ULONG(0x0000000000000001)
 #define QC_SESSION_ATTR___OPTIMIZER_DEFAULT_TEMP_TBS_TYPE_TRUE   ID_ULONG(0x0000000000000001)
@@ -657,6 +663,11 @@ typedef struct qcCondValueCharBuffer {
 #define QC_SESSION_ATTR___OPTIMIZER_ELIMINATE_COMMON_SUBEXPRESSION_MASK  ID_ULONG(0x0010000000000000)
 #define QC_SESSION_ATTR___OPTIMIZER_ELIMINATE_COMMON_SUBEXPRESSION_TRUE  ID_ULONG(0x0010000000000000)
 #define QC_SESSION_ATTR___OPTIMIZER_ELIMINATE_COMMON_SUBEXPRESSION_FALSE ID_ULONG(0x0000000000000000)
+
+/* PROJ-2757 */
+#define QC_SESSION_ATTR_GLOBAL_DDL_MASK                          ID_ULONG(0x0020000000000000)
+#define QC_SESSION_ATTR_GLOBAL_DDL_TRUE                          ID_ULONG(0x0020000000000000)
+#define QC_SESSION_ATTR_GLOBAL_DDL_FALSE                         ID_ULONG(0x0000000000000000)
 
 #define SET_POSITION(_DESTINATION_, _SOURCE_)       \
 {                                                   \
@@ -2364,6 +2375,17 @@ typedef struct qcDDLInfo
     smOID  * mDestPartOIDArray;
 } qcDDLInfo;
 
+/* PROJ-2757 Advanced Global DDL */
+typedef struct qcShardGlobalDDLInfo
+{
+    idBool                             mIsAllowed;
+    idBool                             mIsShardObject;
+    sdiDDLType                         mDDLType;
+    qcNamePosition                     mUserNamePos;
+    qcNamePosition                     mTableNamePos;
+    struct qdIndexPartitionAttribute * mIndexTBSAttr;
+} qcShardGlobalDDLInfo;
+
 typedef struct qcStatement
 {
     // PROJ-1436 shared plan
@@ -2470,6 +2492,9 @@ typedef struct qcStatement
 
     /* TASK-7219 Non-shard DML */
     sdiShardPartialExecType    mShardPartialExecType;
+
+    /* PROJ-2757 Advanced Global DDL */
+    qcShardGlobalDDLInfo       mShardGlobalDDLInfo;
 } qcStatement;
 
 #define QC_SMI_STMT( _QcStmt_ )  ( ( _QcStmt_ )->stmtInfo->mSmiStmtForExecute )
@@ -2515,6 +2540,22 @@ typedef struct qcStatement
 #define QC_STMTTEXTLEN( _QcStmt_ ) ( ( _QcStmt_ )->myPlan->stmtTextLen )
 
 #define QC_SHARD_CLIENT_INFO( _QcSession_ ) ( (_QcSession_)->mQPSpecific.mClientInfo )
+
+/* PROJ-2757 Advanced Global DDL */
+#define QC_SHARD_GLOBAL_DDL_ALLOWED( _QcStmt_ )                    \
+        ( (_QcStmt_)->mShardGlobalDDLInfo.mIsAllowed )
+#define QC_SHARD_GLOBAL_DDL_IS_SHARD_OBJECT( _QcStmt_ )            \
+        ( (_QcStmt_)->mShardGlobalDDLInfo.mIsShardObject )
+#define QC_SHARD_GLOBAL_DDL_GET_DDL_TYPE( _QcStmt_ )               \
+        ( (_QcStmt_)->mShardGlobalDDLInfo.mDDLType )
+#define QC_SHARD_GLOBAL_DDL_USER_NAME( _QcStmt_ )                  \
+        ( (_QcStmt_)->mShardGlobalDDLInfo.mUserNamePos )
+#define QC_SHARD_GLOBAL_DDL_TABLE_NAME( _QcStmt_ )                 \
+        ( (_QcStmt_)->mShardGlobalDDLInfo.mTableNamePos )
+#define QC_SHARD_GLOBAL_DDL_INDEX_TBS_ATTR( _QcStmt_ )             \
+        ( (_QcStmt_)->mShardGlobalDDLInfo.mIndexTBSAttr )
+#define QC_SHARD_GLOBAL_DDL_SET_ALLOWED( _QcStmt_, _bool_ )        \
+        ( (_QcStmt_)->mShardGlobalDDLInfo.mIsAllowed = (_bool_) )
 
 typedef struct qcParseSeqCaches
 {

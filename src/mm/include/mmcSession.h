@@ -3004,7 +3004,8 @@ inline idBool mmcSession::isDDLAutoCommit()
     {    
         if (( getTransactionalDDL() == ID_TRUE ) &&
             (( mQciSession.mQPSpecific.mFlag & QC_SESSION_SHARD_DDL_MASK ) !=
-             QC_SESSION_SHARD_DDL_TRUE ))
+             QC_SESSION_SHARD_DDL_TRUE ) &&
+            ( globalDDLUserSession() != ID_TRUE ))
         {
             sDDLAutoCommit = ID_FALSE;
         }

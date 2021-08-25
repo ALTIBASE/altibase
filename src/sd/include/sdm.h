@@ -239,7 +239,8 @@ private:
                             ULong          aSMN,
                             sdiTableInfo * aTableInfo,
                             sdiRangeInfo * aRangeInfo,
-                            idBool         aNeedMerge );
+                            idBool         aNeedMerge,
+                            idBool         aNeedReplicatSet = ID_FALSE );
 
     static IDE_RC getClone( qcStatement  * aStatement,
                             smiStatement * aSmiStmt,
@@ -475,7 +476,8 @@ public:
                                 ULong          aSMN,
                                 sdiTableInfo * aTableInfo,
                                 sdiRangeInfo * aRangeInfo,
-                                idBool         aNeedMerge );
+                                idBool         aNeedMerge,
+                                idBool         aNeedReplicatSet = ID_FALSE );
 
     /* PROJ-2655 Composite shard key */
     static IDE_RC shardRangeSort( sdiSplitMethod   aSplitMethod,
@@ -678,7 +680,8 @@ public:
                                   SChar       * aNodeName,
                                   SChar       * aUserName,
                                   SChar       * aReplName,
-                                  idBool        aIsNewTrans );
+                                  idBool        aIsNewTrans,
+                                  UInt          aWaitSecond = 0 );
 
     /* PROJ-2748 Shard Failback */
     static IDE_RC getFailoverHistoryWithPrimaryNodename( smiStatement       * aSmiStmt,
@@ -714,7 +717,14 @@ public:
                                                ULong                aSMN,
                                                idBool             * aIsExist );
 
-
+    /* PROJ-2757 Advanced Global DDL */
+    static IDE_RC updateShardMetaForSplitPartition( qcStatement * aStatement,
+                                                    SChar       * aUserName,
+                                                    SChar       * aTableName,
+                                                    SChar       * aSrcPartName,
+                                                    SChar       * aDstPartName,
+                                                    SChar       * aValue,
+                                                    UInt        * aRowCnt );
 };
 
 #endif /* _O_SDM_H_ */

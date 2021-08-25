@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdbAlter.cpp 91512 2021-08-21 07:50:50Z emlee $
+ * $Id: qdbAlter.cpp 91517 2021-08-24 01:25:47Z bethy $
  **********************************************************************/
 
 #include <idl.h>
@@ -58,6 +58,7 @@
 #include <qcc.h>
 #include <qdpRole.h>
 #include <sdi.h>
+#include <sdiGlobalDDL.h>
 
 IDE_RC qdbAlter::validateAddCol(qcStatement * aStatement)
 {
@@ -121,7 +122,11 @@ IDE_RC qdbAlter::validateAddCol(qcStatement * aStatement)
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
 #if defined(DEBUG)
     // BUG-38501
@@ -628,7 +633,11 @@ IDE_RC qdbAlter::validateDropCol(qcStatement * aStatement)
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     sTableInfo = sParseTree->tableInfo;
 
@@ -1266,7 +1275,11 @@ IDE_RC qdbAlter::validateSetDefault(qcStatement * aStatement)
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     // validation of default expression
     IDE_TEST(qdbCommon::validateDefaultDefinition(
@@ -1386,7 +1399,11 @@ IDE_RC qdbAlter::validateDropDefault(qcStatement * aStatement)
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     // check existence of column
     IDE_TEST(qcmCache::getColumn(aStatement,
@@ -1494,7 +1511,11 @@ IDE_RC qdbAlter::validateNotNull(qcStatement * aStatement)
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     // check existence of column
     IDE_TEST(qcmCache::getColumn(aStatement,
@@ -1636,7 +1657,11 @@ IDE_RC qdbAlter::validateNullable(qcStatement * aStatement)
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     // check existence of column
     IDE_TEST(qcmCache::getColumn(aStatement,
@@ -2561,6 +2586,7 @@ IDE_RC qdbAlter::validateSplitPartition( qcStatement * aStatement )
     qcmColumn               * sTableColumn;
     idBool                    sIsDefaultTBS;
     UInt                      i;
+    SChar                     sDstPartName[QC_MAX_OBJECT_NAME_LEN + 1];
 
     qdIndexPartitionAttribute * sIndexPartAttr = NULL;
     qdIndexPartitionAttribute * sTempAttr = NULL;
@@ -2578,7 +2604,11 @@ IDE_RC qdbAlter::validateSplitPartition( qcStatement * aStatement )
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE_SPLIT_PARTITION,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     sTableInfo = sParseTree->tableInfo;
 
@@ -2904,6 +2934,41 @@ IDE_RC qdbAlter::validateSplitPartition( qcStatement * aStatement )
             QD_ALTER_PARTITION_OUTPLACE_TYPE;
     }
 
+    /* PROJ-2757 Advanced Global DDL */
+    if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+         ( QCM_TABLE_IS_SHARD_SPLIT( sTableInfo->mShardFlag ) == ID_TRUE ) )
+    {
+        // shard table의 경우 GLOBAL_DDL에서는 right in-place만 지원
+        IDE_TEST_RAISE( sSrcPartAttr->alterPart->splitMergeType !=
+                        QD_ALTER_PARTITION_RIGHT_INPLACE_TYPE,
+                        ERR_GLOBAL_DDL );
+
+        // list 파티션은 항목 한개만 가질 수 있음
+        if( sTableInfo->partitionMethod == QCM_PARTITION_METHOD_LIST )
+        {
+            IDE_TEST_RAISE( sSrcPartAttr->partKeyCond->next != NULL,
+                            ERR_PART_COND_COUNT );
+        }
+        else
+        {
+            /* Nothing to do */
+        }
+
+        if  ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aStatement ) == ID_TRUE )
+        {
+            // hash,range,list 분산인 경우에 샤드 메타를 변경해야 하므로 executor 재정의
+            sParseTree->common.execute = sdiGlobalDDL::executeSplitPartition;
+        }
+        else
+        {
+            /* Nothing to do */
+        }
+    }
+    else
+    {
+        /* Nothing to do */
+    }
+
     // Left In-place 일 경우
     // DstPart2의 이름과 같은 이름의 파티션이 있는지 체크
     if( sSrcPartAttr->alterPart->splitMergeType ==
@@ -3133,6 +3198,17 @@ IDE_RC qdbAlter::validateSplitPartition( qcStatement * aStatement )
         IDE_SET( ideSetErrorCode( qpERR_ABORT_QDB_USE_ONLY_DISK_TABLE_PARTITION_IN_DISK_EDITION ) );
     }
 #endif
+    IDE_EXCEPTION(ERR_GLOBAL_DDL)
+    {
+        QC_SHARD_GLOBAL_DDL_SET_ALLOWED( aStatement, ID_FALSE );
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDI_UNSUPPORTED_SPLIT_PARTITION_GLOBAL_DDL ) );
+    }
+    IDE_EXCEPTION( ERR_PART_COND_COUNT )
+    {
+        QC_SHARD_GLOBAL_DDL_SET_ALLOWED( aStatement, ID_FALSE );
+        QC_STR_COPY( sDstPartName, sDstPartAttr->tablePartName );
+        IDE_SET( ideSetErrorCode(sdERR_ABORT_SDM_PARTITION_KEY_COND_COUNT, sDstPartName) );
+    }
     IDE_EXCEPTION_END;
 
     return IDE_FAILURE;
@@ -3560,7 +3636,11 @@ IDE_RC qdbAlter::validateMergePartition(qcStatement * aStatement)
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE_PARTITION,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_FALSE /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     sTableInfo = sParseTree->tableInfo;
 
@@ -4096,7 +4176,11 @@ IDE_RC qdbAlter::validateDropPartition( qcStatement * aStatement )
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE_PARTITION,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_FALSE /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     sTableInfo = sParseTree->tableInfo;
 
@@ -4473,7 +4557,11 @@ IDE_RC qdbAlter::validateTruncatePartition( qcStatement * aStatement )
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE_PARTITION,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     sTableInfo = sParseTree->tableInfo;
 
@@ -5137,7 +5225,11 @@ IDE_RC qdbAlter::validateAccessPartition( qcStatement * aStatement )
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE_PARTITION,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     sTableInfo = sParseTree->tableInfo;
 
@@ -13509,6 +13601,8 @@ IDE_RC qdbAlter::executeSplitPartition( qcStatement * aStatement )
  *
  *      3. 메타 캐시 재구성(파티션드 테이블)
  *
+ *      4. GLOBAL_DDL 수행이면서 coord. session이면 샤드 메타 갱신
+ *
  ***********************************************************************/
 
     qdTableParseTree        * sParseTree;
@@ -13596,6 +13690,14 @@ IDE_RC qdbAlter::executeSplitPartition( qcStatement * aStatement )
     sSrcPartHandle = sParseTree->partTable->partInfoList->partHandle;
     sSrcPartInfo   = sParseTree->partTable->partInfoList->partitionInfo;
 
+    /*
+     * PROJ-2757 Advanced Global DDL
+     *   split시 새로 생성되는 파티션의 usable 값은
+     *   source 파티션을 그대로 따른다.
+     */
+    sDstPartAttr1->mIsUsable = sSrcPartInfo->mIsUsable;
+    sDstPartAttr2->mIsUsable = sSrcPartInfo->mIsUsable;
+
     // PROJ-1624 non-partitioned index
     if ( sParseTree->oldIndexTables != NULL )
     {
@@ -13640,8 +13742,9 @@ IDE_RC qdbAlter::executeSplitPartition( qcStatement * aStatement )
                                                                         sSrcPartInfo,
                                                                         &sIsDDLReplOption ) != IDE_SUCCESS );
 
-        if ( ( QCG_GET_SESSION_LOCK_TABLE_UNTIL_NEXT_DDL( aStatement ) == ID_TRUE ) &&
-             ( QCG_GET_SESSION_TABLE_ID_OF_LOCK_TABLE_UNTIL_NEXT_DDL( aStatement ) == sTableInfo->tableID ) )
+        if ( ( ( QCG_GET_SESSION_LOCK_TABLE_UNTIL_NEXT_DDL( aStatement ) == ID_TRUE ) &&
+               ( QCG_GET_SESSION_TABLE_ID_OF_LOCK_TABLE_UNTIL_NEXT_DDL( aStatement ) == sTableInfo->tableID ) ) ||
+             ( QCG_GET_SESSION_TRANSACTIONAL_DDL( aStatement) == ID_TRUE ) ) /* PROJ-2757 */
         {
             IDE_TEST_RAISE( ( qciMisc::isDDLSync( aStatement ) == ID_TRUE ), ERR_DDL_SYNC_WITH_LOCK_UNTIL_NEXT_DDL );
         }
@@ -14769,6 +14872,24 @@ IDE_RC qdbAlter::executeSplitPartition( qcStatement * aStatement )
     if ( sIsReplicated == ID_TRUE )
     {
         (void)qcm::destroyQcmTableInfo( sOldTableInfo );
+    }
+    else
+    {
+        /* Nothing to do */
+    }
+
+    /* PROJ-2757 Advanced Global DDL 
+     *   4. GLOBAL_DDL 수행이면서 coord. session이면 샤드 메타 갱신 */
+    if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+         ( QCG_GET_SESSION_SHARD_SESSION_TYPE( aStatement ) == SDI_SESSION_TYPE_COORD ) &&
+         ( QCM_TABLE_IS_SHARD_SPLIT( sTableInfo->mShardFlag ) == ID_TRUE ) )
+    {
+        IDE_TEST( sdiGlobalDDL::updateShardMetaForSplitPartition(
+                        aStatement,
+                        sTableInfo->tableOwnerName,
+                        sTableInfo->name )
+                  != IDE_SUCCESS );
+                                                         
     }
     else
     {
@@ -29521,6 +29642,21 @@ IDE_RC qdbAlter::validateAccessTable( qcStatement * aStatement )
         // Nothing to do.
     }
 
+    /* PROJ-2757 Advanced Global DDL */
+    if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+         ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aStatement ) == ID_TRUE ) )
+    {
+        sdiGlobalDDL::setInfo( aStatement,
+                               QCM_TABLE_IS_FOR_SHARD( sTableInfo->mShardFlag ),
+                               SDI_DDL_TYPE_TABLE,
+                               &(sParseTree->userName),
+                               &(sParseTree->tableName) );
+    }
+    else
+    {
+        /* Nothing to do */
+    }
+
     return IDE_SUCCESS;
 
     IDE_EXCEPTION( ERR_ACCESS_NOT_SUPPORT_MVIEW );
@@ -30670,6 +30806,9 @@ IDE_RC qdbAlter::validateAlterPartition( qcStatement * aStatement )
     qcmColumn            * sTableColumn   = NULL;
     idBool                 sIsDefaultTBS  = ID_FALSE;
 
+    /* PROJ-2757 Advanced Global DDL */
+    qdIndexPartitionAttribute * sIndexTBSAttrForGlobalDDL = NULL;
+
     sParseTree = (qdTableParseTree *)aStatement->myPlan->parseTree;
 
     /* 1. ALTER TABLE 구문의 공통적인 Validation를 수행한다.
@@ -30815,6 +30954,11 @@ IDE_RC qdbAlter::validateAlterPartition( qcStatement * aStatement )
                                                    sDstPartAttr )
               != IDE_SUCCESS );
 
+    /* PROJ-2757 Advanced Global DDL
+     *   사용자가 지정한 index 이름 관련 구문 정보가 아래에서
+     *   바뀌기 전에 보관해 둔다. */
+    sIndexTBSAttrForGlobalDDL = sDstPartAttr->alterPart->indexPartAttr;
+
     /* 9. Index Partition를 구성한다. */
     IDE_TEST( makeIndexPartAttr( aStatement,
                                  sTableInfo,
@@ -30851,6 +30995,22 @@ IDE_RC qdbAlter::validateAlterPartition( qcStatement * aStatement )
     else
     {
         // Nothing to do.
+    }
+
+    /* PROJ-2757 Advanced Global DDL */
+    if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+         ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aStatement ) == ID_TRUE ) )
+    {
+        sdiGlobalDDL::setInfo( aStatement,
+                               QCM_TABLE_IS_FOR_SHARD( sTableInfo->mShardFlag ),
+                               SDI_DDL_TYPE_TABLE_PARTITION,
+                               &(sParseTree->userName),
+                               &(sParseTree->tableName),
+                               sIndexTBSAttrForGlobalDDL );
+    }
+    else
+    {
+        /* Nothing to do */
     }
 
     return IDE_SUCCESS;
@@ -31326,6 +31486,9 @@ IDE_RC qdbAlter::validateAlterTablespace( qcStatement * aStatement )
     UInt                        sNewTableType           = SMI_TABLE_DISK;
     idBool                      sExistCompressionColumn = ID_FALSE;
 
+    /* PROJ-2757 Advanced Global DDL */
+    qdIndexPartitionAttribute * sIndexTBSAttrForGlobalDDL = NULL;
+
     sParseTree = (qdTableParseTree *)aStatement->myPlan->parseTree;
 
     /* 1. ALTER TABLE 구문의 공통적인 Validation를 수행한다.
@@ -31509,6 +31672,11 @@ IDE_RC qdbAlter::validateAlterTablespace( qcStatement * aStatement )
                                                      sNewTableType )
               != IDE_SUCCESS );
 
+    /* PROJ-2757 Advanced Global DDL
+     *   사용자가 지정한 index 이름 관련 구문 정보가 아래 makeIndexAttr에서
+     *   바뀌기 전에 보관해 둔다. */
+    sIndexTBSAttrForGlobalDDL = sParseTree->indexTBSAttr;
+
     /* 9. Index를 구성한다.
      *    - Index의 Tablespace를 사용자가 중복 지정했는지 검사한다.
      *    - Index를 기존 값으로 초기화한다.
@@ -31548,6 +31716,22 @@ IDE_RC qdbAlter::validateAlterTablespace( qcStatement * aStatement )
     else
     {
         // Nothing to do.
+    }
+
+    /* PROJ-2757 Advanced Global DDL */
+    if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+         ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aStatement ) == ID_TRUE ) )
+    {
+        sdiGlobalDDL::setInfo( aStatement,
+                               QCM_TABLE_IS_FOR_SHARD( sTableInfo->mShardFlag ),
+                               SDI_DDL_TYPE_TABLE,
+                               &(sParseTree->userName),
+                               &(sParseTree->tableName),
+                               sIndexTBSAttrForGlobalDDL );
+    }
+    else
+    {
+        /* Nothing to do */
     }
 
     return IDE_SUCCESS;

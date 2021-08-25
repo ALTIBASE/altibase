@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdbCommon.cpp 90311 2021-03-24 09:46:45Z ahra.cho $
+ * $Id: qdbCommon.cpp 91517 2021-08-24 01:25:47Z bethy $
  **********************************************************************/
 
 #include <idl.h>
@@ -5362,7 +5362,8 @@ IDE_RC qdbCommon::insertTablePartitionSpecIntoMeta(
     SChar               * aPartMaxValue,
     UInt                  aPartOrder,
     scSpaceID             aTBSID,
-    qcmAccessOption       aAccessOption )
+    qcmAccessOption       aAccessOption,
+    idBool                aIsUsable )
 {
 /***********************************************************************
  *
@@ -5382,6 +5383,7 @@ IDE_RC qdbCommon::insertTablePartitionSpecIntoMeta(
     SChar               * sPartMaxValueStr;
     SChar               * sPartOrderStr;
     SChar                 sAccessOptionStr[2];
+    SChar                 sPartitionUsable[2];
 
     QC_STR_COPY( sPartName, aPartNamePos );
 
@@ -5500,6 +5502,18 @@ IDE_RC qdbCommon::insertTablePartitionSpecIntoMeta(
             IDE_ASSERT( 0 );
     }
 
+    /* PROJ-2757 Advanced Global DDL */
+    if ( aIsUsable == ID_TRUE )
+    {
+        sPartitionUsable[0] = 'Y';
+        sPartitionUsable[1] = '\0';
+    }
+    else
+    {
+        sPartitionUsable[0] = 'N';
+        sPartitionUsable[1] = '\0';
+    }
+
     idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
                      "INSERT INTO SYS_TABLE_PARTITIONS_ VALUES( "
                      "INTEGER'%"ID_INT32_FMT"', "
@@ -5512,7 +5526,7 @@ IDE_RC qdbCommon::insertTablePartitionSpecIntoMeta(
                      "%s, "
                      "INTEGER'%"ID_INT32_FMT"', "
                      "CHAR'%s', "          /* PROJ-2359 Table/Partition Access Option */
-                     "CHAR'Y', "           /* TASK-7307 DML Data Consistency in Shard */
+                     "CHAR'%s', "           /* TASK-7307 DML Data Consistency in Shard */
                      "INTEGER'0', "
                      "INTEGER'0', "
                      "SYSDATE, "
@@ -5526,7 +5540,8 @@ IDE_RC qdbCommon::insertTablePartitionSpecIntoMeta(
                      sPartMaxValueStr,
                      sPartOrderStr,
                      (mtdIntegerType) aTBSID,
-                     sAccessOptionStr );    /* PROJ-2359 Table/Partition Access Option */
+                     sAccessOptionStr,    /* PROJ-2359 Table/Partition Access Option */
+                     sPartitionUsable );
 
     IDE_TEST(qcg::runDMLforDDL( QC_SMI_STMT( aStatement ),
                                 sSqlStr,
@@ -11608,7 +11623,8 @@ IDE_RC qdbCommon::createTablePartition( qcStatement          * aStatement,
             aPartMaxVal,
             aPartOrder,
             aPartAttr->TBSAttr.mID,
-            aPartAttr->accessOption )   /* PROJ-2359 Table/Partition Access Option */
+            aPartAttr->accessOption,   /* PROJ-2359 Table/Partition Access Option */
+            aPartAttr->mIsUsable )
         != IDE_SUCCESS);
 
     //-----------------------------------------------------

@@ -62,6 +62,7 @@
 #include <sdi.h>
 #include <qsxLibrary.h>
 #include <qrc.h>
+#include <sdiGlobalDDL.h>
 
 extern mtdModule mtdBigint;
 
@@ -546,6 +547,9 @@ qcg::allocStatement( qcStatement * aStatement,
                          NULL,
                          0,
                          NULL );
+
+    /* PROJ-2757 Advanced Global DDL */
+    sdiGlobalDDL::clearInfo( aStatement );
 
     /* TASK-7219 Shard Transformer Refactoring */
     IDE_TEST( sdi::allocAndInitQuerySetList( aStatement ) != IDE_SUCCESS );
@@ -1534,6 +1538,9 @@ IDE_RC qcg::freeStatement( qcStatement * aStatement )
                              0,
                              NULL );
 
+        /* PROJ-2757 Advanced Global DDL */
+        sdiGlobalDDL::clearInfo( aStatement );
+
         /* BUG-45899 */
         SDI_INIT_PRINT_INFO( &(aStatement->mShardPrintInfo) );
 
@@ -1847,6 +1854,9 @@ IDE_RC qcg::clearStatement( qcStatement * aStatement, idBool aRebuild )
                          NULL,
                          0,
                          NULL );
+
+    /* PROJ-2757 Advanced Global DDL */
+    sdiGlobalDDL::clearInfo( aStatement );
 
     /* PROJ-2206 withStmtList manager alloc
      * PROJ-2415 Grouping Sets Clause

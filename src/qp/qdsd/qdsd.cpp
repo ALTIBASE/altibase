@@ -4376,6 +4376,10 @@ IDE_RC qdsd::validateCommon( qcStatement * aStatement )
     IDE_TEST_RAISE( QCG_GET_SESSION_IS_AUTOCOMMIT( aStatement ) == ID_TRUE,
                     ERR_AUTOCOMMIT_MDOE );
 
+    /* PROJ-2757 Advanced Global DDL */
+    IDE_TEST_RAISE( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE,
+                    ERR_GLOBAL_DDL );
+
     if ( sLocalMetaInfo.mKSafety != 0 )
     {
         for( sPropertyStrIdx = 0; sReplPropertyStr[sPropertyStrIdx] != NULL; sPropertyStrIdx++ )
@@ -4406,6 +4410,11 @@ IDE_RC qdsd::validateCommon( qcStatement * aStatement )
     {
         IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_INSUFFICIENT_ATTRIBUTE,
                                 "AUTOCOMMIT = FALSE" ) );
+    }
+    IDE_EXCEPTION( ERR_GLOBAL_DDL );
+    {
+        IDE_SET( ideSetErrorCode( qpERR_ABORT_QDSD_INSUFFICIENT_ATTRIBUTE,
+                                  "GLOBAL_DDL = 0" ) );
     }
     IDE_EXCEPTION( ERR_SHARD_ENABLE );
     {

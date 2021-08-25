@@ -231,7 +231,8 @@ IDE_RC mmcStatement::beginDDL(mmcStatement *aStmt)
             sSession->setActivated(ID_FALSE);
         }
 
-        if ( aStmt->getStmtType() == QCI_STMT_SHARD_DDL )
+        if ( ( aStmt->getStmtType() == QCI_STMT_SHARD_DDL ) ||
+             ( sSession->globalDDLUserSession() == ID_TRUE ) )
         {
             IDE_TEST( qci::setPropertyForShardMeta( aStmt->getQciStmt() )
                       != IDE_SUCCESS );
@@ -882,7 +883,8 @@ IDE_RC mmcStatement::endDDL(mmcStatement *aStmt, idBool aSuccess)
     if( ( sSession->getCommitMode() == MMC_COMMITMODE_NONAUTOCOMMIT ) ||
         ( aStmt->isRootStmt() == ID_FALSE ) )
     {            
-        if ( aStmt->getStmtType() == QCI_STMT_SHARD_DDL )
+        if ( ( aStmt->getStmtType() == QCI_STMT_SHARD_DDL ) ||
+             ( sSession->globalDDLUserSession() == ID_TRUE ) )
         {
             IDE_TEST( qci::revertPropertyForShardMeta( aStmt->getQciStmt() )
                       != IDE_SUCCESS );
@@ -907,7 +909,8 @@ IDE_RC mmcStatement::endDDL(mmcStatement *aStmt, idBool aSuccess)
         sSession->setActivated(ID_FALSE);
     }
 
-    if ( aStmt->getStmtType() == QCI_STMT_SHARD_DDL )
+    if ( ( aStmt->getStmtType() == QCI_STMT_SHARD_DDL ) ||
+         ( sSession->globalDDLUserSession() == ID_TRUE ) )
     {
         (void)qci::revertPropertyForShardMeta( aStmt->getQciStmt() );
     }

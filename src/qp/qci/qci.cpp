@@ -686,6 +686,7 @@ void qci::endTransForSession( qciSession * aSession,
 {
     idvSQL            * sStatistics;
     ULong               sBeforeSMN;
+    idBool              sNeedUnsetSessionFlag = ID_FALSE;
 
     ACP_UNUSED(aCommitSCN);
 
@@ -699,11 +700,11 @@ void qci::endTransForSession( qciSession * aSession,
                                         & aSession->mQPSpecific.mTemporaryObj,
                                         QCM_TEMPORARY_ON_COMMIT_DELETE_ROWS );
 
-    if ( ( aSession->mQPSpecific.mFlag & QC_SESSION_SHARD_META_TOUCH_MASK ) ==
-         QC_SESSION_SHARD_META_TOUCH_TRUE ) // shard ddl, and shard meta procedure
+    if ( ( aSession->mQPSpecific.mFlag & QC_SESSION_SHARD_DDL_MASK ) ==
+         QC_SESSION_SHARD_DDL_TRUE ) //shard ddl
     {
-        if ( ( aSession->mQPSpecific.mFlag & QC_SESSION_SHARD_DDL_MASK ) ==
-             QC_SESSION_SHARD_DDL_TRUE ) //shard ddl, include shard meta procedure
+        if ( ( aSession->mQPSpecific.mFlag & QC_SESSION_SHARD_META_TOUCH_MASK ) ==
+             QC_SESSION_SHARD_META_TOUCH_TRUE )
         {
             IDE_DASSERT( ( aSession->mQPSpecific.mFlag & QC_SESSION_HANDOVER_SHARD_DDL_MASK ) ==
                          QC_SESSION_HANDOVER_SHARD_DDL_FALSE );
@@ -734,8 +735,45 @@ void qci::endTransForSession( qciSession * aSession,
 
                 ideLog::log( IDE_SD_17, "[SHARD_META] ROLLBACK" );
             }
+            sNeedUnsetSessionFlag = ID_TRUE;
         }
-        else //shard meta procedure only
+    }
+    else if ( ( aSession->mQPSpecific.mFlag & QC_SESSION_GLOBAL_DDL_MASK ) ==
+               QC_SESSION_GLOBAL_DDL_TRUE )
+    {
+        /*
+         * PROJ-2757 Advanced Global DDL
+         */
+        if ( aCommit == ID_TRUE )
+        {
+            if (sdiZookeeper::isExistPendingJob() == ID_TRUE)
+            {
+                *aOutPendingJobFunc = sdiZookeeper::callAfterCommitFunc;
+            }
+            else
+            {
+                sdiZookeeper::callAfterCommitFunc( aNewSMN, sBeforeSMN );
+            }
+            ideLog::log( IDE_SD_17, "[sdiGlobalDDL] COMMIT" );
+        }
+        else
+        {
+            if (sdiZookeeper::isExistPendingJob() == ID_TRUE)
+            {
+                *aOutPendingJobFunc = sdiZookeeper::callAfterRollbackFunc;
+            }
+            else
+            {
+                sdiZookeeper::callAfterRollbackFunc();
+            }
+            ideLog::log( IDE_SD_17, "[sdiGlobalDDL] ROLLBACK" );
+        }
+        sNeedUnsetSessionFlag = ID_TRUE;
+    }
+    else // shard meta procedure only
+    {
+        if ( ( aSession->mQPSpecific.mFlag & QC_SESSION_SHARD_META_TOUCH_MASK ) ==
+             QC_SESSION_SHARD_META_TOUCH_TRUE )
         {
             if ( aCommit == ID_TRUE )
             {
@@ -766,8 +804,13 @@ void qci::endTransForSession( qciSession * aSession,
             }
             //shard meta touch release shard meta lock
             sdiZookeeper::releaseShardMetaLock();
-        }
 
+            sNeedUnsetSessionFlag = ID_TRUE;
+        }
+    }
+
+    if ( sNeedUnsetSessionFlag == ID_TRUE )
+    {
         sdi::unsetInternalTableSwap( aSession );
         // BUG-46884
         sdi::unsetShardMetaTouched( aSession );
@@ -779,6 +822,13 @@ void qci::endTransForSession( qciSession * aSession,
         // BUG-48616
         aSession->mQPSpecific.mFlag &= ~QC_SESSION_SAHRD_ADD_CLONE_MASK;
         aSession->mQPSpecific.mFlag |= QC_SESSION_SAHRD_ADD_CLONE_FALSE;
+        /* initialize session flag global ddl */
+        aSession->mQPSpecific.mFlag &= ~QC_SESSION_GLOBAL_DDL_MASK;
+        aSession->mQPSpecific.mFlag |= QC_SESSION_GLOBAL_DDL_FALSE;
+    }
+    else
+    {
+        /* Nothing to do */
     }
 }
 

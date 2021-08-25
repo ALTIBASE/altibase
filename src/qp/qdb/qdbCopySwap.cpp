@@ -31,6 +31,7 @@
 #include <qdbCopySwap.h>
 #include <qmoPartition.h>
 #include <sdi.h>
+#include <sdiGlobalDDL.h>
 
 IDE_RC qdbCopySwap::validateCreateTableFromTableSchema( qcStatement * aStatement )
 {
@@ -1108,7 +1109,13 @@ IDE_RC qdbCopySwap::validateReplaceTable( qcStatement * aStatement )
     IDE_TEST( qdbAlter::validateAlterCommon( aStatement, ID_FALSE ) != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단(destination check) */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDLInternal( aStatement,
+                                                   sParseTree->userName,
+                                                   sParseTree->tableName,
+                                                   NULL,    /* aObjectName */
+                                                   ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                                   ID_FALSE /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     sTableInfo = sParseTree->tableInfo;
 
@@ -1185,7 +1192,10 @@ IDE_RC qdbCopySwap::validateReplaceTable( qcStatement * aStatement )
     IDE_TEST( sdi::checkShardObjectForDDLInternal( aStatement,
                                                    sParseTree->mSourceUserName,
                                                    sParseTree->mSourceTableName,
-                                                   NULL ) != IDE_SUCCESS );
+                                                   NULL,    /* aObjectName */
+                                                   ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                                   ID_FALSE /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     IDE_TEST_RAISE( sSourceUserID != sParseTree->userID, ERR_DIFFERENT_TABLE_OWNER );
 
@@ -1468,6 +1478,23 @@ IDE_RC qdbCopySwap::validateReplaceTable( qcStatement * aStatement )
     {
         /* Nothing to do */
     } 
+
+    /* PROJ-2757 Advanced Global DDL */
+    if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+         ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aStatement ) == ID_TRUE ) )
+    {
+        sdiGlobalDDL::setInfo( aStatement,
+                               ID_FALSE, /* IsShardObject */
+                               SDI_DDL_TYPE_TABLE,
+                               NULL,
+                               NULL );
+        // rewrite
+        sParseTree->common.execute = sdiGlobalDDL::executeReplace;
+    }
+    else
+    {
+        /* Nothing to do */
+    }
 
     return IDE_SUCCESS;
 
@@ -7391,8 +7418,7 @@ IDE_RC qdbCopySwap::validateReplacePartition( qcStatement      * aStatement,
         }
         else
         {
-            /* BUG-48290 shard object에 대한 DDL 차단(destination check) */
-            IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+            /* Nothing to do */
         }
 
         // Source exist partition table
@@ -7410,11 +7436,7 @@ IDE_RC qdbCopySwap::validateReplacePartition( qcStatement      * aStatement,
         }
         else
         {
-            /* BUG-48290 shard object에 대한 DDL 차단(source check) */
-            IDE_TEST( sdi::checkShardObjectForDDLInternal( aStatement,
-                                                           aParseTree->userName,
-                                                           aParseTree->mPartAttr->tablePartName,
-                                                           NULL ) != IDE_SUCCESS );
+            /* Nothing to do */
         }
 
         /* 2. table parttion key 관련체크 */

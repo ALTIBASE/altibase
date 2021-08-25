@@ -6470,7 +6470,8 @@ IDE_RC sdm::getRangeInfo( qcStatement  * aStatement,
                           ULong          aSMN,
                           sdiTableInfo * aTableInfo,
                           sdiRangeInfo * aRangeInfo,
-                          idBool         aNeedMerge )
+                          idBool         aNeedMerge,
+                          idBool         aNeedReplicaSet )
 {
     switch ( aTableInfo->mSplitMethod )
     {
@@ -6482,7 +6483,8 @@ IDE_RC sdm::getRangeInfo( qcStatement  * aStatement,
                                 aSMN,
                                 aTableInfo,
                                 aRangeInfo,
-                                aNeedMerge )
+                                aNeedMerge,
+                                aNeedReplicaSet )
                       != IDE_SUCCESS );
             break;
         case SDI_SPLIT_CLONE:
@@ -6519,7 +6521,8 @@ IDE_RC sdm::getRange( qcStatement  * aStatement,
                       ULong          aSMN,
                       sdiTableInfo * aTableInfo,
                       sdiRangeInfo * aRangeInfo,
-                      idBool         aNeedMerge )
+                      idBool         aNeedMerge,
+                      idBool         aNeedReplicaSet )
 {
     idBool            sIsCursorOpen = ID_FALSE;
     const void      * sRow          = NULL;
@@ -6698,6 +6701,8 @@ IDE_RC sdm::getRange( qcStatement  * aStatement,
             aRangeInfo->mRanges[aRangeInfo->mCount].mNodeId       = (UInt)sNodeID;
             aRangeInfo->mRanges[aRangeInfo->mCount].mReplicaSetId = (UInt)sReplicaSetId;
 
+            IDE_TEST_CONT( aNeedReplicaSet == ID_TRUE, SKIP_RANGE_VALUE );
+
             // shard key의 range value string을 알맞은 data type으로 변환
             if ( aTableInfo->mSplitMethod == SDI_SPLIT_HASH )
             {
@@ -6745,6 +6750,8 @@ IDE_RC sdm::getRange( qcStatement  * aStatement,
                 /* Nothing to do. */
             }
 
+            IDE_EXCEPTION_CONT( SKIP_RANGE_VALUE );
+
             aRangeInfo->mCount++;
 
             IDE_TEST( sCursor.readRow( &sRow, &sRid, SMI_FIND_NEXT )
@@ -6758,6 +6765,8 @@ IDE_RC sdm::getRange( qcStatement  * aStatement,
 
     sIsCursorOpen = ID_FALSE;
     IDE_TEST( sCursor.close() != IDE_SUCCESS );
+
+    IDE_TEST_CONT( aNeedReplicaSet == ID_TRUE, NORMAL_EXIT );
 
     // 숫자 타입으로 변환된 string의 경우
     // index를 이용한 정렬이 올바르지 않아 추가 정렬이 필요하다.
@@ -6776,6 +6785,8 @@ IDE_RC sdm::getRange( qcStatement  * aStatement,
                                              aRangeInfo )
                   != IDE_SUCCESS );
     }
+
+    IDE_EXCEPTION_CONT( NORMAL_EXIT );
 
     return IDE_SUCCESS;
 
@@ -12461,7 +12472,8 @@ IDE_RC sdm::flushReplTable( qcStatement * aStatement,
                             SChar       * aNodeName,
                             SChar       * aUserName,
                             SChar       * aReplName,
-                            idBool        aIsNewTrans )
+                            idBool        aIsNewTrans,
+                            UInt          aWaitSecond )
 {
     SChar      * sSqlStr;
     UInt         sUserID = QC_EMPTY_USER_ID;
@@ -12475,9 +12487,19 @@ IDE_RC sdm::flushReplTable( qcStatement * aStatement,
                                       &sSqlStr )
               != IDE_SUCCESS);
 
-    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
-                     "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" FLUSH ",
-                     aReplName );
+    if ( aWaitSecond > 0 )
+    {
+        idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                         "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" FLUSH WAIT %"ID_UINT32_FMT,
+                         aReplName,
+                         aWaitSecond );
+    }
+    else
+    {
+        idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                         "ALTER REPLICATION "QCM_SQL_STRING_SKIP_FMT" FLUSH ",
+                         aReplName );
+    }
 
     IDE_TEST( qciMisc::getUserIdByName( aUserName, &sUserID ) != IDE_SUCCESS );
 
@@ -14106,6 +14128,133 @@ IDE_RC sdm::alterShardFlag( qcStatement      * aStatement,
     
     IDE_POP();
     
+    return IDE_FAILURE;
+}
+
+IDE_RC sdm::updateShardMetaForSplitPartition( qcStatement * aStatement,
+                                              SChar       * aUserName,
+                                              SChar       * aTableName,
+                                              SChar       * aSrcPartName,
+                                              SChar       * aDstPartName,
+                                              SChar       * aValue,
+                                              UInt        * aRowCnt )
+{
+/***********************************************************************
+ *
+ * Description :
+ *    PROJ-2757 Advanced Global DDL
+ *
+ *    Shard 테이블에 대해 SPLIT PARTITION DDL 구믄을 Global DDL로 수행하면서 
+ *    새로 생성되는 파티션 정보를 SYS_SHARD.RANGES_에 입력한다.
+ *
+ ***********************************************************************/
+    vSLong          sRowCnt = 0;
+    sdiNode         sNode;
+    sdiTableInfo    sTableInfo;
+    idBool          sIsTableFound = ID_FALSE;
+
+    sdiGlobalMetaInfo sMetaNodeInfo = { SDI_NULL_SMN };
+    SChar           * sSqlStr = NULL;
+
+    SDI_INIT_TABLE_INFO( &sTableInfo );
+    SDI_INIT_NODE(&sNode);
+
+    IDE_TEST( checkMetaVersion( QC_SMI_STMT( aStatement ) )
+              != IDE_SUCCESS );
+
+    IDE_TEST( makeShardMeta4NewSMN(aStatement) != IDE_SUCCESS );
+
+    IDE_TEST( getGlobalMetaInfoCore( QC_SMI_STMT(aStatement),
+                                     &sMetaNodeInfo )
+              != IDE_SUCCESS );
+
+    IDE_TEST( getTableInfo( QC_SMI_STMT( aStatement ),
+                            aUserName,
+                            aTableName,
+                            sMetaNodeInfo.mShardMetaNumber,
+                            &sTableInfo,
+                            &sIsTableFound )
+              != IDE_SUCCESS );
+
+    IDE_TEST_RAISE( sIsTableFound == ID_FALSE,
+                    ERR_NOT_EXIST_TABLE );
+
+    // BUG-46619
+    IDE_TEST( validateRangeCountBeforeInsert( aStatement,
+                                              &sTableInfo,
+                                              sMetaNodeInfo.mShardMetaNumber )
+              != IDE_SUCCESS );
+
+    IDE_TEST( STRUCT_ALLOC_WITH_SIZE( aStatement->qmxMem,
+                                      SChar,
+                                      QD_MAX_SQL_LENGTH,
+                                      &sSqlStr )
+              != IDE_SUCCESS);
+
+    idlOS::snprintf( sSqlStr, QD_MAX_SQL_LENGTH,
+                     "INSERT INTO SYS_SHARD.RANGES_ "
+                     "SELECT SHARD_ID, "      //shardID
+                     QCM_SQL_VARCHAR_FMT", "  //PARTITION_NAME
+                     "%s, "                   //aValue
+                     QCM_SQL_VARCHAR_FMT", "  //aSubValue
+                     "NODE_ID, "              //aNodeId
+                     QCM_SQL_BIGINT_FMT", "   //SMN
+                     "REPLICA_SET_ID "        //ReplicaSetId
+                     "FROM SYS_SHARD.RANGES_ "
+                     "WHERE SHARD_ID="QCM_SQL_INT32_FMT" "
+                     "AND PARTITION_NAME="QCM_SQL_VARCHAR_FMT" "
+                     "AND SMN="QCM_SQL_BIGINT_FMT" "
+                     "UNION "
+                     "SELECT SHARD_ID, "      //shardID
+                     QCM_SQL_VARCHAR_FMT", "  //PARTITION_NAME
+                     "%s, "                   //aValue
+                     QCM_SQL_VARCHAR_FMT", "  //aSubValue
+                     "DEFAULT_NODE_ID, "      //aNodeId
+                     QCM_SQL_BIGINT_FMT", "   //SMN
+                     "DEFAULT_PARTITION_REPLICA_SET_ID "  //ReplicaSetId
+                     "FROM SYS_SHARD.OBJECTS_ "
+                     "WHERE SHARD_ID="QCM_SQL_INT32_FMT" "
+                     "AND DEFAULT_PARTITION_NAME="QCM_SQL_VARCHAR_FMT" "
+                     "AND SMN="QCM_SQL_BIGINT_FMT,
+                     aDstPartName,
+                     aValue,
+                     SDM_NA_STR,
+                     sMetaNodeInfo.mShardMetaNumber,
+                     sTableInfo.mShardID,
+                     aSrcPartName,
+                     sMetaNodeInfo.mShardMetaNumber,
+                     aDstPartName,
+                     aValue,
+                     SDM_NA_STR,
+                     sMetaNodeInfo.mShardMetaNumber,
+                     sTableInfo.mShardID,
+                     aSrcPartName,
+                     sMetaNodeInfo.mShardMetaNumber );
+    
+    IDE_TEST( qciMisc::runDMLforDDL( QC_SMI_STMT( aStatement ),
+                                     sSqlStr,
+                                     & sRowCnt )
+              != IDE_SUCCESS );
+
+    if ( aRowCnt != NULL )
+    {
+        *aRowCnt = (UInt)sRowCnt;
+    }
+    else
+    {
+        /* Nothing to do */
+    }
+
+    sdi::setShardMetaTouched( aStatement->session );
+
+    return IDE_SUCCESS;
+
+    IDE_EXCEPTION( ERR_NOT_EXIST_TABLE )
+    {
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDM_SHARD_TABLE_NOT_EXIST ) );
+    }
+    IDE_EXCEPTION_END;
+
     return IDE_FAILURE;
 }
 

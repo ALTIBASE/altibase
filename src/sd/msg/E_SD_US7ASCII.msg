@@ -1,4 +1,4 @@
-# $Id: E_SD_US7ASCII.msg 91417 2021-08-03 06:35:26Z donghyun $
+# $Id: E_SD_US7ASCII.msg 91517 2021-08-24 01:25:47Z bethy $
 #
 # Error Message File (used by genErrMsg)
 #
@@ -24,7 +24,7 @@
 # 의문 사항이 있으시면 AK팀 혹은 QP(품질본부)팀에 문의 부탁드립니다.
 # SD는 기존 에러 number부여 방식과 다르다. SD directory별 에러코드를
 # 부여 해야한다. last number는 변경하지 말것
-# Last Number = 999
+# Last Number = 1001
 
 SECTION = 14
 
@@ -587,6 +587,14 @@ SECTION = 14
 850,sdERR_ABORT_SDI_ALREADY_IN_CLUSTER = Executing SET_LOCAL_NODE procedure is not allowed for the already added node.
 # *Cause: The command cannot be performed on a node that is already in the cluster.
 # *Action: Drop the node and try again.
+
+1000,sdERR_ABORT_SDI_UNSUPPORTED_GLOBAL_DDL = The DDL statement is not allowed in GLOBAL DDL.
+# *Cause: The DDL statement was tried to be executed when the GLOBAL_DDL property was on.
+# *Action: Set the GLOBAL_DDL property to 0.
+
+1001,sdERR_ABORT_SDI_UNSUPPORTED_SPLIT_PARTITION_GLOBAL_DDL = Only right in-place split partition statements are allowed in GLOBAL DDL.
+# *Cause: Left in-place or out-place split partition statement was tried in GLOBAL DDL.
+# *Action: Rewrite the split partition statement.
 
 ###############################################################################
 #########                 SDC ERROR CODE (901~)                       #########

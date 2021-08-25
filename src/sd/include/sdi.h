@@ -947,17 +947,6 @@ typedef enum
     SDI_REBUILD_SMN_PROPAGATE           ,
 } sdiRebuildPropaOption;
 
-typedef enum
-{
-    SDI_DDL_TYPE_TABLE      = 0,
-    SDI_DDL_TYPE_PROCEDURE  = 1,
-    SDI_DDL_TYPE_INDEX      = 2,
-    SDI_DDL_TYPE_PROCEDURE_DROP = 3,
-    SDI_DDL_TYPE_DROP = 4,
-    SDI_DDL_TYPE_DISJOIN = 5,
-    SDI_DDL_TYPE_INDEX_DROP = 6
-} sdiDDLType;
-
 /* TASK-7219 Non-shard DML */
 typedef struct sdiMyRanges
 {
@@ -1811,12 +1800,17 @@ public:
 
     static IDE_RC checkShardObjectForDDL( qcStatement  * aQcStmt,
                                           sdiDDLType     aDDLType,
+                                          idBool         aIsGlobalDDLAllowedOnNonShardObj = ID_FALSE,
+                                          idBool         aIsGlobalDDLAllowedOnShardObj = ID_FALSE,
                                           SChar        * aObjectName = NULL );
 
-    static IDE_RC checkShardObjectForDDLInternal( qcStatement *      aQcStmt,
-                                                  qcNamePosition     aUserNamePos,
-                                                  qcNamePosition     aTableNamePos,
-                                                  SChar            * aObjectName );
+    static IDE_RC checkShardObjectForDDLInternal( qcStatement *    aQcStmt,
+                                                  qcNamePosition   aUserNamePos,
+                                                  qcNamePosition   aTableNamePos,
+                                                  SChar            * aObjectName,
+                                                  idBool           aIsGlobalDDLAllowedOnNonShardObj = ID_FALSE,
+                                                  idBool           aIsGlobalDDLAllowedOnShardObj = ID_FALSE,
+                                                  idBool         * aIsShardObject = NULL );
 
     static IDE_RC checkShardReplication( qcStatement * aQcStmt );
 

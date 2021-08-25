@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdbCommon.h 90311 2021-03-24 09:46:45Z ahra.cho $
+ * $Id: qdbCommon.h 91517 2021-08-24 01:25:47Z bethy $
  **********************************************************************/
 #ifndef  _O_QDB_COMMON_H_
 #define  _O_QDB_COMMON_H_  1
@@ -333,7 +333,8 @@ public:
         SChar               * aPartMaxValue,
         UInt                  aPartOrder,
         scSpaceID             aTBSID,
-        qcmAccessOption       aAccessOption );  /* PROJ-2359 Table/Partition Access Option */
+        qcmAccessOption       aAccessOption,  /* PROJ-2359 Table/Partition Access Option */
+        idBool                aIsUsable = ID_TRUE );
 
     static IDE_RC insertPartLobSpecIntoMeta(
         qcStatement          * aStatement,

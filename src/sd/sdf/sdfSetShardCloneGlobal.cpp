@@ -249,6 +249,10 @@ IDE_RC sdfCalculate_SetShardCloneGlobal( mtcNode*     aNode,
         IDE_TEST_RAISE ( QCG_GET_SESSION_TRANSACTIONAL_DDL( sStatement) != ID_TRUE,
                      ERR_DDL_TRANSACTION );
         
+        /* PROJ-2757 Advanced Global DDL */
+        IDE_TEST_RAISE ( QCG_GET_SESSION_GLOBAL_DDL( sStatement) == ID_TRUE,
+                         ERR_GLOBAL_DDL );
+        
         IDE_TEST( sdi::compareDataAndSessionSMN( sStatement ) != IDE_SUCCESS );
 
         sdi::setShardMetaTouched( sStatement->session );
@@ -385,6 +389,11 @@ IDE_RC sdfCalculate_SetShardCloneGlobal( mtcNode*     aNode,
     {
         IDE_SET(ideSetErrorCode( sdERR_ABORT_SDC_INSUFFICIENT_ATTRIBUTE,
                                  "TRANSACTIONAL_DDL = 1" ));
+    }
+    IDE_EXCEPTION( ERR_GLOBAL_DDL );
+    {
+        IDE_SET(ideSetErrorCode( sdERR_ABORT_SDC_INSUFFICIENT_ATTRIBUTE,
+                                 "GLOBAL_DDL = 0" ));
     }
     IDE_EXCEPTION_END;
 

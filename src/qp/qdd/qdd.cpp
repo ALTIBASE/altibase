@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdd.cpp 91206 2021-07-12 07:33:20Z seulki $
+ * $Id: qdd.cpp 91517 2021-08-24 01:25:47Z bethy $
  **********************************************************************/
 
 #include <idl.h>
@@ -58,6 +58,7 @@
 /* PROJ-2441 flashback */
 #include <qdbFlashback.h>
 #include <smiTableSpace.h>
+#include <qcc.h>
 #include <sdi.h>
 
 /***********************************************************************
@@ -202,10 +203,28 @@ IDE_RC qdd::parseDropIndex( qcStatement * aStatement )
         /* PROJ-1090 Function-based Index */
         sTableParseTree->dropHiddenColumn = ID_TRUE;
 
-        sTableParseTree->common.validate = qdbAlter::validateDropCol;
-        sTableParseTree->common.execute  = qdbAlter::executeDropCol;
+        /* PROJ-2757 Advanced Global DDL */
+        if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+             ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aStatement ) == ID_TRUE ) )
+        {
+            /* BUG-48290 shard object에 대한 DDL 차단 */
+            IDE_TEST( sdi::checkShardObjectForDDL(
+                            aStatement,
+                            SDI_DDL_TYPE_INDEX_DROP,
+                            ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                            ID_TRUE, /* aIsGlobalDDLAllowedOnShardObj */
+                            sDropParseTree->tableInfo->name )
+                      != IDE_SUCCESS );
 
-        aStatement->myPlan->parseTree = (qcParseTree *)sTableParseTree;
+            sDropParseTree->common.validate = qcc::validate;
+        }
+        else
+        {
+            sTableParseTree->common.validate = qdbAlter::validateDropCol;
+            sTableParseTree->common.execute  = qdbAlter::executeDropCol;
+
+            aStatement->myPlan->parseTree = (qcParseTree *)sTableParseTree;
+        }
     }
     else
     {
@@ -271,7 +290,11 @@ IDE_RC qdd::validateDropTable(qcStatement * aStatement)
               != IDE_SUCCESS);
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_DROP ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_DROP,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_FALSE /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     IDE_TEST( qcm::lockTableForDDLValidation(aStatement,
                                              sParseTree->tableHandle,
@@ -544,9 +567,13 @@ IDE_RC qdd::validateDropIndex(qcStatement * aStatement )
              != IDE_SUCCESS);
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
-                                           SDI_DDL_TYPE_INDEX_DROP,
-                                           sParseTree->tableInfo->name ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL(
+                    aStatement,
+                    SDI_DDL_TYPE_INDEX_DROP,
+                    ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                    ID_TRUE, /* aIsGlobalDDLAllowedOnShardObj */
+                    sParseTree->tableInfo->name )
+              != IDE_SUCCESS );
 
     IDE_TEST( qcm::lockTableForDDLValidation(aStatement,
                                              sParseTree->tableHandle,
@@ -775,7 +802,11 @@ IDE_RC qdd::validateTruncateTable(qcStatement * aStatement)
               != IDE_SUCCESS );
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_DROP ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_DROP,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
     
     IDE_TEST( qcm::lockTableForDDLValidation(aStatement,
                                              sParseTree->tableHandle,

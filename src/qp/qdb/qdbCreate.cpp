@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdbCreate.cpp 91512 2021-08-21 07:50:50Z emlee $
+ * $Id: qdbCreate.cpp 91517 2021-08-24 01:25:47Z bethy $
  **********************************************************************/
 
 #include <idl.h>
@@ -49,6 +49,7 @@
 #include <qcuProperty.h>
 #include <qdpRole.h>
 #include <qmvShardTransform.h> /* TASK-7219 Shard Transformer Refactoring */
+#include <sdiGlobalDDL.h>
 
 IDE_RC qdbCreate::validateCreateTable(qcStatement * aStatement)
 {
@@ -355,6 +356,24 @@ IDE_RC qdbCreate::validateCreateTable(qcStatement * aStatement)
                             NULL,
                             0,
                             NULL );
+    }
+
+    /* PROJ-2757 Advanced Global DDL */
+    if ( ( QCG_GET_SESSION_GLOBAL_DDL( aStatement ) == ID_TRUE ) &&
+         ( QCG_GET_SESSION_IS_SHARD_USER_SESSION( aStatement ) == ID_TRUE ) )
+    {
+        sdiGlobalDDL::setInfo( aStatement,
+                               ID_FALSE, /* IsShardObject */
+                               SDI_DDL_TYPE_TABLE,
+                               &(sParseTree->userName),
+                               &(sParseTree->tableName) );
+
+        // rewrite
+        sParseTree->common.execute = sdiGlobalDDL::executeCreateTable;
+    }
+    else
+    {
+        /* Nothing to do */
     }
 
     return IDE_SUCCESS;

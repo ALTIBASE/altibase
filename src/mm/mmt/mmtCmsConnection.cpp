@@ -2219,6 +2219,11 @@ IDE_RC mmtServiceThread::propertySetProtocol(cmiProtocolContext *aProtocolContex
             CMI_RD4(aProtocolContext, &sValue4 );
 
             IDE_TEST( sSession->setGlobalDDL( (idBool)sValue4 ) != IDE_SUCCESS );
+
+            /* PROJ-2757 Advanced Global DDL */
+            IDE_TEST( sSession->setSessionPropertyInfo( CMP_DB_PROPERTY_GLOBAL_DDL,
+                                                        sInfo->mGlobalDDL )
+                      != IDE_SUCCESS );
             break;
         /* BUG-48132 */
         case CMP_DB_PROPERTY___OPTIMIZER_PLAN_HASH_OR_SORT_METHOD:

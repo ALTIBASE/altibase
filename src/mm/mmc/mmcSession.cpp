@@ -2380,9 +2380,6 @@ IDE_RC mmcSession::setGlobalDDL( idBool aGlobalDDL )
             IDE_TEST_RAISE(isAllStmtEnd() != ID_TRUE, StmtRemainError);
             IDE_TEST_RAISE(isActivated() != ID_FALSE, AlreadyActiveError);
 
-            IDE_TEST( sdi::setTransactionalDDLMode( this->getQciSession(), aGlobalDDL )
-                      != IDE_SUCCESS );
-
             mInfo.mGlobalDDL = aGlobalDDL;
         }
     }

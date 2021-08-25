@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: sdiTypes.h 91417 2021-08-03 06:35:26Z donghyun $
+ * $Id: sdiTypes.h 91517 2021-08-24 01:25:47Z bethy $
  *
  * Description : SD 및 타 모듈에서도 사용하는 자료구조 정의
  *
@@ -381,5 +381,18 @@ typedef enum {
     SDI_SHARD_PARTIAL_EXEC_TYPE_COORD = 1,
     SDI_SHARD_PARTIAL_EXEC_TYPE_QUERY = 2
 } sdiShardPartialExecType;
+
+typedef enum
+{
+    SDI_DDL_TYPE_TABLE                 = 0,
+    SDI_DDL_TYPE_PROCEDURE             = 1,
+    SDI_DDL_TYPE_INDEX                 = 2,
+    SDI_DDL_TYPE_PROCEDURE_DROP        = 3,
+    SDI_DDL_TYPE_DROP                  = 4,
+    SDI_DDL_TYPE_DISJOIN               = 5,
+    SDI_DDL_TYPE_INDEX_DROP            = 6,
+    SDI_DDL_TYPE_TABLE_SPLIT_PARTITION = 7,
+    SDI_DDL_TYPE_TABLE_PARTITION       = 8
+} sdiDDLType;
 
 #endif /* _O_SDI_TYPES_H_ */

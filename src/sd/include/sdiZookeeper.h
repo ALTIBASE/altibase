@@ -110,6 +110,10 @@ typedef enum
     ZK_JOB_DROP,
     ZK_JOB_DROP_FORCE,
     ZK_JOB_RESHARD,
+
+    /* PROJ-2728 Advanced Global DDL */
+    ZK_JOB_GLOBAL_DDL,
+
     ZK_JOB_ERROR
 } ZKJOB;
 
@@ -253,6 +257,9 @@ class sdiZookeeper
         static IDE_RC failbackAfterCommit( ULong aSMN );
         static void callAfterCommitFunc( ULong aAfterSMN, ULong aBeforeSMN );
         static void callAfterRollbackFunc( ULong   aNewSMN = SDI_NULL_SMN, ULong aBeforeSMN = SDI_NULL_SMN );
+
+        /* PROJ-2728 Advanced Global DDL */
+        static void   globalDDLJob();
 
         /* 노드 리스트 관련 */
         static IDE_RC getAllNodeInfoList( iduList   ** aList,

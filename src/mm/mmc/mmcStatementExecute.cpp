@@ -24,6 +24,7 @@
 #include <mmuProperty.h>
 #include <mmuOS.h>
 #include <rpi.h>
+#include <sdiGlobalDDL.h>
 
 mmcStmtExecFunc mmcStatement::mExecuteFunc[] =
 {
@@ -456,37 +457,20 @@ IDE_RC mmcStatement::executeLocalDDL( mmcStatement * aStmt )
 
 IDE_RC mmcStatement::executeGlobalDDL( mmcStatement * aStmt )
 {
-    UInt           sExecCount    = 0;
-    mmcSession   * sSession      = aStmt->getSession();
     qciStatement * sQciStatement = aStmt->getQciStmt();
     qcStatement  * sQcStatement  = &(sQciStatement->statement);
 
-    IDE_TEST_RAISE( sSession->getGlobalTransactionLevel() != 2, ERR_TRANS_LEVEL );
+    /* PROJ-2757 Advanced Global DDL */
+    IDE_TEST_RAISE( QC_SHARD_GLOBAL_DDL_ALLOWED( sQcStatement ) != ID_TRUE,
+                    ERR_GLOBAL_DDL );
 
-    IDE_TEST( sdi::checkShardLinker( sQcStatement ) != IDE_SUCCESS );
-
-    /* IDE_TEST( sdiZookeeper::getShardMetaLock( sSmiTrans->getTransID() ) != IDE_SUCCESS ); */
-
-    IDE_TEST( lockTableAllShardNodes( aStmt, SMI_TABLE_LOCK_X ) != IDE_SUCCESS );
-
-    IDE_TEST( sdi::shardExecDirect( sQcStatement,
-                                    NULL,
-                                    QCI_STMTTEXT( sQciStatement ),
-                                    QCI_STMTTEXTLEN( sQciStatement ),
-                                    SDI_INTERNAL_OP_NOT,
-                                    &sExecCount,
-                                    NULL,
-                                    NULL,
-                                    0,
-                                    NULL )
-              != IDE_SUCCESS );
+    IDE_TEST(qci::execute(sQciStatement, aStmt->getSmiStmt()) != IDE_SUCCESS);
 
     return IDE_SUCCESS;
 
-    IDE_EXCEPTION( ERR_TRANS_LEVEL );
+    IDE_EXCEPTION( ERR_GLOBAL_DDL );
     {
-        IDE_SET( ideSetErrorCode( mmERR_ABORT_INTERNAL_SERVER_ERROR_ARG,
-                                  "Global DDL can only be executed when GLOBAL_TRANSACTION_LEVEL property is 2." ) );
+        IDE_SET( ideSetErrorCode( sdERR_ABORT_SDI_UNSUPPORTED_GLOBAL_DDL ) );
     }
     IDE_EXCEPTION_END;
 

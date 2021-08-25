@@ -4,6 +4,7 @@
 
 SDI_SRCS = $(SD_DIR)/sdi/sdi.cpp                     \
            $(SD_DIR)/sdi/sdiLob.cpp                  \
+           $(SD_DIR)/sdi/sdiGlobalDDL.cpp            \
            $(SD_DIR)/sdi/sdiStatementManager.cpp     \
            $(SD_DIR)/sdi/sdiFailoverTypeStorage.cpp  \
            $(SD_DIR)/sdi/sdiFOThread.cpp

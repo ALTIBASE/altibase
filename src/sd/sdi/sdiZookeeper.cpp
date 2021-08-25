@@ -7134,6 +7134,8 @@ void sdiZookeeper::callAfterCommitFunc( ULong   aNewSMN, ULong aBeforeSMN )
         executePendingJob( ZK_PENDING_JOB_AFTER_COMMIT );
     }
 
+    /* PROJ-2757 Advanced Global DDL
+     *   Split Partition이 아닌 Global DDL은 SMN이 변경되지 않는다 */
     if( aNewSMN == SDI_NULL_SMN )
     {
         /* 현재 수행중인 shard ddl 구문으로 일반 tx에서 shard tx로 변환된 경우 */
@@ -7157,9 +7159,11 @@ void sdiZookeeper::callAfterCommitFunc( ULong   aNewSMN, ULong aBeforeSMN )
         sTxState = 0;
         IDE_TEST( sTrans.destroy( NULL ) != IDE_SUCCESS );
 
-        IDE_DASSERT( sNewSMN > sdi::getSMNForDataNode() )
-        sdi::setSMNForDataNode(sNewSMN );
-        ideLog::log( IDE_SD_17, "[CHANGE_SHARD_META : RELOAD SMN(%"ID_UINT64_FMT")]", sNewSMN );
+        if ( sNewSMN > sdi::getSMNForDataNode() )
+        {
+            sdi::setSMNForDataNode(sNewSMN );
+            ideLog::log( IDE_SD_17, "[CHANGE_SHARD_META : RELOAD SMN(%"ID_UINT64_FMT")]", sNewSMN );
+        }
 
     }
     else
@@ -7212,6 +7216,16 @@ void sdiZookeeper::callAfterCommitFunc( ULong   aNewSMN, ULong aBeforeSMN )
             releaseShardMetaLock();
             releaseZookeeperMetaLock();
             break;
+
+        /* PROJ-2757 Advanced Global DDL */
+        case ZK_JOB_GLOBAL_DDL:
+            if ( aNewSMN != aBeforeSMN )
+            {
+                sdiZookeeper::updateSMN( sNewSMN );
+            }
+            releaseShardMetaLock();
+            break;
+
         case ZK_JOB_NONE:
             releaseShardMetaLock();
             releaseZookeeperMetaLock();
@@ -7309,6 +7323,12 @@ void sdiZookeeper::callAfterRollbackFunc( ULong   aNewSMN, ULong aBeforeSMN )
             sdiZookeeper::releaseShardMetaLock();
             sdiZookeeper::releaseZookeeperMetaLock();
             break;
+
+        /* PROJ-2757 Advanced Global DDL */
+        case ZK_JOB_GLOBAL_DDL:
+            releaseShardMetaLock();
+            break;
+
         case ZK_JOB_NONE:
             releaseShardMetaLock();
             releaseZookeeperMetaLock();
@@ -7750,3 +7770,9 @@ IDE_RC sdiZookeeper::insertList4PV( iduList * aList,
 
     return IDE_FAILURE;
 }
+
+void sdiZookeeper::globalDDLJob()
+{
+    mRunningJobType = ZK_JOB_GLOBAL_DDL;
+}
+

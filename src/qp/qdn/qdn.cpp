@@ -16,7 +16,7 @@
  
 
 /***********************************************************************
- * $Id: qdn.cpp 90824 2021-05-13 05:35:21Z minku.kang $
+ * $Id: qdn.cpp 91517 2021-08-24 01:25:47Z bethy $
  **********************************************************************/
 
 #include <idl.h>
@@ -90,7 +90,11 @@ IDE_RC qdn::validateAddConstr(qcStatement * aStatement)
               != IDE_SUCCESS);
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     IDE_TEST( qcm::lockTableForDDLValidation(aStatement,
                                              sParseTree->tableHandle,
@@ -352,7 +356,11 @@ IDE_RC qdn::validateDropConstr(qcStatement * aStatement)
               != IDE_SUCCESS);
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     IDE_TEST( qcm::lockTableForDDLValidation(aStatement,
                                              sParseTree->tableHandle,
@@ -546,7 +554,11 @@ IDE_RC qdn::validateRenameConstr(qcStatement * aStatement)
               != IDE_SUCCESS);
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     IDE_TEST( qcm::lockTableForDDLValidation(aStatement,
                                              sParseTree->tableHandle,
@@ -690,7 +702,11 @@ IDE_RC qdn::validateDropUnique(qcStatement * aStatement)
               != IDE_SUCCESS);
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     IDE_TEST( qcm::lockTableForDDLValidation(aStatement,
                                              sParseTree->tableHandle,
@@ -869,7 +885,11 @@ IDE_RC qdn::validateDropLocalUnique(qcStatement * aStatement)
               != IDE_SUCCESS);
 
     /* BUG-48290 shard object에 대한 DDL 차단 */
-    IDE_TEST( sdi::checkShardObjectForDDL( aStatement, SDI_DDL_TYPE_TABLE ) != IDE_SUCCESS );
+    IDE_TEST( sdi::checkShardObjectForDDL( aStatement,
+                                           SDI_DDL_TYPE_TABLE,
+                                           ID_TRUE, /* aIsGlobalDDLAllowedOnNonShardObject */
+                                           ID_TRUE  /* aIsGlobalDDLAllowedOnShardObj */ )
+              != IDE_SUCCESS );
 
     IDE_TEST( qcm::lockTableForDDLValidation(aStatement,
                                              sParseTree->tableHandle,
